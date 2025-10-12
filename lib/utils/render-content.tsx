@@ -16,11 +16,11 @@ export const renderFormattedContent = (
   // If content is already an array (from AI), render as bullets regardless of format
   if (Array.isArray(content)) {
     return (
-      <ul className="list-none space-y-1 ml-0">
+      <ul className="list-item list-inside space-y-1 ml-0">
         {content.map((bullet, index) => (
           <li
             key={index}
-            className="text-gray-700 leading-relaxed pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-gray-700 font-medium"
+            className="text-gray-700 leading-relaxed pl-4 relative font-medium"
           >
             {parseHighlights(bullet.trim())}
           </li>
@@ -52,11 +52,11 @@ export const renderFormattedContent = (
 
     if (bullets.length > 1) {
       return (
-        <ul className="list-none space-y-1 ml-0">
+        <ul className="list-item list-inside space-y-1 ml-0">
           {bullets.map((bullet, index) => (
             <li
               key={index}
-              className="text-gray-700 leading-relaxed pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-gray-700 font-medium"
+              className="text-gray-700 leading-relaxed pl-4 relative font-medium"
             >
               {parseHighlights(bullet.trim().replace(/^[•\-\*]\s*/, ''))}
             </li>

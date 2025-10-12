@@ -162,3 +162,12 @@
     padding: 0;
   }
 }
+ol,
+ul,
+menu {
+  list-style: unset;
+  margin: unset;
+  padding: unset;
+  list-style-position: inside
+
+}
