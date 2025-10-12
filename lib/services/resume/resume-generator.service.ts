@@ -4,6 +4,7 @@ import {
   resumeGenerationUserPrompt
 } from '@/lib/prompts'
 import type { Profile, WorkExperience, Education, Project } from '@/lib/types/database'
+import { formatResumeDate } from '@/lib/utils'
 
 export interface ResumeGenerationParams {
   profile: Profile | null
@@ -61,7 +62,7 @@ function buildSystemPromptVariables(params: ResumeGenerationParams) {
     summary_format_instructions:
       generationSettings.summary_format === 'bullets'
         ? '- Create 4-5 compelling bullet points that highlight key qualifications and match job requirements'
-        : '- Create a concise, attractive paragraph (2-3 sentences) that immediately catches attention and positions candidate as ideal fit',
+        : '- Create a concise, attractive paragraph (4-5 sentences) that immediately catches attention and positions candidate as ideal fit',
     summary_format_type:
       generationSettings.summary_format === 'bullets'
         ? 'Use array format: ["qualification 1", "qualification 2", ...]'
@@ -70,7 +71,7 @@ function buildSystemPromptVariables(params: ResumeGenerationParams) {
     mode_instructions:
       mode === 'strict'
         ? `- Strict mode: Use ONLY the provided user information. You can rephrase and optimize for the job, but cannot invent new experiences, technologies, or achievements. Summary must be based strictly on user's actual background (20% job description influence maximum).`
-        : `- Free mode: You can enhance and expand based on job requirements while keeping user's core experience intact. Can infer relevant technologies and skills that align with user's background (up to 80% job description influence allowed).`,
+        : `- Free mode: You can enhance and expand based on job requirements while keeping user's core experience intact. Can infer relevant technologies and skills that align with user's background (up to 80% job description influence allowed). and for this mode, you can also modify any project descriptions to better fit the job requirements.`,
     work_experience_format: generationSettings.work_experience_format,
     work_experience_format_type:
       generationSettings.work_experience_format === 'bullets'
@@ -95,14 +96,12 @@ IN SUMMARY SECTION - Highlight ALL of these:
 
 IN WORK EXPERIENCE - For EACH job, highlight 4-6 items:
 - Specific technologies matching the job description (e.g., "[HIGHLIGHT]React.js[/HIGHLIGHT]", "[HIGHLIGHT]Python[/HIGHLIGHT]", "[HIGHLIGHT]AWS[/HIGHLIGHT]")
-- Leadership/impact keywords (e.g., "[HIGHLIGHT]led team of 5 engineers[/HIGHLIGHT]", "[HIGHLIGHT]architected[/HIGHLIGHT]", "[HIGHLIGHT]designed and implemented[/HIGHLIGHT]")
 - Scale/numbers from user data (e.g., "[HIGHLIGHT]serving 100K+ users[/HIGHLIGHT]")
 - Methodologies matching job (e.g., "[HIGHLIGHT]Agile/Scrum[/HIGHLIGHT]", "[HIGHLIGHT]microservices architecture[/HIGHLIGHT]")
-- Key achievements (e.g., "[HIGHLIGHT]reduced deployment time by 70%[/HIGHLIGHT]" - only if in user data)
+- Key achievements (e.g., "[HIGHLIGHT]reduced deployment time/HIGHLIGHT]" - only if in user data)
 
 IN PROJECTS - For EACH project, highlight 2-4 items:
 - Technologies used (especially ones matching job description)
-- Project scale or impact
 - Your specific role/contribution
 
 HIGHLIGHTING RULES:
@@ -122,7 +121,7 @@ IMPORTANT: Be generous with highlighting. When in doubt, highlight it if it's re
       : '',
     summary_example:
       generationSettings.summary_format === 'bullets'
-        ? '["qualification 1", "qualification 2", "qualification 3", "qualification 4", "qualification 5"] (array of 4-5 strings)'
+        ? '["qualification 1", "qualification 2", "qualification 3", "qualification 4", "qualification 5"] (array of atleast 4-5 strings)'
         : '"string (concise, attention-grabbing 2-3 sentences)"',
     work_experience_example:
       generationSettings.work_experience_format === 'bullets'
@@ -209,7 +208,7 @@ function buildUserPromptVariables(params: ResumeGenerationParams) {
 - Position: ${exp.position_title}
 - Location: ${exp.location}
 - Type: ${exp.job_type}
-- Duration: ${exp.start_date} to ${exp.is_current ? 'Present' : exp.end_date}
+- Duration: ${formatResumeDate(exp.start_date)} to ${exp.is_current ? 'Present' : formatResumeDate(exp.end_date)}
 - Description: ${exp.description}`
       )
       .join('\n'),
@@ -219,7 +218,7 @@ function buildUserPromptVariables(params: ResumeGenerationParams) {
 - Institution: ${edu.institution_name}
 - Degree: ${edu.degree}
 - Field: ${edu.field_of_study}
-- Duration: ${edu.start_date} to ${edu.end_date}`
+- Duration: ${formatResumeDate(edu.start_date)} to ${formatResumeDate(edu.end_date)}`
       )
       .join('\n'),
     projects: projects
@@ -237,6 +236,7 @@ function buildUserPromptVariables(params: ResumeGenerationParams) {
 }
 
 function parseResumeResponse(content: string) {
+  console.log('content', content)
   try {
     return JSON.parse(content)
   } catch {

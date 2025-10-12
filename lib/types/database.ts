@@ -33,7 +33,9 @@ export interface WorkExperience {
   position_title: string
   location: string | null
   job_type: 'Part-Time' | 'Full-Time' | 'Contract' | null
+  /** Date in ISO format, displayed as YYYY-MMM in resume */
   start_date: string
+  /** Date in ISO format, displayed as YYYY-MMM in resume */
   end_date: string | null
   is_current: boolean
   description: string | null
@@ -45,7 +47,9 @@ export interface Education {
   id: string
   user_id: string
   institution_name: string
+  /** Date in ISO format, displayed as YYYY-MMM in resume */
   start_date: string
+  /** Date in ISO format, displayed as YYYY-MMM in resume */
   end_date: string | null
   degree: "Bachelor's" | "Master's" | null
   field_of_study: string | null

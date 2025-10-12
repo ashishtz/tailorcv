@@ -42,10 +42,29 @@ export async function POST(request: NextRequest) {
     const resumeText = await file.text()
     const parsedData = await parseResumeText(resumeText)
 
+    // Generate a random name for the import
+    const randomName = `Import_${new Date().toISOString().split('T')[0]}_${Math.random().toString(36).substring(2, 7)}`
+
+    // Store parsed data in imported_resumes table
+    const { error: insertError } = await supabase
+      .from('imported_resumes')
+      .insert({
+        user_id: user.id,
+        name: randomName,
+        content: parsedData
+      })
+
+    if (insertError) {
+      console.error('Error storing parsed resume:', insertError)
+      return NextResponse.json(
+        { error: 'Failed to store parsed resume' },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json({
       success: true,
-      data: parsedData,
-      message: 'Resume parsed successfully'
+      message: 'Resume parsed and stored successfully'
     })
   } catch (error) {
     console.error('Resume parsing error:', error)

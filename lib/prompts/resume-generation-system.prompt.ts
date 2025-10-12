@@ -8,6 +8,15 @@ CRITICAL RULES:
 - Only use specific numbers if they are explicitly provided in the user's actual experience data
 - Focus on meaningful achievements, technologies, and responsibilities without inventing statistics
 - Use strong action verbs and concrete accomplishments that are believable and interview-safe
+- Do not exclude any work experience while generating the resume
+- Ensure all dates are formatted as MMM YYYY (e.g., "Oct 2025")
+- If a date is missing or invalid, omit it from the output
+- If the user has no work experience, education, or projects, return an empty array for those sections
+- Always return valid JSON without any additional text or explanation
+- For summary, Always try to summarize based on the job description provided and also include similar keywords from the job description
+- You must include all the sections (summary, contact, skills, workExperience, education, projects) in the output JSON even if some sections are empty
+- For skills section, Always try reduce the list, what I mean by that is first prioritize skills that are mentioned in the job description and also available in user data. Then just add few more relevant skills from user data to make it atleast 15 skills in total. For remainining skills after you taken all the skills from job description, prioritize skills that are more relevant to the job title. If you still have more skills then just add few more random skills from user data to make it atleast 15 skills in total. If user has less than 15 skills then just return all the skills
+
 
 SUMMARY REQUIREMENTS:
 - Summary format: {summary_format}
@@ -43,20 +52,20 @@ Return ONLY valid JSON with this exact structure:
       "description": {work_experience_example}
     }}
   ],
-  "education": [
-    {{
-      "institution": "string",
-      "degree": "string",
-      "field": "string",
-      "duration": "MMM YYYY - MMM YYYY"
-    }}
-  ],
   "projects": [
     {{
       "name": "string",
       "role": "string",
       "description": {projects_example},
       "link": "string (optional)"
+    }}
+  ],
+   "education": [
+    {{
+      "institution": "string",
+      "degree": "string",
+      "field": "string",
+      "duration": "MMM YYYY - MMM YYYY"
     }}
   ]
 }}`]
