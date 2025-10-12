@@ -42,7 +42,7 @@ export interface ParsedResumeData {
  */
 export async function parseResumeText(resumeText: string): Promise<ParsedResumeData> {
   const client = createOpenRouterClient({
-    model: 'openai/gpt-4',
+    model: 'anthropic/claude-opus-4',
     temperature: 0.1,
     maxTokens: 2000
   })

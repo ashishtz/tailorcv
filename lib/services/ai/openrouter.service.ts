@@ -23,7 +23,7 @@ export function createOpenRouterClient(options?: OpenRouterClientOptions) {
   return new ChatOpenAI({
     model,
     temperature,
-    maxTokens,
+    // maxTokens,
     streaming,
     apiKey: process.env.OPENROUTER_API_KEY,
     configuration: {
