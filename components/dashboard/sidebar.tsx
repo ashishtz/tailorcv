@@ -23,7 +23,7 @@ export function Sidebar() {
   }
 
   return (
-    <div className="flex h-full w-64 flex-col bg-gradient-to-b from-primary-900 to-primary-950 shadow-large">
+    <div className="flex h-full w-64 flex-col bg-gradient-to-b from-primary-900 to-primary-950 shadow-large no-print">
       {/* Header */}
       <div className="flex h-16 items-center px-6 border-b border-primary-800/50">
         <div className="flex items-center">
@@ -33,7 +33,7 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 px-3 py-6">
+      <nav className="flex-1 space-y-1 px-3 py-6 no-print">
         {navigation.map((item) => {
           const isActive = pathname === item.href
           return (

@@ -8,7 +8,7 @@ interface ClassicTemplateProps {
 
 export function ClassicTemplate({ data, settings }: ClassicTemplateProps) {
   return (
-    <div className="bg-white p-8 w-full shadow-lg font-inter" style={{ minHeight: '11in' }}>
+    <div className="bg-white p-8 w-full font-inter" style={{ minHeight: '11in' }}>
       {/* Header Section */}
       <header className="border-b-2 border-gray-800 pb-4 mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">{data.contact.name}</h1>
@@ -72,26 +72,6 @@ export function ClassicTemplate({ data, settings }: ClassicTemplateProps) {
         </section>
       )}
 
-      {/* Education Section */}
-      {data.education.length > 0 && (
-        <section className="mb-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-3 uppercase tracking-wide">Education</h2>
-          <div className="space-y-3">
-            {data.education.map((edu, index) => (
-              <div key={index}>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{edu.institution}</h3>
-                    <p className="text-gray-700">{edu.degree} in {edu.field}</p>
-                  </div>
-                  <p className="text-sm text-gray-600">{edu.duration}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
       {/* Projects Section */}
       {data.projects && data.projects.length > 0 && (
         <section className="mb-6">
@@ -110,6 +90,26 @@ export function ClassicTemplate({ data, settings }: ClassicTemplateProps) {
                 {project.role && <p className="text-gray-700 text-sm font-semibold">{project.role}</p>}
                 <div className="mt-1 text-sm">
                   {renderFormattedContent(project.description, settings?.projects_format)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Education Section */}
+      {data.education.length > 0 && (
+        <section className="mb-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-3 uppercase tracking-wide">Education</h2>
+          <div className="space-y-3">
+            {data.education.map((edu, index) => (
+              <div key={index}>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{edu.institution}</h3>
+                    <p className="text-gray-700">{edu.degree} in {edu.field}</p>
+                  </div>
+                  <p className="text-sm text-gray-600">{edu.duration}</p>
                 </div>
               </div>
             ))}

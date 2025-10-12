@@ -10,7 +10,7 @@ import { MinimalTemplate } from '@/components/resume-templates/minimal-template'
 import { ProfessionalTemplate } from '@/components/resume-templates/professional-template'
 import { CreativeTemplate } from '@/components/resume-templates/creative-template'
 import { ExecutiveTemplate } from '@/components/resume-templates/executive-template'
-import { Printer, Download, ArrowLeft, Loader2, Edit } from 'lucide-react'
+import { Eye, Download, ArrowLeft, Loader2, Edit } from 'lucide-react'
 import Link from 'next/link'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
@@ -183,16 +183,18 @@ export default function ResumeViewPage() {
                   <Edit className="w-4 h-4" />
                   Edit
                 </Link>
-                <button
-                  onClick={handlePrint}
+                <Link
+                  href={`/preview/${params.id}`}
+                  target="_blank"
                   className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                 >
-                  <Printer className="w-4 h-4" />
-                  Print
-                </button>
+                  <Eye className="w-4 h-4" />
+                  Preview
+                </Link>
                 <button
                   onClick={handleDownload}
-                  disabled={isGeneratingPDF}
+                  title="To be implemented in future"
+                  disabled={true}
                   className="inline-flex items-center gap-2 px-3 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isGeneratingPDF ? (
