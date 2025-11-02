@@ -59,6 +59,90 @@ export async function generateResume(params: ResumeGenerationParams) {
   return parseResumeResponse(response.content as string);
 }
 
+const resumeHighlightPrompt = `
+## STRICT HIGHLIGHTING INSTRUCTION (REVISED)
+
+You are transforming a resume into a version with clear emphasis using [HIGHLIGHT] markers.
+
+Your single top priority:
+Follow the highlighting rules exactly as stated below without skipping or softening them.
+
+---
+
+### GLOBAL HIGHLIGHT RULES
+
+1. Use [HIGHLIGHT] and [/HIGHLIGHT] tags exactly like this: [HIGHLIGHT]text[/HIGHLIGHT].
+2. Highlight complete phrases (2–6 words), not single words.
+3. Highlight only from user-provided data (no invention or assumptions).
+4. Create 15–25 highlights total in the entire resume.
+5. If the same technology or keyword appears in both the user’s background and the job description, it must be highlighted every time it appears.
+6. Never skip a required highlight, even if it feels repetitive.
+
+---
+
+### SUMMARY SECTION RULES
+
+Highlight all of the following (minimum 3, maximum 6 highlights):
+
+* Years of experience (e.g., [HIGHLIGHT]7+ years[/HIGHLIGHT])
+* Seniority level (e.g., [HIGHLIGHT]Senior Software Engineer[/HIGHLIGHT])
+* Primary technical expertise or domain (e.g., [HIGHLIGHT]full-stack web development[/HIGHLIGHT])
+* Specialized focus or skill area (e.g., [HIGHLIGHT]cloud architecture[/HIGHLIGHT], [HIGHLIGHT]AI-driven solutions[/HIGHLIGHT])
+* Any quantified result or scale mentioned
+
+If any are missing, you must create at least two relevant highlights from the available text.
+
+---
+
+### WORK EXPERIENCE RULES
+
+For each job entry, include at least 4 highlights (maximum 6).
+Highlight the following categories:
+
+* Key technologies used (e.g., [HIGHLIGHT]React.js[/HIGHLIGHT], [HIGHLIGHT]Python[/HIGHLIGHT], [HIGHLIGHT]AWS[/HIGHLIGHT])
+* Methodologies or architectures (e.g., [HIGHLIGHT]Agile/Scrum[/HIGHLIGHT], [HIGHLIGHT]microservices architecture[/HIGHLIGHT])
+* Measurable results or scale (e.g., [HIGHLIGHT]serving 200K+ users[/HIGHLIGHT], [HIGHLIGHT]reduced deployment time by 40%[/HIGHLIGHT])
+* Leadership or key achievements (e.g., [HIGHLIGHT]led architecture design[/HIGHLIGHT], [HIGHLIGHT]mentored 5 engineers[/HIGHLIGHT])
+
+No work experience section may have fewer than 3 highlights under any condition.
+
+---
+
+### PROJECTS SECTION RULES
+
+For each project, include 4–5 highlights.
+Highlight these:
+
+* Core technologies used
+* Your personal role or contribution
+* Any performance metrics or achievements
+* Complexity or uniqueness of the project
+
+If a project lacks quantitative data, focus on the tools, your role, and complexity.
+
+---
+
+### FINAL CHECK
+
+Before finalizing:
+
+* Ensure every section (Summary, Work Experience, Projects) contains highlights.
+* Total highlights across the resume = 15 to 25.
+* No fabricated details.
+* If unsure whether to highlight something relevant to the job, highlight it.
+
+---
+
+### SAMPLE OUTPUT FORMAT
+
+Summary:
+"Seasoned [HIGHLIGHT]Senior Software Engineer[/HIGHLIGHT] with [HIGHLIGHT]8+ years[/HIGHLIGHT] of experience in [HIGHLIGHT]full-stack development[/HIGHLIGHT] and [HIGHLIGHT]cloud-native systems[/HIGHLIGHT]."
+
+Experience:
+"Built [HIGHLIGHT]microservices architecture[/HIGHLIGHT] using [HIGHLIGHT]Node.js[/HIGHLIGHT] and [HIGHLIGHT]Docker[/HIGHLIGHT], supporting [HIGHLIGHT]over 500K users[/HIGHLIGHT]."
+`;
+
+
 function buildSystemPromptVariables(params: ResumeGenerationParams) {
   const { mode, generationSettings } = params;
 
@@ -88,43 +172,7 @@ function buildSystemPromptVariables(params: ResumeGenerationParams) {
         ? 'Use array format: ["feature 1", "technology 2", "outcome 3"] each sentence should be atleast 200 words'
         : "Use detailed string format for flowing paragraph descriptions write proper detailed description",
     highlight_instructions: generationSettings.highlight_important_content
-      ? `
-MANDATORY HIGHLIGHTING: You MUST use [HIGHLIGHT]text[/HIGHLIGHT] markers extensively throughout the resume.
-
-WHAT TO HIGHLIGHT (be aggressive with highlighting):
-
-IN SUMMARY SECTION - Highlight ALL of these:
-- Years of experience (e.g., "[HIGHLIGHT]7+ years[/HIGHLIGHT]")
-- Key technologies/skills matching job (e.g., "[HIGHLIGHT]full-stack development[/HIGHLIGHT]")
-- Seniority level (e.g., "[HIGHLIGHT]Senior Software Engineer[/HIGHLIGHT]")
-- Specialized expertise (e.g., "[HIGHLIGHT]cloud architecture specialist[/HIGHLIGHT]")
-
-IN WORK EXPERIENCE - For EACH job, highlight 4-6 items:
-- Specific technologies matching the job description (e.g., "[HIGHLIGHT]React.js[/HIGHLIGHT]", "[HIGHLIGHT]Python[/HIGHLIGHT]", "[HIGHLIGHT]AWS[/HIGHLIGHT]")
-- Scale/numbers from user data (e.g., "[HIGHLIGHT]serving 100K+ users[/HIGHLIGHT]")
-- Methodologies matching job (e.g., "[HIGHLIGHT]Agile/Scrum[/HIGHLIGHT]", "[HIGHLIGHT]microservices architecture[/HIGHLIGHT]")
-- Key achievements (e.g., "[HIGHLIGHT]reduced deployment time/HIGHLIGHT]" - only if in user data)
-
-IN PROJECTS - For EACH project, highlight 4-5 items:
-- Technologies used (especially ones matching job description)
-- Your specific role/contribution
-- Any Achivements
-- Complexity
-
-HIGHLIGHTING RULES:
-1. Highlight 15-25 items TOTAL across the entire resume
-2. If a technology appears in the job description AND user's background, ALWAYS highlight it
-3. Highlight complete phrases (2-6 words), not single words
-4. Every work experience entry MUST have at least 3 highlights
-5. Summary MUST have at least 2 highlights
-6. Only use data from the user's actual background - no fabrication
-
-EXAMPLES:
-Summary: "Experienced software engineer with [HIGHLIGHT]8+ years[/HIGHLIGHT] specializing in [HIGHLIGHT]full-stack web development[/HIGHLIGHT] and [HIGHLIGHT]cloud-based solutions[/HIGHLIGHT]."
-
-Work Experience: "Developed [HIGHLIGHT]scalable microservices[/HIGHLIGHT] using [HIGHLIGHT]Node.js[/HIGHLIGHT] and [HIGHLIGHT]Docker[/HIGHLIGHT], serving [HIGHLIGHT]over 500K users[/HIGHLIGHT]. [HIGHLIGHT]Led architecture decisions[/HIGHLIGHT] for the platform."
-
-IMPORTANT: Be generous with highlighting. When in doubt, highlight it if it's relevant to the job.`
+      ? resumeHighlightPrompt
       : "",
     summary_example:
       generationSettings.summary_format === "bullets"
