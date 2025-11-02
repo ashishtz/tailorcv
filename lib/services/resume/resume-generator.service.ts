@@ -11,6 +11,102 @@ import type {
 } from "@/lib/types/database";
 import { formatResumeDate } from "@/lib/utils";
 
+/**
+ * Configuration interface for resume content formatting requirements
+ */
+interface ResumeFormatConfig {
+  SUMMARY_MIN_BULLETS: number;
+  SUMMARY_MAX_BULLETS: number;
+  SUMMARY_MIN_WORDS_PER_POINT: number;
+  SUMMARY_MAX_WORDS_PER_POINT: number;
+  WORK_EXP_MIN_BULLETS: number;
+  WORK_EXP_MAX_BULLETS: number;
+  WORK_EXP_MIN_WORDS_PER_POINT: number;
+  WORK_EXP_MAX_WORDS_PER_POINT: number;
+  PROJECT_MIN_BULLETS: number;
+  PROJECT_MAX_BULLETS: number;
+  PROJECT_MIN_WORDS_PER_POINT: number;
+  PROJECT_MAX_WORDS_PER_POINT: number;
+  MIN_SKILLS: number;
+  MAX_SKILLS: number;
+  STRICT_MODE_JOB_INFLUENCE: number;
+  FREE_MODE_JOB_INFLUENCE: number;
+}
+
+/**
+ * Default configuration values for resume content formatting
+ */
+const DEFAULT_FORMAT_CONFIG: ResumeFormatConfig = {
+  SUMMARY_MIN_BULLETS: 2,
+  SUMMARY_MAX_BULLETS: 3,
+  SUMMARY_MIN_WORDS_PER_POINT: 150,
+  SUMMARY_MAX_WORDS_PER_POINT: 200,
+  WORK_EXP_MIN_BULLETS: 4,
+  WORK_EXP_MAX_BULLETS: 6,
+  WORK_EXP_MIN_WORDS_PER_POINT: 50,
+  WORK_EXP_MAX_WORDS_PER_POINT: 100,
+  PROJECT_MIN_BULLETS: 3,
+  PROJECT_MAX_BULLETS: 5,
+  PROJECT_MIN_WORDS_PER_POINT: 50,
+  PROJECT_MAX_WORDS_PER_POINT: 75,
+  MIN_SKILLS: 15,
+  MAX_SKILLS: 25,
+  STRICT_MODE_JOB_INFLUENCE: 15,
+  FREE_MODE_JOB_INFLUENCE: 70,
+};
+
+/**
+ * Validates the resume format configuration values
+ * @param config Configuration to validate
+ * @throws Error if any validation rules are violated
+ */
+function validateFormatConfig(config: ResumeFormatConfig): void {
+  const validations = [
+    {
+      condition: config.SUMMARY_MIN_BULLETS <= config.SUMMARY_MAX_BULLETS,
+      message: "Summary min bullets must be less than or equal to max bullets",
+    },
+    {
+      condition: config.SUMMARY_MIN_WORDS_PER_POINT <= config.SUMMARY_MAX_WORDS_PER_POINT,
+      message: "Summary min words per point must be less than or equal to max words",
+    },
+    {
+      condition: config.WORK_EXP_MIN_BULLETS <= config.WORK_EXP_MAX_BULLETS,
+      message: "Work experience min bullets must be less than or equal to max bullets",
+    },
+    {
+      condition: config.WORK_EXP_MIN_WORDS_PER_POINT <= config.WORK_EXP_MAX_WORDS_PER_POINT,
+      message: "Work experience min words per point must be less than or equal to max words",
+    },
+    {
+      condition: config.PROJECT_MIN_BULLETS <= config.PROJECT_MAX_BULLETS,
+      message: "Project min bullets must be less than or equal to max bullets",
+    },
+    {
+      condition: config.PROJECT_MIN_WORDS_PER_POINT <= config.PROJECT_MAX_WORDS_PER_POINT,
+      message: "Project min words per point must be less than or equal to max words",
+    },
+    {
+      condition: config.MIN_SKILLS <= config.MAX_SKILLS,
+      message: "Min skills must be less than or equal to max skills",
+    },
+    {
+      condition: config.STRICT_MODE_JOB_INFLUENCE >= 0 && config.STRICT_MODE_JOB_INFLUENCE <= 100,
+      message: "Strict mode job influence must be between 0 and 100",
+    },
+    {
+      condition: config.FREE_MODE_JOB_INFLUENCE >= 0 && config.FREE_MODE_JOB_INFLUENCE <= 100,
+      message: "Free mode job influence must be between 0 and 100",
+    },
+  ];
+
+  for (const validation of validations) {
+    if (!validation.condition) {
+      throw new Error(`Invalid format config: ${validation.message}`);
+    }
+  }
+}
+
 export interface ResumeGenerationParams {
   profile: Profile | null;
   skills: string[];
@@ -145,32 +241,95 @@ Experience:
 
 function buildSystemPromptVariables(params: ResumeGenerationParams) {
   const { mode, generationSettings } = params;
+  validateFormatConfig(DEFAULT_FORMAT_CONFIG);
 
   return {
     summary_format: generationSettings.summary_format,
     summary_format_instructions:
       generationSettings.summary_format === "bullets"
-        ? "- Create minumum 2-3 detailed bullet points that highlight key qualifications and match job requirements and each point should be atleast 200 words."
-        : "- Create a concise, attractive paragraph (6-7 sentences minimum) that immediately catches attention and positions candidate as ideal fit",
+        ? `- Create ${DEFAULT_FORMAT_CONFIG.SUMMARY_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.SUMMARY_MAX_BULLETS} detailed bullet points that highlight key qualifications and match job requirements. Each point should be ${DEFAULT_FORMAT_CONFIG.SUMMARY_MIN_WORDS_PER_POINT}-${DEFAULT_FORMAT_CONFIG.SUMMARY_MAX_WORDS_PER_POINT} words.`
+        : `- Create a concise, attractive paragraph (${DEFAULT_FORMAT_CONFIG.SUMMARY_MIN_WORDS_PER_POINT}-${DEFAULT_FORMAT_CONFIG.SUMMARY_MAX_WORDS_PER_POINT} words) that immediately catches attention and positions candidate as ideal fit`,
     summary_format_type:
       generationSettings.summary_format === "bullets"
-        ? 'Use array format: ["qualification 1", "qualification 2", ...]'
+        ? `Use array format: ["qualification 1", "qualification 2", ...] (${DEFAULT_FORMAT_CONFIG.SUMMARY_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.SUMMARY_MAX_BULLETS} items)`
         : "Use detailed string format for concise paragraph",
     mode,
     mode_instructions:
       mode === "strict"
-        ? `- Strict mode: Use ONLY the provided user information. You can rephrase and optimize for the job, but cannot invent new experiences, technologies, or achievements. Summary must be based strictly on user's actual background (20% job description influence maximum).`
-        : `- Free mode: You can enhance and expand based on job requirements while keeping user's core experience intact. Can infer relevant technologies and skills that align with user's background (up to 80% job description influence allowed). and for this mode, you can also modify any project descriptions to better fit the job requirements.`,
+        ? `- Strict mode: Use ONLY the provided user information. You can rephrase and optimize for the job, but cannot invent new experiences, technologies, or achievements. Summary must be based strictly on user's actual background (${DEFAULT_FORMAT_CONFIG.STRICT_MODE_JOB_INFLUENCE}% job description influence maximum).
+           Core elements that must remain unchanged:
+           * Company names and employment dates
+           * Job titles and locations
+           * Key achievements with specific metrics
+           * Primary technologies used
+           * Team size and leadership roles`
+        : `- Free mode: You can enhance and expand based on job requirements while keeping user's core experience intact. Can infer relevant technologies and skills that align with user's background (up to ${DEFAULT_FORMAT_CONFIG.FREE_MODE_JOB_INFLUENCE}% job description influence allowed).
+           Core elements that must remain unchanged:
+           * Company names and employment dates
+           * Job titles and locations
+           * Any specific metrics or achievements
+           * Team size and leadership roles
+           Modifiable elements:
+           * Technology stack (can add relevant technologies)
+           * Project descriptions (can be enhanced)
+           * Skill emphasis (can be adjusted)`,
     work_experience_format: generationSettings.work_experience_format,
     work_experience_format_type:
       generationSettings.work_experience_format === "bullets"
-        ? 'Use array format: ["responsibility 1", "achievement 2", "technology used 3"]'
-        : "Use detailed string format for flowing paragraph descriptions",
+        ? `Use array format: ["responsibility 1", "achievement 2", "technology used 3"] (${DEFAULT_FORMAT_CONFIG.WORK_EXP_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.WORK_EXP_MAX_BULLETS} items, ${DEFAULT_FORMAT_CONFIG.WORK_EXP_MIN_WORDS_PER_POINT}-${DEFAULT_FORMAT_CONFIG.WORK_EXP_MAX_WORDS_PER_POINT} words per point)`
+        : `Use detailed string format for flowing paragraph descriptions (${DEFAULT_FORMAT_CONFIG.WORK_EXP_MIN_WORDS_PER_POINT * DEFAULT_FORMAT_CONFIG.WORK_EXP_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.WORK_EXP_MAX_WORDS_PER_POINT * DEFAULT_FORMAT_CONFIG.WORK_EXP_MAX_BULLETS} words total)`,
     projects_format: generationSettings.projects_format,
     projects_format_type:
       generationSettings.projects_format === "bullets"
-        ? 'Use array format: ["feature 1", "technology 2", "outcome 3"] each sentence should be atleast 200 words'
-        : "Use detailed string format for flowing paragraph descriptions write proper detailed description",
+        ? `Use array format: ["feature 1", "technology 2", "outcome 3"] (${DEFAULT_FORMAT_CONFIG.PROJECT_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.PROJECT_MAX_BULLETS} items, ${DEFAULT_FORMAT_CONFIG.PROJECT_MIN_WORDS_PER_POINT}-${DEFAULT_FORMAT_CONFIG.PROJECT_MAX_WORDS_PER_POINT} words per point)`
+        : `Use detailed string format for flowing paragraph descriptions (${DEFAULT_FORMAT_CONFIG.PROJECT_MIN_WORDS_PER_POINT * DEFAULT_FORMAT_CONFIG.PROJECT_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.PROJECT_MAX_WORDS_PER_POINT * DEFAULT_FORMAT_CONFIG.PROJECT_MAX_BULLETS} words total)`,
+    skills_instructions: `
+      Skills Section Requirements:
+      - Include ${DEFAULT_FORMAT_CONFIG.MIN_SKILLS}-${DEFAULT_FORMAT_CONFIG.MAX_SKILLS} skills total
+      - Prioritization order:
+        1. Skills that appear in both job description and user's background
+        2. Skills from job description that align with user's experience
+        3. Most relevant skills from user's background
+        4. Additional skills to meet minimum count requirement
+      - If user has fewer than ${DEFAULT_FORMAT_CONFIG.MIN_SKILLS} skills, include all available skills
+      - Do not exceed ${DEFAULT_FORMAT_CONFIG.MAX_SKILLS} skills even if more are available`,
+    json_structure_example: `{
+      "summary": ${generationSettings.summary_format === "bullets"
+        ? `["qualification 1", "qualification 2", ...] // ${DEFAULT_FORMAT_CONFIG.SUMMARY_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.SUMMARY_MAX_BULLETS} items, ${DEFAULT_FORMAT_CONFIG.SUMMARY_MIN_WORDS_PER_POINT}-${DEFAULT_FORMAT_CONFIG.SUMMARY_MAX_WORDS_PER_POINT} words each`
+        : `"detailed paragraph" // ${DEFAULT_FORMAT_CONFIG.SUMMARY_MIN_WORDS_PER_POINT}-${DEFAULT_FORMAT_CONFIG.SUMMARY_MAX_WORDS_PER_POINT} words total`},
+      "contact": {
+        "name": "string",
+        "email": "string",
+        "phone": "string",
+        "location": "string",
+        "address": "string (optional)"
+      },
+      "skills": ["skill1", "skill2", ...], // ${DEFAULT_FORMAT_CONFIG.MIN_SKILLS}-${DEFAULT_FORMAT_CONFIG.MAX_SKILLS} skills total
+      "workExperience": [{
+        "company": "string",
+        "position": "string",
+        "location": "string",
+        "type": "Full-Time/Part-Time/Contract",
+        "duration": "MMM YYYY - MMM YYYY or Present",
+        "description": ${generationSettings.work_experience_format === "bullets"
+          ? `["point1", "point2", ...] // ${DEFAULT_FORMAT_CONFIG.WORK_EXP_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.WORK_EXP_MAX_BULLETS} items, ${DEFAULT_FORMAT_CONFIG.WORK_EXP_MIN_WORDS_PER_POINT}-${DEFAULT_FORMAT_CONFIG.WORK_EXP_MAX_WORDS_PER_POINT} words each`
+          : `"detailed description" // ${DEFAULT_FORMAT_CONFIG.WORK_EXP_MIN_WORDS_PER_POINT * DEFAULT_FORMAT_CONFIG.WORK_EXP_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.WORK_EXP_MAX_WORDS_PER_POINT * DEFAULT_FORMAT_CONFIG.WORK_EXP_MAX_BULLETS} words total`}
+      }],
+      "projects": [{
+        "name": "string",
+        "role": "string",
+        "description": ${generationSettings.projects_format === "bullets"
+          ? `["point1", "point2", ...] // ${DEFAULT_FORMAT_CONFIG.PROJECT_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.PROJECT_MAX_BULLETS} items, ${DEFAULT_FORMAT_CONFIG.PROJECT_MIN_WORDS_PER_POINT}-${DEFAULT_FORMAT_CONFIG.PROJECT_MAX_WORDS_PER_POINT} words each`
+          : `"detailed description" // ${DEFAULT_FORMAT_CONFIG.PROJECT_MIN_WORDS_PER_POINT * DEFAULT_FORMAT_CONFIG.PROJECT_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.PROJECT_MAX_WORDS_PER_POINT * DEFAULT_FORMAT_CONFIG.PROJECT_MAX_BULLETS} words total`},
+        "link": "string (optional)"
+      }],
+      "education": [{
+        "institution": "string",
+        "degree": "string",
+        "field": "string",
+        "duration": "MMM YYYY - MMM YYYY"
+      }]
+    }`,
     highlight_instructions: generationSettings.highlight_important_content
       ? resumeHighlightPrompt
       : "",
