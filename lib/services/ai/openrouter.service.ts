@@ -14,7 +14,7 @@ export interface OpenRouterClientOptions {
  */
 export function createOpenRouterClient(options?: OpenRouterClientOptions) {
   const {
-    model = 'openai/gpt-3.5-turbo',
+    model = 'anthropic/claude-sonnet-4',
     temperature = 0.7,
     maxTokens = 2000,
     streaming = false,

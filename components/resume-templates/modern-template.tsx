@@ -44,13 +44,30 @@ export function ModernTemplate({ data, settings }: ModernTemplateProps) {
           {data.skills.length > 0 && (
             <section>
               <h2 className="text-lg font-bold text-blue-700 mb-3 border-b-2 border-blue-200 pb-1">SKILLS</h2>
-              <div className="space-y-1">
-                {data.skills.map((skill, index) => (
-                  <div key={index} className="text-sm text-gray-700">
-                    • {skill}
-                  </div>
-                ))}
-              </div>
+              {typeof data.skills[0] === 'string' ? (
+                <div className="space-y-1">
+                  {(data.skills as string[]).map((skill, index) => (
+                    <div key={index} className="text-sm text-gray-700">
+                      • {skill}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {(data.skills as Array<{ category: string; skills: string[] }>).map((category, index) => (
+                    <div key={index}>
+                      <h3 className="font-semibold text-blue-600 text-sm mb-1">{category.category}</h3>
+                      <div className="space-y-1">
+                        {category.skills.map((skill, skillIndex) => (
+                          <div key={skillIndex} className="text-sm text-gray-700">
+                            • {skill}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
           )}
 

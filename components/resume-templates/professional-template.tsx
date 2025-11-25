@@ -48,18 +48,35 @@ export function ProfessionalTemplate({ data, settings }: ProfessionalTemplatePro
           {data.skills.length > 0 && (
             <section className="mb-8">
               <h2 className="text-sm font-semibold uppercase tracking-wider text-blue-300 mb-4">Skills</h2>
-              <div className="space-y-2">
-                {data.skills.map((skill, index) => (
-                  <div key={index} className="text-sm">
-                    <div className="flex justify-between items-center mb-1">
-                      <span>{skill}</span>
+              {typeof data.skills[0] === 'string' ? (
+                <div className="space-y-2">
+                  {(data.skills as string[]).map((skill, index) => (
+                    <div key={index} className="text-sm">
+                      <div className="flex justify-between items-center mb-1">
+                        <span>{skill}</span>
+                      </div>
+                      <div className="w-full bg-slate-700 h-1 rounded">
+                        <div className="bg-blue-400 h-1 rounded w-4/5"></div>
+                      </div>
                     </div>
-                    <div className="w-full bg-slate-700 h-1 rounded">
-                      <div className="bg-blue-400 h-1 rounded w-4/5"></div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {(data.skills as Array<{ category: string; skills: string[] }>).map((category, index) => (
+                    <div key={index}>
+                      <h3 className="text-xs font-semibold text-blue-200 mb-2 uppercase tracking-wide">{category.category}</h3>
+                      <div className="flex flex-wrap gap-1">
+                        {category.skills.map((skill, skillIndex) => (
+                          <span key={skillIndex} className="text-xs bg-slate-700 px-2 py-1 rounded">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </section>
           )}
 

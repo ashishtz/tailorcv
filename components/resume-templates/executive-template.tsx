@@ -66,16 +66,36 @@ export function ExecutiveTemplate({ data, settings }: ExecutiveTemplateProps) {
               </h2>
               <div className="flex-1 ml-4 border-t-2 border-amber-600"></div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {data.skills.map((skill, index) => (
-                <div
-                  key={index}
-                  className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-center hover:bg-amber-50 hover:border-amber-200 transition-colors"
-                >
-                  <span className="font-semibold text-slate-700">{skill}</span>
-                </div>
-              ))}
-            </div>
+            {typeof data.skills[0] === 'string' ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {(data.skills as string[]).map((skill, index) => (
+                  <div
+                    key={index}
+                    className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-center hover:bg-amber-50 hover:border-amber-200 transition-colors"
+                  >
+                    <span className="font-semibold text-slate-700">{skill}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {(data.skills as Array<{ category: string; skills: string[] }>).map((category, index) => (
+                  <div key={index}>
+                    <h3 className="text-lg font-bold text-amber-700 mb-3">{category.category}</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {category.skills.map((skill, skillIndex) => (
+                        <div
+                          key={skillIndex}
+                          className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-center hover:bg-amber-50 hover:border-amber-200 transition-colors"
+                        >
+                          <span className="font-semibold text-slate-700">{skill}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         )}
 

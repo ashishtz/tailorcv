@@ -104,9 +104,22 @@ export function MinimalTemplate({ data, settings }: MinimalTemplateProps) {
         <section>
           <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-widest">Skills</h2>
           <div className="border-l-2 border-gray-200 pl-4">
-            <p className="text-gray-700 leading-relaxed">
-              {data.skills.join(' • ')}
-            </p>
+            {typeof data.skills[0] === 'string' ? (
+              <p className="text-gray-700 leading-relaxed">
+                {(data.skills as string[]).join(' • ')}
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {(data.skills as Array<{ category: string; skills: string[] }>).map((category, index) => (
+                  <div key={index}>
+                    <h3 className="font-semibold text-gray-800 mb-2">{category.category}</h3>
+                    <p className="text-gray-700 leading-relaxed">
+                      {category.skills.join(' • ')}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       )}

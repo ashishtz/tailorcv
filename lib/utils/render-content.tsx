@@ -16,7 +16,7 @@ export const renderFormattedContent = (
   // If content is already an array (from AI), render as bullets regardless of format
   if (Array.isArray(content)) {
     return (
-      <ul className="list-item list-inside space-y-1 ml-0">
+      <ul className="space-y-1 ml-0 list-none">
         {content.map((bullet, index) => (
           <li
             key={index}
@@ -52,7 +52,7 @@ export const renderFormattedContent = (
 
     if (bullets.length > 1) {
       return (
-        <ul className="list-item list-inside space-y-1 ml-0">
+        <ul className="list-none space-y-1 ml-0">
           {bullets.map((bullet, index) => (
             <li
               key={index}

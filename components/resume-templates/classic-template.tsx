@@ -1,5 +1,6 @@
 import { Resume } from '@/lib/types/database'
 import { renderFormattedContent } from '@/lib/utils/render-content'
+import { Fragment } from 'react'
 
 interface ClassicTemplateProps {
   data: Resume['generated_data']
@@ -36,13 +37,31 @@ export function ClassicTemplate({ data, settings }: ClassicTemplateProps) {
       {data.skills.length > 0 && (
         <section className="mb-6">
           <h2 className="text-xl font-bold text-gray-800 mb-3 uppercase tracking-wide">Skills</h2>
-          <div className="flex flex-wrap gap-2">
-            {data.skills.map((skill, index) => (
-              <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded">
-                {skill}
-              </span>
-            ))}
-          </div>
+          {typeof data.skills[0] === 'string' ? (
+            <div className="flex flex-wrap gap-2">
+              {(data.skills as string[]).map((skill, index) => (
+                <span key={index} className="px-3 py-1 text-sm">
+                  {skill}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {(data.skills as Array<{ category: string; skills: string[] }>).map((category, index) => (
+                <div key={index}>
+                  <h3 className="font-semibold mb-2 text-base">{category.category}:{' '}
+                    <span className="text-sm font-medium">
+                    {category.skills.map((skill, skillIndex) => (
+                      <Fragment key={skillIndex}>
+                        {skill}{skillIndex < category.skills.length - 1 ? ', ' : ''}
+                      </Fragment>
+                    ))}
+                    </span>
+                  </h3>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       )}
 

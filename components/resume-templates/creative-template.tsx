@@ -66,16 +66,36 @@ export function CreativeTemplate({ data, settings }: CreativeTemplateProps) {
                   </h2>
                 </div>
                 <div className="bg-white rounded-2xl p-6 shadow-lg">
-                  <div className="flex flex-wrap gap-2">
-                    {data.skills.map((skill, index) => (
-                      <span
-                        key={index}
-                        className="px-4 py-2 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 text-sm font-semibold rounded-full border border-purple-200 hover:shadow-md transition-shadow"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
+                  {typeof data.skills[0] === 'string' ? (
+                    <div className="flex flex-wrap gap-2">
+                      {(data.skills as string[]).map((skill, index) => (
+                        <span
+                          key={index}
+                          className="px-4 py-2 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 text-sm font-semibold rounded-full border border-purple-200 hover:shadow-md transition-shadow"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {(data.skills as Array<{ category: string; skills: string[] }>).map((category, index) => (
+                        <div key={index}>
+                          <h3 className="font-bold text-purple-700 mb-2">{category.category}</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {category.skills.map((skill, skillIndex) => (
+                              <span
+                                key={skillIndex}
+                                className="px-4 py-2 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 text-sm font-semibold rounded-full border border-purple-200 hover:shadow-md transition-shadow"
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </section>
             )}

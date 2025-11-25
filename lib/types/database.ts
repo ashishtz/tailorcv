@@ -20,10 +20,23 @@ export interface Skill {
   created_at: string
 }
 
+export interface SkillCategory {
+  id: string
+  name: string
+  created_at: string
+}
+
 export interface UserSkill {
   user_id: string
   skill_id: string
+  category_id: string | null
   skill?: Skill
+  skill_category?: SkillCategory
+}
+
+export interface CategorizedSkill {
+  category: string
+  skills: string[]
 }
 
 export interface WorkExperience {
@@ -90,7 +103,7 @@ export interface Resume {
       address?: string
     }
     summary?: string | string[]
-    skills: string[]
+    skills: string[] | CategorizedSkill[]
     workExperience: Array<{
       company: string
       position: string

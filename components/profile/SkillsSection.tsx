@@ -1,87 +1,185 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, X, Search } from 'lucide-react'
+import { Plus, X, Trash2 } from 'lucide-react'
+import AsyncCreatableSelect from 'react-select/async-creatable'
+import { AddSkillsModal } from './AddSkillsModal'
+import { ConfirmDialog } from '../ui/confirm-dialog'
+import type { StylesConfig, GroupBase, SingleValue } from 'react-select'
 
 interface Skill {
   id: string
   name: string
 }
 
+interface SkillCategory {
+  id: string
+  name: string
+}
+
+interface CategorizedSkill {
+  category: SkillCategory
+  skills: Skill[]
+}
+
+interface OptionType {
+  value: string
+  label: string
+  __isNew__?: boolean
+}
+
+// Compact select styles for quick-add inputs
+const quickAddStyles: StylesConfig<OptionType, false, GroupBase<OptionType>> = {
+  control: (base, state) => ({
+    ...base,
+    borderColor: state.isFocused ? '#94a3b8' : '#e5e7eb',
+    boxShadow: state.isFocused ? '0 0 0 1px #94a3b8' : 'none',
+    '&:hover': {
+      borderColor: '#94a3b8',
+    },
+    minHeight: '32px',
+    fontSize: '13px',
+    backgroundColor: '#f9fafb',
+  }),
+  valueContainer: (base) => ({
+    ...base,
+    padding: '0 8px',
+  }),
+  input: (base) => ({
+    ...base,
+    margin: 0,
+    padding: 0,
+  }),
+  option: (base, state) => ({
+    ...base,
+    backgroundColor: state.isFocused ? '#f1f5f9' : 'white',
+    color: '#374151',
+    fontSize: '13px',
+    cursor: 'pointer',
+    padding: '8px 12px',
+  }),
+  placeholder: (base) => ({
+    ...base,
+    color: '#9ca3af',
+    fontSize: '13px',
+  }),
+  menu: (base) => ({
+    ...base,
+    zIndex: 9999,
+  }),
+  indicatorsContainer: (base) => ({
+    ...base,
+    display: 'none',
+  }),
+}
+
 export default function SkillsSection() {
-  const [userSkills, setUserSkills] = useState<Skill[]>([])
-  const [allSkills, setAllSkills] = useState<Skill[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [isAddingSkill, setIsAddingSkill] = useState(false)
-  const [newSkillName, setNewSkillName] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [categorizedSkills, setCategorizedSkills] = useState<CategorizedSkill[]>([])
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ categoryId: string; categoryName: string } | null>(null)
+  const [deletingCategory, setDeletingCategory] = useState(false)
   const supabase = createClient()
 
-  useEffect(() => {
-    loadUserSkills()
-    loadAllSkills()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const loadUserSkills = async () => {
+  const loadUserSkills = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
       const { data, error } = await supabase
         .from('user_skills')
-        .select('skill_id, skills(id, name)')
+        .select('skill_id, category_id, skills(id, name), skill_categories(id, name)')
         .eq('user_id', user.id)
 
       if (!error && data) {
-        const skills = data
-          .map(item => {
-            const skillData = item.skills as unknown
-            return skillData && typeof skillData === 'object' && skillData !== null && 'id' in skillData && 'name' in skillData
-              ? skillData as Skill
-              : null
-          })
-          .filter((skill): skill is Skill => skill !== null)
-        setUserSkills(skills)
+        const categoryMap = new Map<string, CategorizedSkill>()
+
+        data.forEach(item => {
+          const skill = item.skills as unknown as Skill | null
+          const category = item.skill_categories as unknown as SkillCategory | null
+
+          if (skill && category) {
+            if (!categoryMap.has(category.id)) {
+              categoryMap.set(category.id, {
+                category: { id: category.id, name: category.name },
+                skills: []
+              })
+            }
+            categoryMap.get(category.id)?.skills.push(skill)
+          }
+        })
+
+        setCategorizedSkills(Array.from(categoryMap.values()))
       }
     } catch (error) {
       console.error('Error loading user skills:', error)
     }
-  }
+  }, [supabase])
 
-  const loadAllSkills = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('skills')
-        .select('*')
-        .order('name')
+  useEffect(() => {
+    loadUserSkills()
+  }, [loadUserSkills])
 
-      if (!error && data) {
-        setAllSkills(data)
-      }
-    } catch (error) {
-      console.error('Error loading all skills:', error)
-    }
-  }
+  const loadSkillsForQuickAdd = useCallback(async (inputValue: string): Promise<OptionType[]> => {
+    if (!inputValue || inputValue.length < 1) return []
 
-  const addSkillToUser = async (skill: Skill) => {
+    const { data } = await supabase
+      .from('skills')
+      .select('id, name')
+      .ilike('name', `%${inputValue}%`)
+      .limit(10)
+
+    return data?.map(s => ({ value: s.id, label: s.name })) || []
+  }, [supabase])
+
+  const handleQuickAddSkill = async (categoryId: string, option: SingleValue<OptionType>) => {
+    if (!option) return
+
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { error } = await supabase
-        .from('user_skills')
-        .insert({ user_id: user.id, skill_id: skill.id })
+      let skillId = option.value
 
-      if (!error) {
-        setUserSkills([...userSkills, skill])
+      // Create skill if new
+      if (option.__isNew__) {
+        const { data: newSkill, error: skillError } = await supabase
+          .from('skills')
+          .insert({ name: option.label })
+          .select()
+          .single()
+
+        if (skillError) throw skillError
+        skillId = newSkill.id
+      }
+
+      // Check if already exists
+      const { data: existing } = await supabase
+        .from('user_skills')
+        .select('skill_id')
+        .eq('user_id', user.id)
+        .eq('skill_id', skillId)
+        .eq('category_id', categoryId)
+        .single()
+
+      if (!existing) {
+        const { error: linkError } = await supabase
+          .from('user_skills')
+          .insert({
+            user_id: user.id,
+            skill_id: skillId,
+            category_id: categoryId,
+          })
+
+        if (linkError) throw linkError
+        await loadUserSkills()
       }
     } catch (error) {
       console.error('Error adding skill:', error)
     }
   }
 
-  const removeSkillFromUser = async (skillId: string) => {
+  const handleRemoveSkill = async (skillId: string, categoryId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -91,153 +189,128 @@ export default function SkillsSection() {
         .delete()
         .eq('user_id', user.id)
         .eq('skill_id', skillId)
+        .eq('category_id', categoryId)
 
       if (!error) {
-        setUserSkills(userSkills.filter(s => s.id !== skillId))
+        await loadUserSkills()
       }
     } catch (error) {
       console.error('Error removing skill:', error)
     }
   }
 
-  const createNewSkill = async () => {
-    if (!newSkillName.trim()) return
+  const handleRemoveCategory = async () => {
+    if (!deleteConfirm) return
 
-    setLoading(true)
+    setDeletingCategory(true)
     try {
-      const { data, error } = await supabase
-        .from('skills')
-        .insert({ name: newSkillName.trim() })
-        .select()
-        .single()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
-      if (!error && data) {
-        await addSkillToUser(data)
-        setAllSkills([...allSkills, data].sort((a, b) => a.name.localeCompare(b.name)))
-        setNewSkillName('')
-        setIsAddingSkill(false)
-        setSearchTerm('')
+      const { error } = await supabase
+        .from('user_skills')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('category_id', deleteConfirm.categoryId)
+
+      if (!error) {
+        await loadUserSkills()
+        setDeleteConfirm(null)
       }
     } catch (error) {
-      console.error('Error creating skill:', error)
+      console.error('Error removing category:', error)
     } finally {
-      setLoading(false)
+      setDeletingCategory(false)
     }
   }
-
-  const filteredSkills = allSkills.filter(skill =>
-    skill.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    !userSkills.some(us => us.id === skill.id)
-  )
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-gray-900">Skills</h2>
         <button
-          onClick={() => setIsAddingSkill(!isAddingSkill)}
-          className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-100 hover:bg-blue-200"
+          onClick={() => setIsModalOpen(true)}
+          className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-100 hover:bg-blue-200 transition-colors"
         >
           <Plus className="w-4 h-4 mr-1" />
-          Add Skill
+          Add Category
         </button>
       </div>
 
-      {isAddingSkill && (
-        <div className="mb-4 p-4 border border-gray-200 rounded-lg">
-          <div className="mb-3">
-            <label htmlFor="skill-search" className="block text-sm font-medium text-gray-700 mb-2">
-              Search or Create Skill
-            </label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                id="skill-search"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Type to search existing skills..."
-                className="pl-10 w-full rounded-md border-gray-300 shadow-sm focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
-              />
-            </div>
-          </div>
-
-          {searchTerm && filteredSkills.length > 0 && (
-            <div className="mb-3">
-              <p className="text-sm text-gray-600 mb-2">Select from existing skills:</p>
-              <div className="flex flex-wrap gap-2">
-                {filteredSkills.slice(0, 10).map(skill => (
-                  <button
-                    key={skill.id}
-                    onClick={() => {
-                      addSkillToUser(skill)
-                      setSearchTerm('')
-                      setIsAddingSkill(false)
-                    }}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 hover:bg-gray-200"
-                  >
-                    {skill.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {searchTerm && filteredSkills.length === 0 && (
-            <div className="mb-3">
-              <p className="text-sm text-gray-600 mb-2">No skills found. Create a new one:</p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newSkillName}
-                  onChange={(e) => setNewSkillName(e.target.value)}
-                  placeholder={searchTerm}
-                  className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
-                />
+      {categorizedSkills.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-500 mb-4">No skills added yet</p>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+          >
+            Click &quot;Add Category&quot; to get started
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {categorizedSkills.map(({ category, skills }) => (
+            <div key={category.id} className="border border-gray-200 rounded-lg p-4">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-sm font-semibold text-gray-800">{category.name}</h3>
                 <button
-                  onClick={createNewSkill}
-                  disabled={loading}
-                  className="px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                  onClick={() => setDeleteConfirm({ categoryId: category.id, categoryName: category.name })}
+                  className="text-gray-400 hover:text-red-500 transition-colors"
+                  title="Remove category"
                 >
-                  {loading ? 'Creating...' : 'Create & Add'}
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-            </div>
-          )}
 
-          <button
-            onClick={() => {
-              setIsAddingSkill(false)
-              setSearchTerm('')
-              setNewSkillName('')
-            }}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            Cancel
-          </button>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {skills.map(skill => (
+                  <span
+                    key={skill.id}
+                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                  >
+                    {skill.name}
+                    <button
+                      onClick={() => handleRemoveSkill(skill.id, category.id)}
+                      className="ml-2 text-blue-600 hover:text-blue-800 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+
+              <AsyncCreatableSelect<OptionType, false>
+                key={`quick-add-${category.id}`}
+                cacheOptions
+                loadOptions={loadSkillsForQuickAdd}
+                onChange={(option) => handleQuickAddSkill(category.id, option)}
+                placeholder="Add skill to this category..."
+                formatCreateLabel={(inputValue) => `Create "${inputValue}"`}
+                styles={quickAddStyles}
+                value={null}
+                noOptionsMessage={() => 'Type to search skills...'}
+              />
+            </div>
+          ))}
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2">
-        {userSkills.length === 0 ? (
-          <p className="text-gray-500 text-sm">No skills added yet</p>
-        ) : (
-          userSkills.map(skill => (
-            <span
-              key={skill.id}
-              className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 group"
-            >
-              {skill.name}
-              <button
-                onClick={() => removeSkillFromUser(skill.id)}
-                className="ml-2 text-blue-600 hover:text-blue-800"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          ))
-        )}
-      </div>
+      <AddSkillsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={loadUserSkills}
+      />
+
+      <ConfirmDialog
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        onConfirm={handleRemoveCategory}
+        title="Remove Category"
+        message={`Are you sure you want to remove "${deleteConfirm?.categoryName}" and all its skills from your profile?`}
+        confirmText="Remove"
+        type="danger"
+        loading={deletingCategory}
+      />
     </div>
   )
 }

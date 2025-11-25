@@ -8,6 +8,7 @@ import type {
   WorkExperience,
   Education,
   Project,
+  CategorizedSkill,
 } from "@/lib/types/database";
 import { formatResumeDate } from "@/lib/utils";
 
@@ -109,7 +110,7 @@ function validateFormatConfig(config: ResumeFormatConfig): void {
 
 export interface ResumeGenerationParams {
   profile: Profile | null;
-  skills: string[];
+  skills: CategorizedSkill[];
   workExperiences: WorkExperience[];
   education: Education[];
   projects: Project[];
@@ -133,6 +134,7 @@ export interface ResumeGenerationParams {
  * @returns Generated resume data in structured format
  */
 export async function generateResume(params: ResumeGenerationParams) {
+  console.log('params', params)
   const systemVars = buildSystemPromptVariables(params);
   const userVars = buildUserPromptVariables(params);
 
@@ -170,7 +172,7 @@ Follow the highlighting rules exactly as stated below without skipping or soften
 1. Use [HIGHLIGHT] and [/HIGHLIGHT] tags exactly like this: [HIGHLIGHT]text[/HIGHLIGHT].
 2. Highlight complete phrases (2–6 words), not single words.
 3. Highlight only from user-provided data (no invention or assumptions).
-4. Create 15–25 highlights total in the entire resume.
+4. Create 8-10 highlights total in the entire resume.
 5. If the same technology or keyword appears in both the user’s background and the job description, it must be highlighted every time it appears.
 6. Never skip a required highlight, even if it feels repetitive.
 
@@ -178,7 +180,7 @@ Follow the highlighting rules exactly as stated below without skipping or soften
 
 ### SUMMARY SECTION RULES
 
-Highlight all of the following (minimum 3, maximum 6 highlights):
+Highlight all of the following (minimum 3, maximum 4 highlights):
 
 * Years of experience (e.g., [HIGHLIGHT]7+ years[/HIGHLIGHT])
 * Seniority level (e.g., [HIGHLIGHT]Senior Software Engineer[/HIGHLIGHT])
@@ -192,7 +194,7 @@ If any are missing, you must create at least two relevant highlights from the av
 
 ### WORK EXPERIENCE RULES
 
-For each job entry, include at least 4 highlights (maximum 6).
+For each job entry, include at least 1 highlights.
 Highlight the following categories:
 
 * Key technologies used (e.g., [HIGHLIGHT]React.js[/HIGHLIGHT], [HIGHLIGHT]Python[/HIGHLIGHT], [HIGHLIGHT]AWS[/HIGHLIGHT])
@@ -206,7 +208,7 @@ No work experience section may have fewer than 3 highlights under any condition.
 
 ### PROJECTS SECTION RULES
 
-For each project, include 4–5 highlights.
+For each project, include 2-3 highlights.
 Highlight these:
 
 * Core technologies used
@@ -224,18 +226,24 @@ Before finalizing:
 
 * Ensure every section (Summary, Work Experience, Projects) contains highlights.
 * Total highlights across the resume = 15 to 25.
-* No fabricated details.
 * If unsure whether to highlight something relevant to the job, highlight it.
+* Generate only the Impact section for a professional experience summary. Do not include any “What I Did” or task-related details. Write in concise bullet points that show measurable or qualitative outcomes, organizational benefits, and improvements in scalability, security, efficiency, or collaboration. Maintain a professional tone suitable for a senior software engineer’s resume. Limit to 4–6 impactful points. Do not repeat job duties or use storytelling. Only focus on results and outcomes achieved for the organization.
 
 ---
 
 ### SAMPLE OUTPUT FORMAT
 
 Summary:
-"Seasoned [HIGHLIGHT]Senior Software Engineer[/HIGHLIGHT] with [HIGHLIGHT]8+ years[/HIGHLIGHT] of experience in [HIGHLIGHT]full-stack development[/HIGHLIGHT] and [HIGHLIGHT]cloud-native systems[/HIGHLIGHT]."
+"Experienced [HIGHLIGHT]Senior Software Engineer[/HIGHLIGHT] with [HIGHLIGHT]8+ years[/HIGHLIGHT] of experience in [HIGHLIGHT]full-stack development[/HIGHLIGHT] and [HIGHLIGHT]cloud-native systems[/HIGHLIGHT]."
 
 Experience:
 "Built [HIGHLIGHT]microservices architecture[/HIGHLIGHT] using [HIGHLIGHT]Node.js[/HIGHLIGHT] and [HIGHLIGHT]Docker[/HIGHLIGHT], supporting [HIGHLIGHT]over 500K users[/HIGHLIGHT]."
+"Improved [HIGHLIGHT]platform scalability[/HIGHLIGHT] by deploying a modular [HIGHLIGHT]Node.js[/HIGHLIGHT] and [HIGHLIGHT]Docker microservices architecture[/HIGHLIGHT] supporting over [HIGHLIGHT]500K active users[/HIGHLIGHT]."
+"Enhanced [HIGHLIGHT]system reliability[/HIGHLIGHT] and [HIGHLIGHT]uptime[/HIGHLIGHT] through containerized [HIGHLIGHT]Node.js microservices[/HIGHLIGHT], enabling seamless [HIGHLIGHT]scaling under high traffic[/HIGHLIGHT]."
+"Strengthened [HIGHLIGHT]data security[/HIGHLIGHT] and [HIGHLIGHT]regulatory compliance[/HIGHLIGHT] by integrating containerized [HIGHLIGHT]microservices[/HIGHLIGHT] within a controlled [HIGHLIGHT]deployment pipeline[/HIGHLIGHT]."
+"Reduced [HIGHLIGHT]operational costs[/HIGHLIGHT] and [HIGHLIGHT]deployment time[/HIGHLIGHT] by automating [HIGHLIGHT]microservice orchestration[/HIGHLIGHT] with [HIGHLIGHT]Docker-based infrastructure[/HIGHLIGHT]."
+"Increased [HIGHLIGHT]developer productivity[/HIGHLIGHT] by isolating [HIGHLIGHT]service components[/HIGHLIGHT], improving [HIGHLIGHT]test coverage[/HIGHLIGHT], and simplifying [HIGHLIGHT]continuous delivery[/HIGHLIGHT]."
+"Enabled faster [HIGHLIGHT]feature rollouts[/HIGHLIGHT] and higher [HIGHLIGHT]platform resilience[/HIGHLIGHT] by adopting a [HIGHLIGHT]microservices-first architecture[/HIGHLIGHT] across product modules."
 `;
 
 
@@ -247,11 +255,11 @@ function buildSystemPromptVariables(params: ResumeGenerationParams) {
     summary_format: generationSettings.summary_format,
     summary_format_instructions:
       generationSettings.summary_format === "bullets"
-        ? `- Create ${DEFAULT_FORMAT_CONFIG.SUMMARY_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.SUMMARY_MAX_BULLETS} detailed bullet points that highlight key qualifications and match job requirements. Each point should be ${DEFAULT_FORMAT_CONFIG.SUMMARY_MIN_WORDS_PER_POINT}-${DEFAULT_FORMAT_CONFIG.SUMMARY_MAX_WORDS_PER_POINT} words.`
+        ? `- Create ${DEFAULT_FORMAT_CONFIG.SUMMARY_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.SUMMARY_MAX_BULLETS} detailed bullet points that highlight key qualifications and match job requirements. Each point should be 40-50 words.`
         : `- Create a concise, attractive paragraph (${DEFAULT_FORMAT_CONFIG.SUMMARY_MIN_WORDS_PER_POINT}-${DEFAULT_FORMAT_CONFIG.SUMMARY_MAX_WORDS_PER_POINT} words) that immediately catches attention and positions candidate as ideal fit`,
     summary_format_type:
       generationSettings.summary_format === "bullets"
-        ? `Use array format: ["qualification 1", "qualification 2", ...] (${DEFAULT_FORMAT_CONFIG.SUMMARY_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.SUMMARY_MAX_BULLETS} items)`
+        ? `Use array format: ["qualification 1", "qualification 2", ...]`
         : "Use detailed string format for concise paragraph",
     mode,
     mode_instructions:
@@ -276,75 +284,37 @@ function buildSystemPromptVariables(params: ResumeGenerationParams) {
     work_experience_format: generationSettings.work_experience_format,
     work_experience_format_type:
       generationSettings.work_experience_format === "bullets"
-        ? `Use array format: ["responsibility 1", "achievement 2", "technology used 3"] (${DEFAULT_FORMAT_CONFIG.WORK_EXP_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.WORK_EXP_MAX_BULLETS} items, ${DEFAULT_FORMAT_CONFIG.WORK_EXP_MIN_WORDS_PER_POINT}-${DEFAULT_FORMAT_CONFIG.WORK_EXP_MAX_WORDS_PER_POINT} words per point)`
+        ? `Use array format: ["responsibility 1", "achievement 2", "technology used 3"] (${DEFAULT_FORMAT_CONFIG.WORK_EXP_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.WORK_EXP_MAX_BULLETS} items, 40-50 words per point)`
         : `Use detailed string format for flowing paragraph descriptions (${DEFAULT_FORMAT_CONFIG.WORK_EXP_MIN_WORDS_PER_POINT * DEFAULT_FORMAT_CONFIG.WORK_EXP_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.WORK_EXP_MAX_WORDS_PER_POINT * DEFAULT_FORMAT_CONFIG.WORK_EXP_MAX_BULLETS} words total)`,
     projects_format: generationSettings.projects_format,
     projects_format_type:
       generationSettings.projects_format === "bullets"
-        ? `Use array format: ["feature 1", "technology 2", "outcome 3"] (${DEFAULT_FORMAT_CONFIG.PROJECT_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.PROJECT_MAX_BULLETS} items, ${DEFAULT_FORMAT_CONFIG.PROJECT_MIN_WORDS_PER_POINT}-${DEFAULT_FORMAT_CONFIG.PROJECT_MAX_WORDS_PER_POINT} words per point)`
+        ? `Use array format: ["feature 1", "technology 2", "outcome 3"] (${DEFAULT_FORMAT_CONFIG.PROJECT_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.PROJECT_MAX_BULLETS} items, 30-40 words per point)`
         : `Use detailed string format for flowing paragraph descriptions (${DEFAULT_FORMAT_CONFIG.PROJECT_MIN_WORDS_PER_POINT * DEFAULT_FORMAT_CONFIG.PROJECT_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.PROJECT_MAX_WORDS_PER_POINT * DEFAULT_FORMAT_CONFIG.PROJECT_MAX_BULLETS} words total)`,
     skills_instructions: `
       Skills Section Requirements:
-      - Include ${DEFAULT_FORMAT_CONFIG.MIN_SKILLS}-${DEFAULT_FORMAT_CONFIG.MAX_SKILLS} skills total
-      - Prioritization order:
+      - Include all the skills with Category of user.
+      - You can Re-order skils based on the below requirement but you can't remove any of the skills.
+      - You can't re-order the Categories of skills, they are always going to be in same order. you can re-order the skills inside those categoreis.
+      - Prioritization skill order(Must order skills in below provided instructions):
         1. Skills that appear in both job description and user's background
         2. Skills from job description that align with user's experience
-        3. Most relevant skills from user's background
-        4. Additional skills to meet minimum count requirement
-      - If user has fewer than ${DEFAULT_FORMAT_CONFIG.MIN_SKILLS} skills, include all available skills
-      - Do not exceed ${DEFAULT_FORMAT_CONFIG.MAX_SKILLS} skills even if more are available`,
-    json_structure_example: `{
-      "summary": ${generationSettings.summary_format === "bullets"
-        ? `["qualification 1", "qualification 2", ...] // ${DEFAULT_FORMAT_CONFIG.SUMMARY_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.SUMMARY_MAX_BULLETS} items, ${DEFAULT_FORMAT_CONFIG.SUMMARY_MIN_WORDS_PER_POINT}-${DEFAULT_FORMAT_CONFIG.SUMMARY_MAX_WORDS_PER_POINT} words each`
-        : `"detailed paragraph" // ${DEFAULT_FORMAT_CONFIG.SUMMARY_MIN_WORDS_PER_POINT}-${DEFAULT_FORMAT_CONFIG.SUMMARY_MAX_WORDS_PER_POINT} words total`},
-      "contact": {
-        "name": "string",
-        "email": "string",
-        "phone": "string",
-        "location": "string",
-        "address": "string (optional)"
-      },
-      "skills": ["skill1", "skill2", ...], // ${DEFAULT_FORMAT_CONFIG.MIN_SKILLS}-${DEFAULT_FORMAT_CONFIG.MAX_SKILLS} skills total
-      "workExperience": [{
-        "company": "string",
-        "position": "string",
-        "location": "string",
-        "type": "Full-Time/Part-Time/Contract",
-        "duration": "MMM YYYY - MMM YYYY or Present",
-        "description": ${generationSettings.work_experience_format === "bullets"
-          ? `["point1", "point2", ...] // ${DEFAULT_FORMAT_CONFIG.WORK_EXP_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.WORK_EXP_MAX_BULLETS} items, ${DEFAULT_FORMAT_CONFIG.WORK_EXP_MIN_WORDS_PER_POINT}-${DEFAULT_FORMAT_CONFIG.WORK_EXP_MAX_WORDS_PER_POINT} words each`
-          : `"detailed description" // ${DEFAULT_FORMAT_CONFIG.WORK_EXP_MIN_WORDS_PER_POINT * DEFAULT_FORMAT_CONFIG.WORK_EXP_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.WORK_EXP_MAX_WORDS_PER_POINT * DEFAULT_FORMAT_CONFIG.WORK_EXP_MAX_BULLETS} words total`}
-      }],
-      "projects": [{
-        "name": "string",
-        "role": "string",
-        "description": ${generationSettings.projects_format === "bullets"
-          ? `["point1", "point2", ...] // ${DEFAULT_FORMAT_CONFIG.PROJECT_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.PROJECT_MAX_BULLETS} items, ${DEFAULT_FORMAT_CONFIG.PROJECT_MIN_WORDS_PER_POINT}-${DEFAULT_FORMAT_CONFIG.PROJECT_MAX_WORDS_PER_POINT} words each`
-          : `"detailed description" // ${DEFAULT_FORMAT_CONFIG.PROJECT_MIN_WORDS_PER_POINT * DEFAULT_FORMAT_CONFIG.PROJECT_MIN_BULLETS}-${DEFAULT_FORMAT_CONFIG.PROJECT_MAX_WORDS_PER_POINT * DEFAULT_FORMAT_CONFIG.PROJECT_MAX_BULLETS} words total`},
-        "link": "string (optional)"
-      }],
-      "education": [{
-        "institution": "string",
-        "degree": "string",
-        "field": "string",
-        "duration": "MMM YYYY - MMM YYYY"
-      }]
-    }`,
+        3. Most relevant skills from user's background`,
     highlight_instructions: generationSettings.highlight_important_content
       ? resumeHighlightPrompt
       : "",
     summary_example:
       generationSettings.summary_format === "bullets"
-        ? '["qualification 1", "qualification 2", "qualification 3", "qualification 4", "qualification 5"] (array of atleast 2-3 detailed strings)'
-        : '"detailed string (concise, attention-grabbing 2-3 sentences)"',
+        ? '["qualification 1", "qualification 2", "qualification 3", "qualification 4", "qualification 5"]'
+        : '"detailed paragraph summarizing key qualifications and fit for the job"',
     work_experience_example:
       generationSettings.work_experience_format === "bullets"
-        ? '["responsibility/achievement 1", "technology/tool used 2", "meaningful accomplishment 3"] (array of atleast 5-6 detailed strings, NO fabricated percentages)'
-        : '"detailed string (flowing paragraph describing role without fake metrics)"',
+        ? '["responsibility/achievement 1", "technology/tool used 2", "meaningful accomplishment 3",...]'
+        : '"detailed working paragraph (flowing description of role"',
     projects_example:
       generationSettings.projects_format === "bullets"
-        ? '["key feature/functionality 1", "technology stack used 2", "project outcome 3"] (array of detailed strings, NO fabricated metrics)"'
-        : '"detailed string (flowing paragraph about project without fake statistics)"',
+        ? '["key feature/functionality 1", "technology stack used 2", "project outcome 3"]"'
+        : '"detailed project description paragraph"',
   };
 }
 
@@ -447,6 +417,11 @@ function buildUserPromptVariables(params: ResumeGenerationParams) {
   }
 
   // Otherwise, use profile data (original behavior)
+  // Format categorized skills for prompt
+  const formattedSkills = skills
+    .map(cat => `${cat.category}: ${cat.skills.join(", ")}`)
+    .join("\n");
+
   return {
     first_name: profile?.first_name || "",
     last_name: profile?.last_name || "",
@@ -456,7 +431,7 @@ function buildUserPromptVariables(params: ResumeGenerationParams) {
     address: [profile?.address_1, profile?.address_2, profile?.address_3]
       .filter(Boolean)
       .join(", "),
-    skills: skills.join(", "),
+    skills: formattedSkills,
     work_experiences: workExperiences
       .map(
         (exp) => `

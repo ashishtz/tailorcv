@@ -8,7 +8,8 @@ export const resumeGenerationUserPrompt = ChatPromptTemplate.fromMessages([
 - Location: {location}
 - Address: {address}
 
-Skills: {skills}
+Skills (organized by categories):
+{skills}
 
 Work Experience:
 {work_experiences}
@@ -43,7 +44,6 @@ CRITICAL REQUIREMENTS:
    - Ensure highlights create a clear visual path showing "this person can do this job"
 
 4. AUTHENTICITY RULES:
-   - ABSOLUTELY NO fabricated percentages, statistics, or unverifiable claims
    - Only highlight achievements and details that are EXPLICITLY provided in the user data
    - Focus on real technologies, actual responsibilities, and genuine accomplishments
    - Everything must be interview-safe and verifiable
