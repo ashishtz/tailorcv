@@ -1,0 +1,57 @@
+services:
+  # ===========================================
+  # Next.js Application
+  # ===========================================
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Build-time arguments for NEXT_PUBLIC_* variables
+        # These get baked into the client bundle
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_URL: ${NEXT_PUBLIC_URL:-http://resume.local}
+    container_name: resume-nextjs
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Runtime environment variables (server-side only)
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      # Re-declare NEXT_PUBLIC_* for server-side runtime access
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - NEXT_PUBLIC_URL=${NEXT_PUBLIC_URL:-http://resume.local}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - resume-network
+    # Health check for the application
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===========================================
+  # Nginx Reverse Proxy
+  # ===========================================
+  nginx:
+    image: nginx:alpine
+    container_name: resume-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      nextjs:
+        condition: service_healthy
+    networks:
+      - resume-network
+
+networks:
+  resume-network:
+    driver: bridge

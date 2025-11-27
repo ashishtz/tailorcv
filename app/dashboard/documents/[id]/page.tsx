@@ -55,11 +55,6 @@ export default function ResumeViewPage() {
     fetchResumeData()
   }, [params.id, supabase])
 
-
-  const handlePrint = () => {
-    window.print()
-  }
-
   const handleDownload = async () => {
     if (!resume) return
 

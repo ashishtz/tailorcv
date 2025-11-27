@@ -16,7 +16,7 @@ export function createOpenRouterClient(options?: OpenRouterClientOptions) {
   const {
     model = 'anthropic/claude-sonnet-4',
     temperature = 0.7,
-    maxTokens = 2000,
+    // maxTokens = 2000,
     streaming = false,
   } = options || {}
 
