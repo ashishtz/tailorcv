@@ -1,5 +1,6 @@
 import { Resume } from '@/lib/types/database'
 import { Mail, Phone, MapPin, Link as LinkIcon } from 'lucide-react'
+import { LinkedInIcon, GitHubIcon, StackOverflowIcon } from '@/components/icons/SocialIcons'
 import { renderFormattedContent } from '@/lib/utils/render-content'
 
 interface ModernTemplateProps {
@@ -26,6 +27,21 @@ export function ModernTemplate({ data, settings }: ModernTemplateProps) {
             <MapPin className="w-4 h-4" />
             <span>{data.contact.location}</span>
           </div>
+          {data.contact.socialLinks?.linkedin && (
+            <a href={data.contact.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <LinkedInIcon className="w-4 h-4" />
+            </a>
+          )}
+          {data.contact.socialLinks?.github && (
+            <a href={data.contact.socialLinks.github} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <GitHubIcon className="w-4 h-4" />
+            </a>
+          )}
+          {data.contact.socialLinks?.stackoverflow && (
+            <a href={data.contact.socialLinks.stackoverflow} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <StackOverflowIcon className="w-4 h-4" />
+            </a>
+          )}
         </div>
       </header>
 

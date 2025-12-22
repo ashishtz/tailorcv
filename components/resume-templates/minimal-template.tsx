@@ -1,5 +1,6 @@
 import { Resume } from '@/lib/types/database'
 import { renderFormattedContent } from '@/lib/utils/render-content'
+import { LinkedInIcon, GitHubIcon, StackOverflowIcon } from '@/components/icons/SocialIcons'
 
 interface MinimalTemplateProps {
   data: Resume['generated_data']
@@ -16,6 +17,25 @@ export function MinimalTemplate({ data, settings }: MinimalTemplateProps) {
           <p>{data.contact.email} • {data.contact.phone}</p>
           <p>{data.contact.location}</p>
           {data.contact.address && <p>{data.contact.address}</p>}
+          {(data.contact.socialLinks?.linkedin || data.contact.socialLinks?.github || data.contact.socialLinks?.stackoverflow) && (
+            <div className="flex justify-center gap-4 mt-2">
+              {data.contact.socialLinks?.linkedin && (
+                <a href={data.contact.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 transition-colors">
+                  <LinkedInIcon className="w-4 h-4" />
+                </a>
+              )}
+              {data.contact.socialLinks?.github && (
+                <a href={data.contact.socialLinks.github} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 transition-colors">
+                  <GitHubIcon className="w-4 h-4" />
+                </a>
+              )}
+              {data.contact.socialLinks?.stackoverflow && (
+                <a href={data.contact.socialLinks.stackoverflow} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 transition-colors">
+                  <StackOverflowIcon className="w-4 h-4" />
+                </a>
+              )}
+            </div>
+          )}
         </div>
       </header>
 

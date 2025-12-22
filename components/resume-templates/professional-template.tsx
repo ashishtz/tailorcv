@@ -1,4 +1,5 @@
 import { Mail, Phone, MapPin, Globe } from 'lucide-react'
+import { LinkedInIcon, GitHubIcon, StackOverflowIcon } from '@/components/icons/SocialIcons'
 import { Resume } from '@/lib/types/database'
 import { renderFormattedContent } from '@/lib/utils/render-content'
 
@@ -40,6 +41,21 @@ export function ProfessionalTemplate({ data, settings }: ProfessionalTemplatePro
                   <Globe className="w-4 h-4 mr-3 mt-0.5 text-blue-300 flex-shrink-0" />
                   <span className="text-sm">{data.contact.address}</span>
                 </div>
+              )}
+              {data.contact.socialLinks?.linkedin && (
+                <a href={data.contact.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center text-blue-300 hover:text-white transition-colors">
+                  <LinkedInIcon className="w-4 h-4" />
+                </a>
+              )}
+              {data.contact.socialLinks?.github && (
+                <a href={data.contact.socialLinks.github} target="_blank" rel="noopener noreferrer" className="flex items-center text-blue-300 hover:text-white transition-colors">
+                  <GitHubIcon className="w-4 h-4" />
+                </a>
+              )}
+              {data.contact.socialLinks?.stackoverflow && (
+                <a href={data.contact.socialLinks.stackoverflow} target="_blank" rel="noopener noreferrer" className="flex items-center text-blue-300 hover:text-white transition-colors">
+                  <StackOverflowIcon className="w-4 h-4" />
+                </a>
               )}
             </div>
           </section>

@@ -1,4 +1,5 @@
 import { Mail, Phone, MapPin, ExternalLink } from 'lucide-react'
+import { LinkedInIcon, GitHubIcon, StackOverflowIcon } from '@/components/icons/SocialIcons'
 import { Resume } from '@/lib/types/database'
 import { renderFormattedContent } from '@/lib/utils/render-content'
 
@@ -32,6 +33,21 @@ export function CreativeTemplate({ data, settings }: CreativeTemplateProps) {
               <MapPin className="w-4 h-4 mr-2" />
               <span>{data.contact.location}</span>
             </div>
+            {data.contact.socialLinks?.linkedin && (
+              <a href={data.contact.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center hover:opacity-80 transition-opacity">
+                <LinkedInIcon className="w-4 h-4" />
+              </a>
+            )}
+            {data.contact.socialLinks?.github && (
+              <a href={data.contact.socialLinks.github} target="_blank" rel="noopener noreferrer" className="flex items-center hover:opacity-80 transition-opacity">
+                <GitHubIcon className="w-4 h-4" />
+              </a>
+            )}
+            {data.contact.socialLinks?.stackoverflow && (
+              <a href={data.contact.socialLinks.stackoverflow} target="_blank" rel="noopener noreferrer" className="flex items-center hover:opacity-80 transition-opacity">
+                <StackOverflowIcon className="w-4 h-4" />
+              </a>
+            )}
           </div>
         </div>
       </header>

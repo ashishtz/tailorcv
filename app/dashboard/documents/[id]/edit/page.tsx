@@ -6,6 +6,7 @@ import { useForm, useFieldArray } from 'react-hook-form'
 import { createClient } from '@/lib/supabase/client'
 import { Resume } from '@/lib/types/database'
 import { ArrowLeft, Plus, Trash2, Save, Loader2 } from 'lucide-react'
+import { LinkedInIcon, GitHubIcon, StackOverflowIcon } from '@/components/icons/SocialIcons'
 import Link from 'next/link'
 
 type FormData = {
@@ -15,6 +16,11 @@ type FormData = {
     phone: string
     location: string
     address?: string
+    socialLinks?: {
+      linkedin?: string
+      github?: string
+      stackoverflow?: string
+    }
   }
   skills: string[]
   workExperience: Array<{
@@ -114,7 +120,10 @@ export default function EditResumePage() {
     try {
       const updatedData = {
         generated_data: {
-          contact: data.contact,
+          contact: {
+            ...data.contact,
+            socialLinks: data.contact.socialLinks
+          },
           skills: skillsArray.filter(skill => skill && skill.trim()),
           workExperience: data.workExperience,
           education: data.education,
@@ -269,6 +278,45 @@ export default function EditResumePage() {
                   </label>
                   <input
                     {...register('contact.address')}
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                    <LinkedInIcon className="w-4 h-4 text-[#0A66C2]" />
+                    LinkedIn (Optional)
+                  </label>
+                  <input
+                    type="url"
+                    {...register('contact.socialLinks.linkedin')}
+                    placeholder="https://linkedin.com/in/username"
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                    <GitHubIcon className="w-4 h-4 text-gray-900" />
+                    GitHub (Optional)
+                  </label>
+                  <input
+                    type="url"
+                    {...register('contact.socialLinks.github')}
+                    placeholder="https://github.com/username"
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                    <StackOverflowIcon className="w-4 h-4 text-[#F48024]" />
+                    StackOverflow (Optional)
+                  </label>
+                  <input
+                    type="url"
+                    {...register('contact.socialLinks.stackoverflow')}
+                    placeholder="https://stackoverflow.com/users/id"
                     className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                   />
                 </div>

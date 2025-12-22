@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Profile } from '@/lib/types/database'
 import { Save, Upload } from 'lucide-react'
+import { LinkedInIcon, GitHubIcon, StackOverflowIcon } from '@/components/icons/SocialIcons'
 import SkillsSection from '@/components/profile/SkillsSection'
 import WorkExperienceSection from '@/components/profile/WorkExperienceSection'
 import EducationSection from '@/components/profile/EducationSection'
@@ -186,6 +187,57 @@ export default function ProfilePage() {
                   onChange={(e) => setProfile(prev => prev ? { ...prev, birthday: e.target.value } : null)}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
+              </div>
+            </div>
+
+            {/* Social Links */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Social Links</h3>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                <div>
+                  <label htmlFor="linkedin_url" className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <LinkedInIcon className="w-4 h-4 text-[#0A66C2]" />
+                    LinkedIn
+                  </label>
+                  <input
+                    type="url"
+                    id="linkedin_url"
+                    placeholder="https://linkedin.com/in/username"
+                    value={profile?.linkedin_url || ''}
+                    onChange={(e) => setProfile(prev => prev ? { ...prev, linkedin_url: e.target.value } : null)}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="github_url" className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <GitHubIcon className="w-4 h-4 text-gray-900" />
+                    GitHub
+                  </label>
+                  <input
+                    type="url"
+                    id="github_url"
+                    placeholder="https://github.com/username"
+                    value={profile?.github_url || ''}
+                    onChange={(e) => setProfile(prev => prev ? { ...prev, github_url: e.target.value } : null)}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="stackoverflow_url" className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <StackOverflowIcon className="w-4 h-4 text-[#F48024]" />
+                    StackOverflow
+                  </label>
+                  <input
+                    type="url"
+                    id="stackoverflow_url"
+                    placeholder="https://stackoverflow.com/users/id"
+                    value={profile?.stackoverflow_url || ''}
+                    onChange={(e) => setProfile(prev => prev ? { ...prev, stackoverflow_url: e.target.value } : null)}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  />
+                </div>
               </div>
             </div>
 

@@ -7,6 +7,9 @@ export const resumeGenerationUserPrompt = ChatPromptTemplate.fromMessages([
 - Phone: {phone}
 - Location: {location}
 - Address: {address}
+- LinkedIn: {linkedin_url}
+- GitHub: {github_url}
+- StackOverflow: {stackoverflow_url}
 
 Skills (organized by categories):
 {skills}

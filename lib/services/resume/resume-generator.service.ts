@@ -340,6 +340,18 @@ function buildUserPromptVariables(params: ResumeGenerationParams) {
         location?: string;
         address?: string;
       };
+      contact?: {
+        name?: string;
+        email?: string;
+        phone?: string;
+        location?: string;
+        address?: string;
+        socialLinks?: {
+          linkedin?: string;
+          github?: string;
+          stackoverflow?: string;
+        };
+      };
       skills?: string[];
       workExperience?: Array<{
         company?: string;
@@ -363,14 +375,18 @@ function buildUserPromptVariables(params: ResumeGenerationParams) {
       }>;
     };
 
-    const nameParts = resumeData.personalInfo?.name?.split(" ") || [];
+    const nameParts = (resumeData.contact?.name || resumeData.personalInfo?.name)?.split(" ") || [];
+    const socialLinks = resumeData.contact?.socialLinks;
     return {
       first_name: nameParts[0] || "",
       last_name: nameParts.slice(1).join(" ") || "",
-      email: resumeData.personalInfo?.email || "",
-      phone: resumeData.personalInfo?.phone || "",
-      location: resumeData.personalInfo?.location || "",
-      address: resumeData.personalInfo?.address || "",
+      email: resumeData.contact?.email || resumeData.personalInfo?.email || "",
+      phone: resumeData.contact?.phone || resumeData.personalInfo?.phone || "",
+      location: resumeData.contact?.location || resumeData.personalInfo?.location || "",
+      address: resumeData.contact?.address || resumeData.personalInfo?.address || "",
+      linkedin_url: socialLinks?.linkedin || "",
+      github_url: socialLinks?.github || "",
+      stackoverflow_url: socialLinks?.stackoverflow || "",
       skills: Array.isArray(resumeData.skills)
         ? resumeData.skills.join(", ")
         : "",
@@ -431,6 +447,9 @@ function buildUserPromptVariables(params: ResumeGenerationParams) {
     address: [profile?.address_1, profile?.address_2, profile?.address_3]
       .filter(Boolean)
       .join(", "),
+    linkedin_url: profile?.linkedin_url || "",
+    github_url: profile?.github_url || "",
+    stackoverflow_url: profile?.stackoverflow_url || "",
     skills: formattedSkills,
     work_experiences: workExperiences
       .map(

@@ -1,4 +1,5 @@
 import { Mail, Phone, MapPin, Briefcase, Award } from 'lucide-react'
+import { LinkedInIcon, GitHubIcon, StackOverflowIcon } from '@/components/icons/SocialIcons'
 import { Resume } from '@/lib/types/database'
 import { renderFormattedContent } from '@/lib/utils/render-content'
 
@@ -36,6 +37,25 @@ export function ExecutiveTemplate({ data, settings }: ExecutiveTemplateProps) {
               <span className="font-medium">{data.contact.location}</span>
             </div>
           </div>
+          {(data.contact.socialLinks?.linkedin || data.contact.socialLinks?.github || data.contact.socialLinks?.stackoverflow) && (
+            <div className="flex gap-4 mt-4">
+              {data.contact.socialLinks?.linkedin && (
+                <a href={data.contact.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:text-white transition-colors">
+                  <LinkedInIcon className="w-5 h-5" />
+                </a>
+              )}
+              {data.contact.socialLinks?.github && (
+                <a href={data.contact.socialLinks.github} target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:text-white transition-colors">
+                  <GitHubIcon className="w-5 h-5" />
+                </a>
+              )}
+              {data.contact.socialLinks?.stackoverflow && (
+                <a href={data.contact.socialLinks.stackoverflow} target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:text-white transition-colors">
+                  <StackOverflowIcon className="w-5 h-5" />
+                </a>
+              )}
+            </div>
+          )}
         </div>
       </header>
 

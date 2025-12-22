@@ -1,6 +1,7 @@
 import { Resume } from '@/lib/types/database'
 import { renderFormattedContent } from '@/lib/utils/render-content'
 import { Fragment } from 'react'
+import { LinkedInIcon, GitHubIcon, StackOverflowIcon } from '@/components/icons/SocialIcons'
 
 interface ClassicTemplateProps {
   data: Resume['generated_data']
@@ -13,12 +14,36 @@ export function ClassicTemplate({ data, settings }: ClassicTemplateProps) {
       {/* Header Section */}
       <header className="border-b-2 border-gray-800 pb-4 mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">{data.contact.name}</h1>
-        <div className="flex flex-wrap gap-4 text-sm text-gray-600 font-medium">
+        <div className="flex flex-wrap gap-4 text-sm text-gray-600 font-medium items-center">
           <span>{data.contact.email}</span>
           <span>•</span>
           <span>{data.contact.phone}</span>
           <span>•</span>
           <span>{data.contact.location}</span>
+          {data.contact.socialLinks?.linkedin && (
+            <>
+              <span>•</span>
+              <a href={data.contact.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-gray-900 transition-colors">
+                <LinkedInIcon className="w-4 h-4" />
+              </a>
+            </>
+          )}
+          {data.contact.socialLinks?.github && (
+            <>
+              <span>•</span>
+              <a href={data.contact.socialLinks.github} target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-gray-900 transition-colors">
+                <GitHubIcon className="w-4 h-4" />
+              </a>
+            </>
+          )}
+          {data.contact.socialLinks?.stackoverflow && (
+            <>
+              <span>•</span>
+              <a href={data.contact.socialLinks.stackoverflow} target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-gray-900 transition-colors">
+                <StackOverflowIcon className="w-4 h-4" />
+              </a>
+            </>
+          )}
         </div>
         {data.contact.address && (
           <div className="text-sm text-gray-600 mt-1">{data.contact.address}</div>

@@ -10,6 +10,9 @@ export interface Profile {
   address_2: string | null
   address_3: string | null
   postal_code: string | null
+  linkedin_url: string | null
+  github_url: string | null
+  stackoverflow_url: string | null
   created_at: string
   updated_at: string
 }
@@ -101,6 +104,11 @@ export interface Resume {
       phone: string
       location: string
       address?: string
+      socialLinks?: {
+        linkedin?: string
+        github?: string
+        stackoverflow?: string
+      }
     }
     summary?: string | string[]
     skills: string[] | CategorizedSkill[]

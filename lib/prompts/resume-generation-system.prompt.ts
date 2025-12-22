@@ -46,7 +46,12 @@ Return ONLY valid JSON with this exact structure:
     "email": "string",
     "phone": "string",
     "location": "string",
-    "address": "string (optional)"
+    "address": "string (optional)",
+    "socialLinks": {{
+      "linkedin": "string (optional, copy from user data if provided)",
+      "github": "string (optional, copy from user data if provided)",
+      "stackoverflow": "string (optional, copy from user data if provided)"
+    }}
   }},
   "skills": [
     {{
