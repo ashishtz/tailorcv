@@ -1,7 +1,6 @@
 import { Resume } from '@/lib/types/database'
 import { renderFormattedContent } from '@/lib/utils/render-content'
 import { Fragment } from 'react'
-import { LinkedInIcon, GitHubIcon, StackOverflowIcon } from '@/components/icons/SocialIcons'
 
 interface ClassicTemplateProps {
   data: Resume['generated_data']
@@ -11,38 +10,35 @@ interface ClassicTemplateProps {
 export function ClassicTemplate({ data, settings }: ClassicTemplateProps) {
   return (
     <div className="bg-white p-8 w-full font-inter" style={{ minHeight: '11in' }}>
-      {/* Header Section */}
+      {/* Header Section - ATS-friendly: no icons, plain text with separators */}
       <header className="border-b-2 border-gray-800 pb-4 mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">{data.contact.name}</h1>
-        <div className="flex flex-wrap gap-4 text-sm text-gray-600 font-medium items-center">
-          <span>{data.contact.email}</span>
-          <span>•</span>
-          <span>{data.contact.phone}</span>
-          <span>•</span>
-          <span>{data.contact.location}</span>
-          {data.contact.socialLinks?.linkedin && (
-            <>
-              <span>•</span>
-              <a href={data.contact.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-gray-900 transition-colors">
-                <LinkedInIcon className="w-4 h-4" />
-              </a>
-            </>
-          )}
-          {data.contact.socialLinks?.github && (
-            <>
-              <span>•</span>
-              <a href={data.contact.socialLinks.github} target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-gray-900 transition-colors">
-                <GitHubIcon className="w-4 h-4" />
-              </a>
-            </>
-          )}
-          {data.contact.socialLinks?.stackoverflow && (
-            <>
-              <span>•</span>
-              <a href={data.contact.socialLinks.stackoverflow} target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-gray-900 transition-colors">
-                <StackOverflowIcon className="w-4 h-4" />
-              </a>
-            </>
+        <div className="text-sm text-gray-600 font-medium">
+          {/* Primary contact info on one line with pipe separators */}
+          <p>
+            {data.contact.email} | {data.contact.phone} | {data.contact.location}
+          </p>
+          {/* Social links on separate line with text labels for ATS parsing */}
+          {(data.contact.socialLinks?.linkedin || data.contact.socialLinks?.github || data.contact.socialLinks?.stackoverflow) && (
+            <p className="mt-1">
+              {data.contact.socialLinks?.linkedin && (
+                <span>
+                  LinkedIn: {data.contact.socialLinks.linkedin.replace(/^https?:\/\/(www\.)?/, '')}
+                </span>
+              )}
+              {data.contact.socialLinks?.linkedin && data.contact.socialLinks?.github && ' | '}
+              {data.contact.socialLinks?.github && (
+                <span>
+                  GitHub: {data.contact.socialLinks.github.replace(/^https?:\/\/(www\.)?/, '')}
+                </span>
+              )}
+              {(data.contact.socialLinks?.linkedin || data.contact.socialLinks?.github) && data.contact.socialLinks?.stackoverflow && ' | '}
+              {data.contact.socialLinks?.stackoverflow && (
+                <span>
+                  StackOverflow: {data.contact.socialLinks.stackoverflow.replace(/^https?:\/\/(www\.)?/, '')}
+                </span>
+              )}
+            </p>
           )}
         </div>
         {data.contact.address && (

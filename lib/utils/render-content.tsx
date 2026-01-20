@@ -14,14 +14,16 @@ export const renderFormattedContent = (
   }
 
   // If content is already an array (from AI), render as bullets regardless of format
+  // ATS-friendly: Include actual bullet character (•) in text for parsing
   if (Array.isArray(content)) {
     return (
       <ul className="space-y-1 ml-0 list-none">
         {content.map((bullet, index) => (
           <li
             key={index}
-            className="text-gray-700 leading-relaxed pl-4 relative font-medium"
+            className="text-gray-700 leading-relaxed pl-0 relative font-medium"
           >
+            <span className="mr-2">•</span>
             {parseHighlights(bullet.trim())}
           </li>
         ))}
@@ -52,12 +54,14 @@ export const renderFormattedContent = (
 
     if (bullets.length > 1) {
       return (
+        // ATS-friendly: Include actual bullet character (•) in text for parsing
         <ul className="list-none space-y-1 ml-0">
           {bullets.map((bullet, index) => (
             <li
               key={index}
-              className="text-gray-700 leading-relaxed pl-4 relative font-medium"
+              className="text-gray-700 leading-relaxed pl-0 relative font-medium"
             >
+              <span className="mr-2">•</span>
               {parseHighlights(bullet.trim().replace(/^[•\-\*]\s*/, ''))}
             </li>
           ))}
