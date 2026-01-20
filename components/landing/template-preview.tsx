@@ -6,6 +6,7 @@ import { MinimalTemplate } from '@/components/resume-templates/minimal-template'
 import { ProfessionalTemplate } from '@/components/resume-templates/professional-template'
 import { CreativeTemplate } from '@/components/resume-templates/creative-template'
 import { ExecutiveTemplate } from '@/components/resume-templates/executive-template'
+import { JakeTemplate } from '@/components/resume-templates/jake-template'
 import { dummyResumeData } from '@/lib/data/dummy-resume'
 
 interface TemplatePreviewProps {
@@ -86,6 +87,8 @@ export function TemplatePreview({ templateName }: TemplatePreviewProps) {
         return <CreativeTemplate data={transformedData} settings={defaultSettings} />
       case 'Executive':
         return <ExecutiveTemplate data={transformedData} settings={defaultSettings} />
+      case 'Jake (LaTeX)':
+        return <JakeTemplate data={transformedData} settings={defaultSettings} />
       default:
         return <ClassicTemplate data={transformedData} settings={defaultSettings} />
     }

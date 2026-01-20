@@ -87,7 +87,14 @@ Return ONLY valid JSON with this exact structure:
       "description": {work_experience_example}
     }}
   ],
-  "projects": [keep it an empty array. we don't want projects in the resume],
+  "projects": [
+    {{
+      "name": "string",
+      "role": "string (optional)",
+      "link": "string (optional)",
+      "description": {projects_example}
+    }}
+  ],
    "education": [
     {{
       "institution": "string",

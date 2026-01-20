@@ -10,6 +10,7 @@ import { MinimalTemplate } from '@/components/resume-templates/minimal-template'
 import { ProfessionalTemplate } from '@/components/resume-templates/professional-template'
 import { CreativeTemplate } from '@/components/resume-templates/creative-template'
 import { ExecutiveTemplate } from '@/components/resume-templates/executive-template'
+import { JakeTemplate } from '@/components/resume-templates/jake-template'
 import { Eye, Download, ArrowLeft, Loader2, Edit } from 'lucide-react'
 import Link from 'next/link'
 import html2canvas from 'html2canvas'
@@ -22,6 +23,7 @@ const templates = [
   { id: 'professional', name: 'Professional', component: ProfessionalTemplate },
   { id: 'creative', name: 'Creative', component: CreativeTemplate },
   { id: 'executive', name: 'Executive', component: ExecutiveTemplate },
+  { id: 'jake', name: 'Jake (LaTeX)', component: JakeTemplate },
 ]
 
 export default function ResumeViewPage() {
@@ -179,7 +181,7 @@ export default function ResumeViewPage() {
                   Edit
                 </Link>
                 <Link
-                  href={`/preview/${params.id}`}
+                  href={`/preview/${params.id}?template=${selectedTemplate}`}
                   target="_blank"
                   className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                 >

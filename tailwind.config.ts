@@ -57,6 +57,7 @@ const config: Config = {
         'poppins': ['var(--font-poppins)', 'sans-serif'],
         'source-sans': ['var(--font-source-sans)', 'sans-serif'],
         'roboto': ['var(--font-roboto)', 'sans-serif'],
+        'libre-baskerville': ['var(--font-libre-baskerville)', 'serif'],
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',

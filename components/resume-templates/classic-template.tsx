@@ -112,22 +112,20 @@ export function ClassicTemplate({ data, settings }: ClassicTemplateProps) {
         </section>
       )}
 
-      {/* Projects Section */}
+      {/* Projects Section - ATS-friendly: no flexbox, visible URLs */}
       {data.projects && data.projects.length > 0 && (
         <section className="mb-6">
           <h2 className="text-xl font-bold text-gray-800 mb-3 uppercase tracking-wide">Projects</h2>
           <div className="space-y-3">
             {data.projects.map((project, index) => (
               <div key={index}>
-                <div className="flex justify-between items-start">
-                  <h3 className="font-bold text-gray-900 text-lg">{project.name}</h3>
-                  {project.link && (
-                    <a href={project.link} className="text-sm text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
-                      View Project
-                    </a>
-                  )}
-                </div>
+                <h3 className="font-bold text-gray-900 text-lg">{project.name}</h3>
                 {project.role && <p className="text-gray-700 text-sm font-semibold">{project.role}</p>}
+                {project.link && (
+                  <p className="text-sm text-gray-600">
+                    Link: {project.link.replace(/^https?:\/\/(www\.)?/, '')}
+                  </p>
+                )}
                 <div className="mt-1 text-sm">
                   {renderFormattedContent(project.description, settings?.projects_format)}
                 </div>

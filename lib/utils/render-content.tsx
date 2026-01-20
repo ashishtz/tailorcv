@@ -21,10 +21,10 @@ export const renderFormattedContent = (
         {content.map((bullet, index) => (
           <li
             key={index}
-            className="text-gray-700 leading-relaxed pl-0 relative font-medium"
+            className="text-gray-700 leading-relaxed font-medium flex"
           >
-            <span className="mr-2">•</span>
-            {parseHighlights(bullet.trim())}
+            <span className="mr-2 flex-shrink-0">•</span>
+            <span>{parseHighlights(bullet.trim())}</span>
           </li>
         ))}
       </ul>
@@ -59,10 +59,10 @@ export const renderFormattedContent = (
           {bullets.map((bullet, index) => (
             <li
               key={index}
-              className="text-gray-700 leading-relaxed pl-0 relative font-medium"
+              className="text-gray-700 leading-relaxed font-medium flex"
             >
-              <span className="mr-2">•</span>
-              {parseHighlights(bullet.trim().replace(/^[•\-\*]\s*/, ''))}
+              <span className="mr-2 flex-shrink-0">•</span>
+              <span>{parseHighlights(bullet.trim().replace(/^[•\-\*]\s*/, ''))}</span>
             </li>
           ))}
         </ul>
