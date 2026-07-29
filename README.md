@@ -15,7 +15,7 @@ A full-featured AI-powered resume builder application built with Next.js, Supaba
 
 ## Tech Stack
 
-- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
+- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS
 - **Backend**: Next.js API Routes
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth
@@ -24,6 +24,8 @@ A full-featured AI-powered resume builder application built with Next.js, Supaba
 - **Styling**: Tailwind CSS
 
 ## Setup Instructions
+
+**Prerequisites:** Node.js 24+ (see `.nvmrc` — run `nvm use`).
 
 ### 1. Clone the Repository
 

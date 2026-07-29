@@ -5,6 +5,17 @@
 
 ---
 
+## Session 2b — 2026-07-29 (Node 22 → 24 migration check)
+
+User upgraded Node to 24 (nvm default + new `.nvmrc` v24.18.0, npm 11.16.0). Verified & adjusted:
+- Clean `npm ci` under 24: 0 EBADENGINE, 0 deprecations, 0 vulnerabilities; npm 11 pruned 221 orphaned optional-peer lockfile entries (committed).
+- **npm 11 gates install scripts**: approved `core-js`, `fsevents`, `unrs-resolver` via `npm approve-scripts` → new `allowScripts` block in package.json. Future installs of new native deps may need the same.
+- Added `"engines": { "node": ">=24" }` to package.json; README setup now states the Node 24 prerequisite (and stale "Next.js 15" fixed to 16).
+- Full matrix re-run on 24: lint ✓ typecheck ✓ jest 2/2 ✓ build ✓ outdated empty ✓.
+- Left alone: `@types/node` stays at 26.x (session-1 zero-outdated policy; types are back-compatible with the 24 runtime).
+
+---
+
 ## Session 2 — 2026-07-29 (ponytail audit + full cleanup)
 
 **Branch:** `claude/deps-ui-modernize-mkz7xm`

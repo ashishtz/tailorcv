@@ -2,6 +2,9 @@
   "name": "resume-builder",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -49,5 +52,10 @@
       "postcss": "^8.5.24",
       "sharp": "^0.35.3"
     }
+  },
+  "allowScripts": {
+    "core-js@3.49.0": true,
+    "fsevents@2.3.3": true,
+    "unrs-resolver@1.12.2": true
   }
 }
