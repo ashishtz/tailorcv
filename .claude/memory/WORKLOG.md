@@ -5,6 +5,17 @@
 
 ---
 
+## Session 2g — 2026-07-29 (PDF export → print-to-PDF, deps deleted)
+
+User call: raster PDF (html2canvas image) not ATS-friendly; use print instead. Done:
+- View page "Download PDF" now opens `/preview/[id]?template=X&print=1` in a new tab; preview auto-opens the print dialog 300ms after the sheet renders (`?print=1` effect). "Save as PDF" gives text-based, selectable, ATS-parseable output.
+- Deleted `handleDownload` (html2canvas capture + jsPDF A4 slicing), `isGeneratingPDF` state; **removed deps `html2canvas-pro` + `jspdf`** (−~650KB even from lazy chunks).
+- Added `@page { size: letter; margin: 0 }` to globals.css (templates carry their own padding; 816px sheet = letter @96dpi).
+- Resolves backlog item 4 (raster→text PDF). Note: html2canvas-pro/oklch decision (session 1) now moot.
+- Verified: install 0 warnings, tsc ✓ eslint ✓ jest 6/6 ✓ build ✓.
+
+---
+
 ## Session 2f — 2026-07-29 (performance review + fixes)
 
 User reported slow page loads + high memory. Measured (prod build + chunk analysis), found 3 real causes, fixed all:

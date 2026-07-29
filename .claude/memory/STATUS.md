@@ -5,7 +5,7 @@
 > and MUST update all three before finishing a work chunk. Keep entries detailed enough
 > that a brand-new session can resume without any other context.
 
-**Last updated:** 2026-07-29 (session 2f)
+**Last updated:** 2026-07-29 (session 2g)
 **Working branch:** `claude/deps-ui-modernize-mkz7xm` (never push to main)
 
 ---
@@ -45,7 +45,6 @@
 1. (Deferred) Revisit TypeScript 7 + real `typescript` package when Next 16.3 stable ships `experimental.useTypeScriptCli` AND typescript-eslint supports TS7 peers.
 2. (USER ACTION — SECURITY) Rotate the OpenRouter API key: it was committed in `.env.docker` (file now deleted, but the key remains in git history). PII in `supabase/backup` history is intentional per user — no scrub.
 3. (Nice-to-have) Test coverage is thin (one utils suite); add component/API tests for the rebuilt flows.
-4. (Nice-to-have) PDF export is raster (html2canvas image); a text-based PDF (e.g. react-pdf or print-to-PDF flow) would give selectable/ATS-parseable output and smaller files.
 5. (Nice-to-have) `imported_resumes` rows accumulate per import; no UI lists them — either surface import history or prune old rows.
 
 ## ⛔ Known Constraints / Gotchas

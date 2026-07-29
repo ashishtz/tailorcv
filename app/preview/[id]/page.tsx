@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { FileX, Printer } from 'lucide-react'
@@ -16,6 +16,14 @@ function PreviewContent() {
   const { resume, loading } = useResume(resumeId)
 
   const templateId = searchParams.get('template')
+  // ?print=1 (the Download PDF button): open the print dialog once the sheet
+  // has painted - "Save as PDF" there produces a text-based, ATS-parseable file.
+  const shouldPrint = searchParams.get('print') === '1'
+  useEffect(() => {
+    if (!resume || !shouldPrint) return
+    const timer = setTimeout(() => window.print(), 300)
+    return () => clearTimeout(timer)
+  }, [resume, shouldPrint])
 
   if (loading) {
     // This page opens in a new tab - never leave it blank.

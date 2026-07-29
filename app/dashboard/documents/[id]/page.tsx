@@ -21,7 +21,6 @@ export default function ResumeViewPage() {
   const { resume, loading, failed: loadFailed } = useResume(resumeId)
   // null = follow the saved template; set only when the user picks one here.
   const [templateOverride, setTemplateOverride] = useState<string | null>(null)
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
   const toast = useToast()
   const supabase = createClient()
 
@@ -43,68 +42,6 @@ export default function ResumeViewPage() {
     }
   }
 
-  const handleDownload = async () => {
-    if (!resume) return
-
-    setIsGeneratingPDF(true)
-
-    try {
-      const resumeElement = document.querySelector('.resume-container') as HTMLElement | null
-      if (!resumeElement) {
-        throw new Error('Resume container not found')
-      }
-
-      // ~650KB of libraries only needed at download time - load on demand.
-      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-        import('html2canvas-pro'),
-        import('jspdf'),
-      ])
-
-      // The capture container is fixed at RESUME_PAGE_WIDTH_PX, so output is
-      // identical on every screen; scale 2 keeps text crisp.
-      const canvas = await html2canvas(resumeElement, {
-        useCORS: true,
-        logging: false,
-        scale: 2,
-        windowWidth: RESUME_PAGE_WIDTH_PX,
-      })
-
-      const imgWidth = 210 // A4 width in mm
-      const pageHeight = 297 // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      })
-
-      // JPEG keeps the file ~10x smaller than PNG at visually identical quality
-      const imgData = canvas.toDataURL('image/jpeg', 0.92)
-
-      let heightLeft = imgHeight
-      let position = 0
-
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
-      heightLeft -= pageHeight
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight
-        pdf.addPage()
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
-        heightLeft -= pageHeight
-      }
-
-      const fileName = `${resume.job_title.replace(/\s+/g, '_')}_Resume_${new Date().toISOString().split('T')[0]}.pdf`
-      pdf.save(fileName)
-      toast.success('PDF downloaded', fileName)
-    } catch (error) {
-      console.error('Error generating PDF:', error)
-      toast.error('PDF failed', 'The PDF could not be generated. Please try again.')
-    } finally {
-      setIsGeneratingPDF(false)
-    }
-  }
 
   if (loading) {
     return (
@@ -201,10 +138,12 @@ export default function ResumeViewPage() {
                 Preview
               </Button>
             </Link>
-            <Button onClick={handleDownload} loading={isGeneratingPDF}>
-              {!isGeneratingPDF && <Download aria-hidden />}
-              {isGeneratingPDF ? 'Generating…' : 'Download PDF'}
-            </Button>
+            <Link href={`/preview/${resumeId}?template=${selectedTemplate}&print=1`} target="_blank">
+              <Button>
+                <Download aria-hidden />
+                Download PDF
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

@@ -136,6 +136,10 @@
 }
 
 /* Print: only the resume sheet */
+@page {
+  size: letter;
+  margin: 0;
+}
 @media print {
   .no-print {
     display: none !important;
