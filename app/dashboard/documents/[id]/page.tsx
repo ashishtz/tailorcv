@@ -114,18 +114,19 @@ export default function ResumeViewPage() {
         format: 'a4',
       })
 
-      const imgData = canvas.toDataURL('image/png', 1.0)
+      // JPEG keeps the file ~10x smaller than PNG at visually identical quality
+      const imgData = canvas.toDataURL('image/jpeg', 0.92)
 
       let heightLeft = imgHeight
       let position = 0
 
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
       heightLeft -= pageHeight
 
       while (heightLeft > 0) {
         position = heightLeft - imgHeight
         pdf.addPage()
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
         heightLeft -= pageHeight
       }
 
