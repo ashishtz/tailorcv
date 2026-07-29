@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import html2canvas from 'html2canvas-pro'
 import jsPDF from 'jspdf'
 import { ArrowLeft, Download, Eye, FileX, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { Resume } from '@/lib/types/database'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -15,71 +14,33 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Card } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
 import { getTemplateDef, RESUME_TEMPLATES, RESUME_PAGE_WIDTH_PX } from '@/lib/templates'
-import { normalizeResumeData, normalizeSettings, rowToResume } from '@/lib/utils/normalize-resume'
+import { normalizeSettings } from '@/lib/utils/normalize-resume'
+import { useResume } from '@/lib/use-resume'
 
 export default function ResumeViewPage() {
   const params = useParams<{ id: string }>()
   const resumeId = typeof params.id === 'string' ? params.id : ''
-  const [resume, setResume] = useState<Resume | null>(null)
-  const [selectedTemplate, setSelectedTemplate] = useState('classic')
-  const [loading, setLoading] = useState(true)
-  const [loadFailed, setLoadFailed] = useState(false)
+  const { resume, loading, failed: loadFailed } = useResume(resumeId)
+  // null = follow the saved template; set only when the user picks one here.
+  const [templateOverride, setTemplateOverride] = useState<string | null>(null)
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
   const toast = useToast()
   const supabase = createClient()
 
-  const fetchResume = useCallback(async (): Promise<Resume | null | 'error'> => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return 'error'
-
-      const { data, error } = await supabase
-        .from('resumes')
-        .select('*')
-        .eq('id', resumeId)
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      if (error) {
-        console.error('Error fetching resume:', error)
-        return 'error'
-      }
-      return data ? rowToResume(data) : null
-    } catch (error) {
-      console.error('Error fetching resume:', error)
-      return 'error'
-    }
-  }, [supabase, resumeId])
-
-  useEffect(() => {
-    let active = true
-    fetchResume().then((result) => {
-      if (!active) return
-      if (result === 'error') {
-        setLoadFailed(true)
-      } else if (result) {
-        setResume(result)
-        setSelectedTemplate(result.template_id || 'classic')
-      }
-      setLoading(false)
-    })
-    return () => {
-      active = false
-    }
-  }, [fetchResume])
+  const selectedTemplate = templateOverride ?? resume?.template_id ?? 'classic'
 
   // Persist template choice - previously the dropdown was local-only state
   // and silently reset on every reload.
   const handleTemplateChange = async (templateId: string) => {
     const previous = selectedTemplate
-    setSelectedTemplate(templateId)
+    setTemplateOverride(templateId)
     const { error } = await supabase
       .from('resumes')
       .update({ template_id: templateId })
       .eq('id', resumeId)
 
     if (error) {
-      setSelectedTemplate(previous)
+      setTemplateOverride(previous)
       toast.error('Template not saved', 'Could not save your template choice. Please try again.')
     }
   }
@@ -181,7 +142,7 @@ export default function ResumeViewPage() {
   }
 
   const TemplateComponent = getTemplateDef(selectedTemplate).component
-  const data = normalizeResumeData(resume.generated_data)
+  const data = resume.generated_data
   const settings = normalizeSettings(resume.generation_settings)
 
   return (

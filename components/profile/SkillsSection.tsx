@@ -1,10 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Tags, Trash2, X } from 'lucide-react'
-import AsyncCreatableSelect from 'react-select/async-creatable'
-import type { SingleValue } from 'react-select'
 import { Card, CardHeader, CardBody } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -12,9 +10,9 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { SkeletonRows } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
+import { SuggestInput } from '@/components/forms/suggest-input'
+import { ensureSkillId, searchNames } from '@/lib/repositories/onboarding.repository'
 import { AddSkillsModal } from './AddSkillsModal'
-import { compactSelectStyles, type SkillOption } from './select-styles'
-import { ensureSkillId, searchNamedRows } from './skills-data'
 
 interface SkillRow {
   id: string
@@ -45,7 +43,44 @@ function firstRow<T>(value: T | T[] | null): T | null {
   return value
 }
 
-const SEARCH_DEBOUNCE_MS = 300
+/** Search-or-create input that adds one skill to a category on submit. */
+function QuickAddSkill({
+  category,
+  busy,
+  search,
+  onAdd,
+}: {
+  category: CategoryRow
+  busy: boolean
+  search: (term: string) => Promise<string[]>
+  onAdd: (name: string) => Promise<void>
+}) {
+  const [name, setName] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const trimmed = name.trim()
+    if (!trimmed) return
+    setName('')
+    await onAdd(trimmed)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-3 flex max-w-xs gap-2">
+      <SuggestInput
+        value={name}
+        onChange={setName}
+        search={search}
+        placeholder="Add a skill…"
+        aria-label={`Add a skill to ${category.name}`}
+        disabled={busy}
+      />
+      <Button type="submit" variant="secondary" size="sm" disabled={busy || !name.trim()}>
+        Add
+      </Button>
+    </form>
+  )
+}
 
 export default function SkillsSection() {
   const [categorizedSkills, setCategorizedSkills] = useState<CategorizedSkills[]>([])
@@ -54,7 +89,6 @@ export default function SkillsSection() {
   const [quickAddBusy, setQuickAddBusy] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<CategoryRow | null>(null)
   const [deletingCategory, setDeletingCategory] = useState(false)
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const supabase = createClient()
   const toast = useToast()
 
@@ -108,10 +142,9 @@ export default function SkillsSection() {
   }, [fetchUserSkills])
 
   const searchSkills = useCallback(
-    async (term: string): Promise<SkillOption[]> => {
+    async (term: string): Promise<string[]> => {
       try {
-        const rows = await searchNamedRows(supabase, 'skills', term)
-        return rows.map((row) => ({ value: row.id, label: row.name }))
+        return await searchNames(supabase, 'skills', term)
       } catch (error) {
         toast.error(
           'Skill search failed',
@@ -123,29 +156,15 @@ export default function SkillsSection() {
     [supabase, toast]
   )
 
-  // Debounced so a keystroke burst issues a single query. Only the promise of
-  // the latest keystroke resolves, which is exactly what react-select expects.
-  const loadSkillOptions = useCallback(
-    (term: string) =>
-      new Promise<SkillOption[]>((resolve) => {
-        if (searchTimer.current) clearTimeout(searchTimer.current)
-        searchTimer.current = setTimeout(() => {
-          searchSkills(term).then(resolve)
-        }, SEARCH_DEBOUNCE_MS)
-      }),
-    [searchSkills]
-  )
-
-  const handleQuickAdd = async (category: CategoryRow, option: SingleValue<SkillOption>) => {
-    if (!option) return
+  const handleQuickAdd = async (category: CategoryRow, name: string) => {
     setQuickAddBusy(category.id)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('You are signed out. Sign in again to add skills.')
 
-      const skillId = option.__isNew__
-        ? await ensureSkillId(supabase, option.label)
-        : option.value
+      // Find-or-create by name, so picking a suggestion and typing a brand
+      // new skill go through the same path.
+      const skillId = await ensureSkillId(supabase, name)
 
       // A user links each skill at most once (PK user_id + skill_id), so the
       // existence check ignores the category and must tolerate zero rows.
@@ -159,7 +178,7 @@ export default function SkillsSection() {
       const existing = existingRow as { category_id: string | null } | null
 
       if (existing && existing.category_id === category.id) {
-        toast.info('Already added', `"${option.label}" is already in ${category.name}.`)
+        toast.info('Already added', `"${name}" is already in ${category.name}.`)
         return
       }
 
@@ -172,9 +191,7 @@ export default function SkillsSection() {
       if (error) throw new Error(error.message)
 
       toast.success(
-        existing
-          ? `"${option.label}" moved to ${category.name}`
-          : `"${option.label}" added to ${category.name}`
+        existing ? `"${name}" moved to ${category.name}` : `"${name}" added to ${category.name}`
       )
       await loadUserSkills()
     } catch (error) {
@@ -301,23 +318,12 @@ export default function SkillsSection() {
                 </div>
               )}
 
-              <div className="mt-3 max-w-xs">
-                <AsyncCreatableSelect<SkillOption, false>
-                  loadOptions={loadSkillOptions}
-                  onChange={(option) => handleQuickAdd(category, option)}
-                  value={null}
-                  placeholder="Add a skill…"
-                  aria-label={`Add a skill to ${category.name}`}
-                  formatCreateLabel={(inputValue) => `Create "${inputValue}"`}
-                  noOptionsMessage={({ inputValue }) =>
-                    inputValue ? 'No matching skills' : 'Type to search skills…'
-                  }
-                  styles={compactSelectStyles}
-                  menuPortalTarget={typeof document === 'undefined' ? undefined : document.body}
-                  isDisabled={quickAddBusy === category.id}
-                  isLoading={quickAddBusy === category.id}
-                />
-              </div>
+              <QuickAddSkill
+                category={category}
+                busy={quickAddBusy === category.id}
+                search={searchSkills}
+                onAdd={(name) => handleQuickAdd(category, name)}
+              />
             </div>
           ))}
         </CardBody>
@@ -336,7 +342,6 @@ export default function SkillsSection() {
         title="Remove category"
         message={`"${deleteTarget?.name}" and all the skills inside it will be removed from your profile.`}
         confirmText="Remove"
-        type="danger"
         loading={deletingCategory}
       />
     </Card>

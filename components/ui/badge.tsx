@@ -10,8 +10,6 @@ const badgeVariants = cva(
         accent: 'bg-accent-100 text-accent-800',
         stone: 'bg-stone-100 text-stone-700',
         success: 'bg-emerald-50 text-emerald-700',
-        danger: 'bg-red-50 text-red-700',
-        info: 'bg-sky-50 text-sky-700',
       },
     },
     defaultVariants: {
@@ -20,7 +18,7 @@ const badgeVariants = cva(
   }
 )
 
-export interface BadgeProps
+interface BadgeProps
   extends React.HTMLAttributes<HTMLSpanElement>,
     VariantProps<typeof badgeVariants> {}
 

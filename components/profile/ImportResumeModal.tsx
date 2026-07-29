@@ -16,8 +16,10 @@ import type { LucideIcon } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
-import { monthInputToDate } from '@/lib/utils'
-import { ensureCategoryId, ensureSkillId, type SupabaseBrowserClient } from './skills-data'
+import {
+  importParsedResume,
+  type ParsedResumeData,
+} from '@/lib/repositories/onboarding.repository'
 
 interface ImportResumeModalProps {
   isOpen: boolean
@@ -25,293 +27,7 @@ interface ImportResumeModalProps {
   onSuccess: () => void
 }
 
-/* ------------------------------------------------------------------ *
- * Parsed payload returned by POST /api/parse-resume ({ success, data }).
- * Every field is treated as optional - the parser output is AI-generated.
- * ------------------------------------------------------------------ */
-
-interface ParsedContact {
-  name?: string
-  email?: string
-  phone?: string
-  location?: string
-}
-
-interface ParsedWorkExperience {
-  company?: string
-  position?: string
-  location?: string
-  startDate?: string
-  endDate?: string
-  description?: string
-}
-
-interface ParsedEducation {
-  institution?: string
-  degree?: string
-  field?: string
-  startDate?: string
-  endDate?: string
-}
-
-interface ParsedProject {
-  name?: string
-  role?: string
-  description?: string
-  link?: string
-}
-
-interface ParsedResumeData {
-  contact?: ParsedContact
-  workExperience?: ParsedWorkExperience[]
-  education?: ParsedEducation[]
-  skills?: string[]
-  projects?: ParsedProject[]
-}
-
 const MAX_FILE_SIZE = 2 * 1024 * 1024 // matches the API's 2MB cap
-
-const IMPORT_SKILL_CATEGORY = 'Imported'
-
-/* ------------------------------------------------------------------ *
- * Conversion helpers
- * ------------------------------------------------------------------ */
-
-/** Parsed dates arrive as "YYYY-MM", sometimes "YYYY", "YYYY-MM-DD" or
- * "Present". Returns a DATE-column-safe string, or null when unusable. */
-function importDateToDate(value: string | undefined): string | null {
-  const trimmed = value?.trim()
-  if (!trimmed || /^present$/i.test(trimmed)) return null
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed
-  if (/^\d{4}-\d{2}$/.test(trimmed)) return monthInputToDate(trimmed)
-  if (/^\d{4}$/.test(trimmed)) return `${trimmed}-01-01`
-  return null
-}
-
-/** Prefixes https:// when the scheme is missing; empty input becomes null. */
-function normalizeLink(raw: string | undefined): string | null {
-  const trimmed = raw?.trim()
-  if (!trimmed) return null
-  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
-}
-
-const DEGREE_VALUES = [
-  'High School',
-  'Associate',
-  "Bachelor's",
-  "Master's",
-  'PhD',
-  'Diploma',
-  'Certificate',
-  'Other',
-] as const
-
-type DegreeValue = (typeof DEGREE_VALUES)[number]
-
-/** Maps free-form degree text onto the education.degree CHECK constraint. */
-function mapDegree(raw: string | undefined): DegreeValue | null {
-  const trimmed = raw?.trim()
-  if (!trimmed) return null
-
-  const exact = DEGREE_VALUES.find((d) => d.toLowerCase() === trimmed.toLowerCase())
-  if (exact) return exact
-
-  const lower = trimmed.toLowerCase()
-  if (lower.includes('bachelor') || /^b\.?\s?(a|s|sc|e|eng|tech|com)\b/i.test(trimmed)) {
-    return "Bachelor's"
-  }
-  if (lower.includes('master') || /^m\.?\s?(a|s|sc|e|eng|ba|tech|com)\b/i.test(trimmed)) {
-    return "Master's"
-  }
-  if (lower.includes('phd') || lower.includes('ph.d') || lower.includes('doctor')) return 'PhD'
-  if (lower.includes('high school') || lower.includes('secondary')) return 'High School'
-  if (lower.includes('associate')) return 'Associate'
-  if (lower.includes('diploma')) return 'Diploma'
-  if (lower.includes('certificat')) return 'Certificate'
-  return 'Other'
-}
-
-/* ------------------------------------------------------------------ *
- * Merge/apply helpers - all inserts, never deletes (RLS scopes writes
- * to the signed-in user).
- * ------------------------------------------------------------------ */
-
-type ProfileContactField = 'first_name' | 'last_name' | 'email' | 'phone' | 'location'
-
-/** Fills profile contact fields that are currently empty. Returns the
- * number of fields written. */
-async function mergeProfileFields(
-  supabase: SupabaseBrowserClient,
-  userId: string,
-  info: ParsedContact | undefined
-): Promise<number> {
-  if (!info) return 0
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('first_name, last_name, email, phone, location')
-    .eq('id', userId)
-    .maybeSingle()
-  if (error) throw new Error(error.message)
-  const current = (data ?? {}) as Partial<Record<ProfileContactField, string | null>>
-
-  const [firstName, ...restName] = (info.name ?? '').trim().split(/\s+/).filter(Boolean)
-  const lastName = restName.join(' ')
-
-  const candidates: Record<ProfileContactField, string> = {
-    first_name: firstName ?? '',
-    last_name: lastName,
-    email: info.email?.trim() ?? '',
-    phone: info.phone?.trim() ?? '',
-    location: info.location?.trim() ?? '',
-  }
-
-  const updates: Partial<Record<ProfileContactField, string>> = {}
-  for (const field of Object.keys(candidates) as ProfileContactField[]) {
-    if (candidates[field] && !current[field]) updates[field] = candidates[field]
-  }
-
-  const count = Object.keys(updates).length
-  if (count === 0) return 0
-
-  const { error: updateError } = await supabase.from('profiles').update(updates).eq('id', userId)
-  if (updateError) throw new Error(updateError.message)
-  return count
-}
-
-interface InsertOutcome {
-  added: number
-  skipped: number
-}
-
-async function insertWorkExperiences(
-  supabase: SupabaseBrowserClient,
-  userId: string,
-  items: ParsedWorkExperience[]
-): Promise<InsertOutcome> {
-  let added = 0
-  let skipped = 0
-
-  for (const item of items) {
-    const company = item.company?.trim()
-    const position = item.position?.trim()
-    const startDate = importDateToDate(item.startDate)
-    if (!company || !position || !startDate) {
-      skipped += 1
-      continue
-    }
-
-    const isCurrent = /^present$/i.test(item.endDate?.trim() ?? '')
-    const { error } = await supabase.from('work_experiences').insert({
-      user_id: userId,
-      company_name: company,
-      position_title: position,
-      location: item.location?.trim() || null,
-      job_type: null,
-      start_date: startDate,
-      end_date: isCurrent ? null : importDateToDate(item.endDate),
-      is_current: isCurrent,
-      description: item.description?.trim() || null,
-    })
-    if (error) skipped += 1
-    else added += 1
-  }
-
-  return { added, skipped }
-}
-
-async function insertEducation(
-  supabase: SupabaseBrowserClient,
-  userId: string,
-  items: ParsedEducation[]
-): Promise<InsertOutcome> {
-  let added = 0
-  let skipped = 0
-
-  for (const item of items) {
-    const institution = item.institution?.trim()
-    const startDate = importDateToDate(item.startDate)
-    if (!institution || !startDate) {
-      skipped += 1
-      continue
-    }
-
-    const { error } = await supabase.from('education').insert({
-      user_id: userId,
-      institution_name: institution,
-      degree: mapDegree(item.degree),
-      field_of_study: item.field?.trim() || null,
-      start_date: startDate,
-      end_date: importDateToDate(item.endDate),
-    })
-    if (error) skipped += 1
-    else added += 1
-  }
-
-  return { added, skipped }
-}
-
-async function insertProjects(
-  supabase: SupabaseBrowserClient,
-  userId: string,
-  items: ParsedProject[]
-): Promise<InsertOutcome> {
-  let added = 0
-  let skipped = 0
-
-  for (const item of items) {
-    const name = item.name?.trim()
-    if (!name) {
-      skipped += 1
-      continue
-    }
-
-    const { error } = await supabase.from('projects').insert({
-      user_id: userId,
-      project_name: name,
-      role_title: item.role?.trim() || null,
-      description: item.description?.trim() || null,
-      link: normalizeLink(item.link),
-    })
-    if (error) skipped += 1
-    else added += 1
-  }
-
-  return { added, skipped }
-}
-
-/** Links parsed skills under an "Imported" category. Existing links keep
- * their category (duplicates are ignored, nothing is moved or deleted). */
-async function importSkills(
-  supabase: SupabaseBrowserClient,
-  userId: string,
-  names: string[]
-): Promise<InsertOutcome> {
-  const cleaned = Array.from(new Set(names.map((name) => name.trim()).filter(Boolean)))
-  if (cleaned.length === 0) return { added: 0, skipped: 0 }
-
-  const categoryId = await ensureCategoryId(supabase, IMPORT_SKILL_CATEGORY)
-
-  let skipped = 0
-  const rows: Array<{ user_id: string; skill_id: string; category_id: string }> = []
-  for (const name of cleaned) {
-    try {
-      const skillId = await ensureSkillId(supabase, name)
-      rows.push({ user_id: userId, skill_id: skillId, category_id: categoryId })
-    } catch {
-      skipped += 1
-    }
-  }
-
-  if (rows.length > 0) {
-    const { error } = await supabase
-      .from('user_skills')
-      .upsert(rows, { onConflict: 'user_id,skill_id', ignoreDuplicates: true })
-    if (error) throw new Error(error.message)
-  }
-
-  return { added: rows.length, skipped }
-}
 
 /* ------------------------------------------------------------------ *
  * Review-step summary row
@@ -417,60 +133,35 @@ export function ImportResumeModal({ isOpen, onClose, onSuccess }: ImportResumeMo
       return
     }
 
-    const parts: string[] = []
-    const problems: string[] = []
-    let skippedTotal = 0
-
-    try {
-      const filled = await mergeProfileFields(supabase, user.id, parsed.contact)
-      if (filled > 0) parts.push(`${filled} contact field${filled === 1 ? '' : 's'} filled`)
-    } catch {
-      problems.push('contact details')
-    }
-
-    try {
-      const work = await insertWorkExperiences(supabase, user.id, parsed.workExperience ?? [])
-      if (work.added > 0) parts.push(`${work.added} work experience${work.added === 1 ? '' : 's'}`)
-      skippedTotal += work.skipped
-    } catch {
-      problems.push('work experience')
-    }
-
-    try {
-      const education = await insertEducation(supabase, user.id, parsed.education ?? [])
-      if (education.added > 0) {
-        parts.push(`${education.added} education entr${education.added === 1 ? 'y' : 'ies'}`)
-      }
-      skippedTotal += education.skipped
-    } catch {
-      problems.push('education')
-    }
-
-    try {
-      const projects = await insertProjects(supabase, user.id, parsed.projects ?? [])
-      if (projects.added > 0) parts.push(`${projects.added} project${projects.added === 1 ? '' : 's'}`)
-      skippedTotal += projects.skipped
-    } catch {
-      problems.push('projects')
-    }
-
-    try {
-      const skills = await importSkills(supabase, user.id, parsed.skills ?? [])
-      if (skills.added > 0) parts.push(`${skills.added} skill${skills.added === 1 ? '' : 's'}`)
-      skippedTotal += skills.skipped
-    } catch {
-      problems.push('skills')
-    }
-
+    const result = await importParsedResume(supabase, user.id, parsed)
     setApplying(false)
+
+    const parts: string[] = []
+    if (result.contactFieldsFilled > 0) {
+      parts.push(`${result.contactFieldsFilled} contact field${result.contactFieldsFilled === 1 ? '' : 's'} filled`)
+    }
+    if (result.work.added > 0) {
+      parts.push(`${result.work.added} work experience${result.work.added === 1 ? '' : 's'}`)
+    }
+    if (result.education.added > 0) {
+      parts.push(`${result.education.added} education entr${result.education.added === 1 ? 'y' : 'ies'}`)
+    }
+    if (result.projects.added > 0) {
+      parts.push(`${result.projects.added} project${result.projects.added === 1 ? '' : 's'}`)
+    }
+    if (result.skills.added > 0) {
+      parts.push(`${result.skills.added} skill${result.skills.added === 1 ? '' : 's'}`)
+    }
+    const skippedTotal =
+      result.work.skipped + result.education.skipped + result.projects.skipped + result.skills.skipped
 
     if (parts.length > 0) {
       toast.success('Resume imported', `Added ${parts.join(', ')}.`)
-    } else if (problems.length === 0 && skippedTotal === 0) {
+    } else if (result.failed.length === 0 && skippedTotal === 0) {
       toast.info('Nothing to import', 'The parsed resume had no new usable entries.')
     }
-    if (problems.length > 0) {
-      toast.error('Some sections failed', `Could not import: ${problems.join(', ')}.`)
+    if (result.failed.length > 0) {
+      toast.error('Some sections failed', `Could not import: ${result.failed.join(', ')}.`)
     } else if (skippedTotal > 0) {
       toast.info(
         `${skippedTotal} entr${skippedTotal === 1 ? 'y' : 'ies'} skipped`,

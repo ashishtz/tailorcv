@@ -1,16 +1,6 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import {
-  useReactTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  createColumnHelper,
-  flexRender,
-  SortingState,
-} from '@tanstack/react-table'
 import Link from 'next/link'
 import {
   FileText,
@@ -33,6 +23,17 @@ import { useToast } from '@/components/ui/toast'
 import { createClient } from '@/lib/supabase/client'
 import { getTemplateDef } from '@/lib/templates'
 import { formatMonthYear } from '@/lib/utils'
+
+const PAGE_SIZE = 10
+
+const COLUMNS = [
+  { key: 'job_title', label: 'Job title' },
+  { key: 'template_id', label: 'Template' },
+  { key: 'mode', label: 'Mode' },
+  { key: 'created_at', label: 'Created' },
+] as const
+
+type SortKey = (typeof COLUMNS)[number]['key']
 
 interface DocumentsTableProps {
   resumes: Resume[]
@@ -111,82 +112,48 @@ function ActionsCell({ resume, onDelete }: ActionsCellProps) {
         title="Delete resume"
         message={`Are you sure you want to delete "${resume.job_title}"? This action cannot be undone.`}
         confirmText="Delete"
-        cancelText="Cancel"
-        type="danger"
         loading={isDeleting}
       />
     </>
   )
 }
 
-const columnHelper = createColumnHelper<Resume>()
-
 export function DocumentsTable({ resumes, onResumeDeleted }: DocumentsTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [filtering, setFiltering] = useState('')
+  const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' } | null>(null)
+  const [filter, setFilter] = useState('')
+  const [page, setPage] = useState(0)
 
-  const columns = useMemo(
-    () => [
-      columnHelper.accessor('job_title', {
-        header: 'Job title',
-        cell: (info) => (
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50">
-              <FileText className="h-4 w-4 text-brand-600" aria-hidden />
-            </div>
-            <span className="font-medium text-stone-900">{info.getValue()}</span>
-          </div>
-        ),
-      }),
-      columnHelper.accessor('template_id', {
-        header: 'Template',
-        cell: (info) => <Badge variant="brand">{getTemplateDef(info.getValue()).name}</Badge>,
-      }),
-      columnHelper.accessor('mode', {
-        header: 'Mode',
-        cell: (info) => (
-          <Badge variant={info.getValue() === 'strict' ? 'success' : 'accent'}>
-            {info.getValue() === 'strict' ? 'Strict' : 'Free'}
-          </Badge>
-        ),
-      }),
-      columnHelper.accessor('created_at', {
-        header: 'Created',
-        cell: (info) => (
-          <span className="text-stone-500">{formatMonthYear(info.getValue())}</span>
-        ),
-      }),
-      columnHelper.display({
-        id: 'actions',
-        header: () => <span className="sr-only">Actions</span>,
-        cell: (info) => <ActionsCell resume={info.row.original} onDelete={onResumeDeleted} />,
-      }),
-    ],
-    [onResumeDeleted]
-  )
+  const filtered = useMemo(() => {
+    const q = filter.trim().toLowerCase()
+    const rows = q
+      ? resumes.filter((r) =>
+          [r.job_title, getTemplateDef(r.template_id).name, r.mode, formatMonthYear(r.created_at)]
+            .join(' ')
+            .toLowerCase()
+            .includes(q)
+        )
+      : resumes
+    if (!sort) return rows
+    const sorted = [...rows].sort((a, b) =>
+      String(a[sort.key] ?? '').localeCompare(String(b[sort.key] ?? ''))
+    )
+    return sort.dir === 'desc' ? sorted.reverse() : sorted
+  }, [resumes, filter, sort])
 
-  // React Compiler skips memoizing useReactTable (TanStack API returns
-  // non-memoizable functions); informational only, behavior is unaffected.
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const table = useReactTable({
-    data: resumes,
-    columns,
-    state: {
-      sorting,
-      globalFilter: filtering,
-    },
-    onSortingChange: setSorting,
-    onGlobalFilterChange: setFiltering,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 10,
-      },
-    },
-  })
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const safePage = Math.min(page, pageCount - 1)
+  const pageRows = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE)
+
+  const toggleSort = (key: SortKey) => {
+    // Cycle asc -> desc -> off, matching the previous table behavior.
+    setSort((prev) =>
+      prev?.key !== key
+        ? { key, dir: 'asc' }
+        : prev.dir === 'asc'
+          ? { key, dir: 'desc' }
+          : null
+    )
+  }
 
   return (
     <Card>
@@ -199,15 +166,18 @@ export function DocumentsTable({ resumes, onResumeDeleted }: DocumentsTableProps
           />
           <Input
             type="search"
-            value={filtering}
-            onChange={(e) => setFiltering(e.target.value)}
+            value={filter}
+            onChange={(e) => {
+              setFilter(e.target.value)
+              setPage(0)
+            }}
             placeholder="Search resumes…"
             aria-label="Search resumes"
             className="pl-9"
           />
         </div>
         <p className="text-sm text-stone-500">
-          {table.getFilteredRowModel().rows.length} of {resumes.length}
+          {filtered.length} of {resumes.length}
         </p>
       </div>
 
@@ -215,50 +185,64 @@ export function DocumentsTable({ resumes, onResumeDeleted }: DocumentsTableProps
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="border-b border-stone-200">
-                {headerGroup.headers.map((header) => {
-                  const sortable = header.column.getCanSort()
-                  const sorted = header.column.getIsSorted()
-                  return (
-                    <th
-                      key={header.id}
-                      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-500 sm:px-5"
-                    >
-                      {sortable ? (
-                        <button
-                          type="button"
-                          onClick={header.column.getToggleSortingHandler()}
-                          className="inline-flex items-center gap-1 rounded-sm hover:text-stone-800"
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {sorted === 'asc' && <ChevronUp className="h-3.5 w-3.5" aria-hidden />}
-                          {sorted === 'desc' && <ChevronDown className="h-3.5 w-3.5" aria-hidden />}
-                        </button>
-                      ) : (
-                        flexRender(header.column.columnDef.header, header.getContext())
-                      )}
-                    </th>
-                  )
-                })}
-              </tr>
-            ))}
+            <tr className="border-b border-stone-200">
+              {COLUMNS.map(({ key, label }) => (
+                <th
+                  key={key}
+                  className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-500 sm:px-5"
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleSort(key)}
+                    className="inline-flex items-center gap-1 rounded-sm hover:text-stone-800"
+                  >
+                    {label}
+                    {sort?.key === key && sort.dir === 'asc' && (
+                      <ChevronUp className="h-3.5 w-3.5" aria-hidden />
+                    )}
+                    {sort?.key === key && sort.dir === 'desc' && (
+                      <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+                    )}
+                  </button>
+                </th>
+              ))}
+              <th className="px-4 py-3 sm:px-5">
+                <span className="sr-only">Actions</span>
+              </th>
+            </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
-            {table.getRowModel().rows.length === 0 ? (
+            {pageRows.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="px-5 py-10 text-center text-stone-500">
+                <td colSpan={COLUMNS.length + 1} className="px-5 py-10 text-center text-stone-500">
                   No resumes match your search.
                 </td>
               </tr>
             ) : (
-              table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="transition-colors hover:bg-stone-50">
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3 sm:px-5">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
+              pageRows.map((resume) => (
+                <tr key={resume.id} className="transition-colors hover:bg-stone-50">
+                  <td className="px-4 py-3 sm:px-5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50">
+                        <FileText className="h-4 w-4 text-brand-600" aria-hidden />
+                      </div>
+                      <span className="font-medium text-stone-900">{resume.job_title}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 sm:px-5">
+                    <Badge variant="brand">{getTemplateDef(resume.template_id).name}</Badge>
+                  </td>
+                  <td className="px-4 py-3 sm:px-5">
+                    <Badge variant={resume.mode === 'strict' ? 'success' : 'accent'}>
+                      {resume.mode === 'strict' ? 'Strict' : 'Free'}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 sm:px-5">
+                    <span className="text-stone-500">{formatMonthYear(resume.created_at)}</span>
+                  </td>
+                  <td className="px-4 py-3 sm:px-5">
+                    <ActionsCell resume={resume} onDelete={onResumeDeleted} />
+                  </td>
                 </tr>
               ))
             )}
@@ -267,17 +251,17 @@ export function DocumentsTable({ resumes, onResumeDeleted }: DocumentsTableProps
       </div>
 
       {/* Pagination */}
-      {table.getPageCount() > 1 && (
+      {pageCount > 1 && (
         <div className="flex items-center justify-between border-t border-stone-200 px-4 py-3 sm:px-5">
           <p className="text-sm text-stone-500">
-            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+            Page {safePage + 1} of {pageCount}
           </p>
           <div className="flex gap-2">
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
+              onClick={() => setPage(safePage - 1)}
+              disabled={safePage === 0}
             >
               <ChevronLeft aria-hidden />
               Previous
@@ -285,8 +269,8 @@ export function DocumentsTable({ resumes, onResumeDeleted }: DocumentsTableProps
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
+              onClick={() => setPage(safePage + 1)}
+              disabled={safePage >= pageCount - 1}
             >
               Next
               <ChevronRight aria-hidden />

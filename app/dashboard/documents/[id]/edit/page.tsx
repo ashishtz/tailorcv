@@ -1,22 +1,20 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, type ReactNode, type ChangeEvent } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, FileX, Plus, Save, Trash2, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { Resume, CategorizedSkill } from '@/lib/types/database'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import { Card, CardHeader, CardBody } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useToast } from '@/components/ui/toast'
+import { useResume } from '@/lib/use-resume'
 import {
   asJson,
-  normalizeResumeData,
   normalizeSettings,
-  rowToResume,
   type GeneratedResumeData,
   type GenerationSettings,
 } from '@/lib/utils/normalize-resume'
@@ -41,8 +39,8 @@ const textToContent = (text: string, format: 'paragraph' | 'bullets'): string | 
 }
 
 /* ------------------------------------------------------------------ *
- * Skill editors - generated resumes use categorized skills; legacy
- * rows may have plain string arrays. Both shapes are supported.
+ * Skill editors - skills are always categorized after normalization
+ * (normalizeResumeData folds legacy flat arrays into a bucket).
  * ------------------------------------------------------------------ */
 
 function SkillChip({ label, onRemove }: { label: string; onRemove: () => void }) {
@@ -100,108 +98,120 @@ interface SkillsEditorProps {
 }
 
 function SkillsEditor({ skills, onChange }: SkillsEditorProps) {
-  const isCategorized = skills.length > 0 && typeof skills[0] === 'object'
-
-  if (isCategorized) {
-    const categorized = skills as CategorizedSkill[]
-    return (
-      <div className="space-y-4">
-        {categorized.map((group, groupIndex) => (
-          <div
-            key={`${group.category}-${groupIndex}`}
-            className="rounded-lg border border-stone-200 p-4"
-          >
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <Input
-                value={group.category}
-                onChange={(e) => {
-                  const next = categorized.map((g, i) =>
-                    i === groupIndex ? { ...g, category: e.target.value } : g
-                  )
-                  onChange(next)
-                }}
-                aria-label="Category name"
-                className="max-w-56 font-medium"
-              />
-              <Button
-                variant="danger-ghost"
-                size="icon-sm"
-                aria-label={`Remove category ${group.category}`}
-                onClick={() => onChange(categorized.filter((_, i) => i !== groupIndex))}
-              >
-                <Trash2 aria-hidden />
-              </Button>
-            </div>
-            <div className="mb-3 flex flex-wrap gap-1.5">
-              {group.skills.map((skill, skillIndex) => (
-                <SkillChip
-                  key={`${skill}-${skillIndex}`}
-                  label={skill}
-                  onRemove={() => {
-                    const next = categorized.map((g, i) =>
-                      i === groupIndex
-                        ? { ...g, skills: g.skills.filter((_, si) => si !== skillIndex) }
-                        : g
-                    )
-                    onChange(next)
-                  }}
-                />
-              ))}
-              {group.skills.length === 0 && (
-                <p className="text-xs text-stone-400">No skills in this category yet.</p>
-              )}
-            </div>
-            <ChipInput
-              placeholder="Add a skill"
-              onAdd={(value) => {
-                const next = categorized.map((g, i) =>
-                  i === groupIndex && !g.skills.includes(value)
-                    ? { ...g, skills: [...g.skills, value] }
-                    : g
+  return (
+    <div className="space-y-4">
+      {skills.map((group, groupIndex) => (
+        <div
+          key={`${group.category}-${groupIndex}`}
+          className="rounded-lg border border-stone-200 p-4"
+        >
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <Input
+              value={group.category}
+              onChange={(e) => {
+                const next = skills.map((g, i) =>
+                  i === groupIndex ? { ...g, category: e.target.value } : g
                 )
                 onChange(next)
               }}
+              aria-label="Category name"
+              className="max-w-56 font-medium"
             />
+            <Button
+              variant="danger-ghost"
+              size="icon-sm"
+              aria-label={`Remove category ${group.category}`}
+              onClick={() => onChange(skills.filter((_, i) => i !== groupIndex))}
+            >
+              <Trash2 aria-hidden />
+            </Button>
           </div>
-        ))}
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => onChange([...categorized, { category: 'New category', skills: [] }])}
-        >
-          <Plus aria-hidden />
-          Add category
-        </Button>
-      </div>
-    )
-  }
-
-  const plain = skills as string[]
-  return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap gap-1.5">
-        {plain.map((skill, index) => (
-          <SkillChip
-            key={`${skill}-${index}`}
-            label={skill}
-            onRemove={() => onChange(plain.filter((_, i) => i !== index))}
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {group.skills.map((skill, skillIndex) => (
+              <SkillChip
+                key={`${skill}-${skillIndex}`}
+                label={skill}
+                onRemove={() => {
+                  const next = skills.map((g, i) =>
+                    i === groupIndex
+                      ? { ...g, skills: g.skills.filter((_, si) => si !== skillIndex) }
+                      : g
+                  )
+                  onChange(next)
+                }}
+              />
+            ))}
+            {group.skills.length === 0 && (
+              <p className="text-xs text-stone-400">No skills in this category yet.</p>
+            )}
+          </div>
+          <ChipInput
+            placeholder="Add a skill"
+            onAdd={(value) => {
+              const next = skills.map((g, i) =>
+                i === groupIndex && !g.skills.includes(value)
+                  ? { ...g, skills: [...g.skills, value] }
+                  : g
+              )
+              onChange(next)
+            }}
           />
-        ))}
-        {plain.length === 0 && <p className="text-xs text-stone-400">No skills yet.</p>}
-      </div>
-      <ChipInput
-        placeholder="Add a skill"
-        onAdd={(value) => {
-          if (!plain.includes(value)) onChange([...plain, value])
-        }}
-      />
+        </div>
+      ))}
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => onChange([...skills, { category: 'New category', skills: [] }])}
+      >
+        <Plus aria-hidden />
+        Add category
+      </Button>
     </div>
   )
 }
 
 /* ------------------------------------------------------------------ *
+ * Shared list-entry chrome
+ * ------------------------------------------------------------------ */
+
+function EntryCard({
+  index,
+  label,
+  onRemove,
+  children,
+}: {
+  index: number
+  label: string
+  onRemove: () => void
+  children: ReactNode
+}) {
+  return (
+    <div className="rounded-lg border border-stone-200 p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-sm font-medium text-stone-500">Entry {index + 1}</p>
+        <Button
+          variant="danger-ghost"
+          size="icon-sm"
+          aria-label={`Remove ${label} ${index + 1}`}
+          onClick={onRemove}
+        >
+          <Trash2 aria-hidden />
+        </Button>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+const NoEntries = ({ what }: { what: string }) => (
+  <p className="text-sm text-stone-400">No {what} entries.</p>
+)
+
+/* ------------------------------------------------------------------ *
  * Page
  * ------------------------------------------------------------------ */
+
+type ListKey = 'workExperience' | 'education' | 'projects'
 
 export default function ResumeEditPage() {
   const params = useParams<{ id: string }>()
@@ -210,53 +220,21 @@ export default function ResumeEditPage() {
   const toast = useToast()
   const supabase = createClient()
 
-  const [loading, setLoading] = useState(true)
+  const { resume, loading } = useResume(resumeId)
   const [saving, setSaving] = useState(false)
-  const [notFound, setNotFound] = useState(false)
   const [jobTitle, setJobTitle] = useState('')
   const [data, setData] = useState<GeneratedResumeData | null>(null)
   const [settings, setSettings] = useState<GenerationSettings | null>(null)
 
-  const fetchResume = useCallback(async (): Promise<Resume | null> => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return null
-
-      const { data: row, error } = await supabase
-        .from('resumes')
-        .select('*')
-        .eq('id', resumeId)
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      if (error) {
-        console.error('Error fetching resume:', error)
-        return null
-      }
-      return row ? rowToResume(row) : null
-    } catch (error) {
-      console.error('Error fetching resume:', error)
-      return null
-    }
-  }, [supabase, resumeId])
-
-  useEffect(() => {
-    let active = true
-    fetchResume().then((row) => {
-      if (!active) return
-      if (!row) {
-        setNotFound(true)
-      } else {
-        setJobTitle(row.job_title)
-        setData(normalizeResumeData(row.generated_data))
-        setSettings(normalizeSettings(row.generation_settings))
-      }
-      setLoading(false)
-    })
-    return () => {
-      active = false
-    }
-  }, [fetchResume])
+  // Seed the editable copy once the resume loads (render-time state adjust,
+  // per React's "storing information from previous renders" pattern).
+  const [seededFrom, setSeededFrom] = useState<typeof resume>(null)
+  if (resume && resume !== seededFrom) {
+    setSeededFrom(resume)
+    setJobTitle(resume.job_title)
+    setData(resume.generated_data)
+    setSettings(normalizeSettings(resume.generation_settings))
+  }
 
   const update = (patch: Partial<GeneratedResumeData>) =>
     setData((prev) => (prev ? { ...prev, ...patch } : prev))
@@ -296,7 +274,9 @@ export default function ResumeEditPage() {
     }
   }
 
-  if (loading) {
+  // The seed effect runs one render after the resume arrives - keep showing
+  // the skeleton in that gap instead of flashing "not found".
+  if (loading || (resume && (!data || !settings))) {
     return (
       <div className="px-4 py-8 sm:px-6 lg:px-8" role="status" aria-label="Loading editor">
         <div className="mx-auto max-w-3xl space-y-6">
@@ -308,7 +288,7 @@ export default function ResumeEditPage() {
     )
   }
 
-  if (notFound || !data || !settings) {
+  if (!data || !settings) {
     return (
       <div className="px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-lg">
@@ -334,6 +314,28 @@ export default function ResumeEditPage() {
 
   const workFormat = settings.work_experience_format
   const projectFormat = settings.projects_format
+
+  // One binder for every per-entry field: spread onto an Input/Textarea.
+  // `parse` covers the two non-plain-string fields (bullet descriptions,
+  // optional link); everything else round-trips as a plain string.
+  const bind = <K extends ListKey>(
+    key: K,
+    index: number,
+    field: keyof GeneratedResumeData[K][number] & string,
+    parse?: (value: string) => string | string[] | undefined
+  ) => ({
+    value: contentToText(
+      (data[key][index] as unknown as Record<string, string | string[] | undefined>)[field]
+    ),
+    onChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      update({
+        [key]: data[key].map((item, i) =>
+          i === index
+            ? { ...item, [field]: parse ? parse(e.target.value) : e.target.value }
+            : item
+        ),
+      } as Partial<GeneratedResumeData>),
+  })
 
   return (
     <div className="min-h-full bg-stone-50">
@@ -464,72 +466,28 @@ export default function ResumeEditPage() {
             }
           />
           <CardBody className="space-y-5">
-            {data.workExperience.length === 0 && (
-              <p className="text-sm text-stone-400">No work experience entries.</p>
-            )}
+            {data.workExperience.length === 0 && <NoEntries what="work experience" />}
             {data.workExperience.map((entry, index) => (
-              <div key={index} className="rounded-lg border border-stone-200 p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-sm font-medium text-stone-500">Entry {index + 1}</p>
-                  <Button
-                    variant="danger-ghost"
-                    size="icon-sm"
-                    aria-label={`Remove work entry ${index + 1}`}
-                    onClick={() =>
-                      update({ workExperience: data.workExperience.filter((_, i) => i !== index) })
-                    }
-                  >
-                    <Trash2 aria-hidden />
-                  </Button>
-                </div>
+              <EntryCard
+                key={index}
+                index={index}
+                label="work entry"
+                onRemove={() =>
+                  update({ workExperience: data.workExperience.filter((_, i) => i !== index) })
+                }
+              >
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="Company">
-                    <Input
-                      value={entry.company}
-                      onChange={(e) =>
-                        update({
-                          workExperience: data.workExperience.map((w, i) =>
-                            i === index ? { ...w, company: e.target.value } : w
-                          ),
-                        })
-                      }
-                    />
+                    <Input {...bind('workExperience', index, 'company')} />
                   </Field>
                   <Field label="Position">
-                    <Input
-                      value={entry.position}
-                      onChange={(e) =>
-                        update({
-                          workExperience: data.workExperience.map((w, i) =>
-                            i === index ? { ...w, position: e.target.value } : w
-                          ),
-                        })
-                      }
-                    />
+                    <Input {...bind('workExperience', index, 'position')} />
                   </Field>
                   <Field label="Location">
-                    <Input
-                      value={entry.location}
-                      onChange={(e) =>
-                        update({
-                          workExperience: data.workExperience.map((w, i) =>
-                            i === index ? { ...w, location: e.target.value } : w
-                          ),
-                        })
-                      }
-                    />
+                    <Input {...bind('workExperience', index, 'location')} />
                   </Field>
                   <Field label="Duration" hint='e.g. "Jan 2022 - Present"'>
-                    <Input
-                      value={entry.duration}
-                      onChange={(e) =>
-                        update({
-                          workExperience: data.workExperience.map((w, i) =>
-                            i === index ? { ...w, duration: e.target.value } : w
-                          ),
-                        })
-                      }
-                    />
+                    <Input {...bind('workExperience', index, 'duration')} />
                   </Field>
                 </div>
                 <div className="mt-3">
@@ -538,21 +496,14 @@ export default function ResumeEditPage() {
                     hint={workFormat === 'bullets' ? 'One bullet per line.' : undefined}
                   >
                     <Textarea
-                      value={contentToText(entry.description)}
-                      onChange={(e) =>
-                        update({
-                          workExperience: data.workExperience.map((w, i) =>
-                            i === index
-                              ? { ...w, description: textToContent(e.target.value, workFormat) }
-                              : w
-                          ),
-                        })
-                      }
                       rows={4}
+                      {...bind('workExperience', index, 'description', (v) =>
+                        textToContent(v, workFormat)
+                      )}
                     />
                   </Field>
                 </div>
-              </div>
+              </EntryCard>
             ))}
           </CardBody>
         </Card>
@@ -580,75 +531,31 @@ export default function ResumeEditPage() {
             }
           />
           <CardBody className="space-y-5">
-            {data.education.length === 0 && (
-              <p className="text-sm text-stone-400">No education entries.</p>
-            )}
+            {data.education.length === 0 && <NoEntries what="education" />}
             {data.education.map((entry, index) => (
-              <div key={index} className="rounded-lg border border-stone-200 p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-sm font-medium text-stone-500">Entry {index + 1}</p>
-                  <Button
-                    variant="danger-ghost"
-                    size="icon-sm"
-                    aria-label={`Remove education entry ${index + 1}`}
-                    onClick={() =>
-                      update({ education: data.education.filter((_, i) => i !== index) })
-                    }
-                  >
-                    <Trash2 aria-hidden />
-                  </Button>
-                </div>
+              <EntryCard
+                key={index}
+                index={index}
+                label="education entry"
+                onRemove={() =>
+                  update({ education: data.education.filter((_, i) => i !== index) })
+                }
+              >
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="Institution">
-                    <Input
-                      value={entry.institution}
-                      onChange={(e) =>
-                        update({
-                          education: data.education.map((ed, i) =>
-                            i === index ? { ...ed, institution: e.target.value } : ed
-                          ),
-                        })
-                      }
-                    />
+                    <Input {...bind('education', index, 'institution')} />
                   </Field>
                   <Field label="Degree" hint="e.g. Bachelor's, Master's, PhD">
-                    <Input
-                      value={entry.degree}
-                      onChange={(e) =>
-                        update({
-                          education: data.education.map((ed, i) =>
-                            i === index ? { ...ed, degree: e.target.value } : ed
-                          ),
-                        })
-                      }
-                    />
+                    <Input {...bind('education', index, 'degree')} />
                   </Field>
                   <Field label="Field of study">
-                    <Input
-                      value={entry.field}
-                      onChange={(e) =>
-                        update({
-                          education: data.education.map((ed, i) =>
-                            i === index ? { ...ed, field: e.target.value } : ed
-                          ),
-                        })
-                      }
-                    />
+                    <Input {...bind('education', index, 'field')} />
                   </Field>
                   <Field label="Duration" hint='e.g. "2016 - 2020"'>
-                    <Input
-                      value={entry.duration}
-                      onChange={(e) =>
-                        update({
-                          education: data.education.map((ed, i) =>
-                            i === index ? { ...ed, duration: e.target.value } : ed
-                          ),
-                        })
-                      }
-                    />
+                    <Input {...bind('education', index, 'duration')} />
                   </Field>
                 </div>
-              </div>
+              </EntryCard>
             ))}
           </CardBody>
         </Card>
@@ -681,61 +588,28 @@ export default function ResumeEditPage() {
             }
           />
           <CardBody className="space-y-5">
-            {data.projects.length === 0 && (
-              <p className="text-sm text-stone-400">No project entries.</p>
-            )}
+            {data.projects.length === 0 && <NoEntries what="project" />}
             {data.projects.map((entry, index) => (
-              <div key={index} className="rounded-lg border border-stone-200 p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-sm font-medium text-stone-500">Entry {index + 1}</p>
-                  <Button
-                    variant="danger-ghost"
-                    size="icon-sm"
-                    aria-label={`Remove project ${index + 1}`}
-                    onClick={() => update({ projects: data.projects.filter((_, i) => i !== index) })}
-                  >
-                    <Trash2 aria-hidden />
-                  </Button>
-                </div>
+              <EntryCard
+                key={index}
+                index={index}
+                label="project"
+                onRemove={() => update({ projects: data.projects.filter((_, i) => i !== index) })}
+              >
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="Name">
-                    <Input
-                      value={entry.name}
-                      onChange={(e) =>
-                        update({
-                          projects: data.projects.map((p, i) =>
-                            i === index ? { ...p, name: e.target.value } : p
-                          ),
-                        })
-                      }
-                    />
+                    <Input {...bind('projects', index, 'name')} />
                   </Field>
                   <Field label="Role">
-                    <Input
-                      value={entry.role}
-                      onChange={(e) =>
-                        update({
-                          projects: data.projects.map((p, i) =>
-                            i === index ? { ...p, role: e.target.value } : p
-                          ),
-                        })
-                      }
-                    />
+                    <Input {...bind('projects', index, 'role')} />
                   </Field>
                 </div>
                 <div className="mt-3 space-y-3">
                   <Field label="Link">
                     <Input
                       type="url"
-                      value={entry.link ?? ''}
                       placeholder="https://…"
-                      onChange={(e) =>
-                        update({
-                          projects: data.projects.map((p, i) =>
-                            i === index ? { ...p, link: e.target.value || undefined } : p
-                          ),
-                        })
-                      }
+                      {...bind('projects', index, 'link', (v) => v || undefined)}
                     />
                   </Field>
                   <Field
@@ -743,21 +617,14 @@ export default function ResumeEditPage() {
                     hint={projectFormat === 'bullets' ? 'One bullet per line.' : undefined}
                   >
                     <Textarea
-                      value={contentToText(entry.description)}
-                      onChange={(e) =>
-                        update({
-                          projects: data.projects.map((p, i) =>
-                            i === index
-                              ? { ...p, description: textToContent(e.target.value, projectFormat) }
-                              : p
-                          ),
-                        })
-                      }
                       rows={3}
+                      {...bind('projects', index, 'description', (v) =>
+                        textToContent(v, projectFormat)
+                      )}
                     />
                   </Field>
                 </div>
-              </div>
+              </EntryCard>
             ))}
           </CardBody>
         </Card>

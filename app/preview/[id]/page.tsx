@@ -1,59 +1,21 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { Suspense } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { FileX, Printer } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
-import { Resume } from '@/lib/types/database'
 import { Button } from '@/components/ui/button'
 import { getTemplateDef, RESUME_PAGE_WIDTH_PX } from '@/lib/templates'
-import { normalizeResumeData, normalizeSettings, rowToResume } from '@/lib/utils/normalize-resume'
+import { normalizeSettings } from '@/lib/utils/normalize-resume'
+import { useResume } from '@/lib/use-resume'
 
 function PreviewContent() {
   const params = useParams<{ id: string }>()
   const resumeId = typeof params.id === 'string' ? params.id : ''
   const searchParams = useSearchParams()
-  const [resume, setResume] = useState<Resume | null>(null)
-  const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const { resume, loading } = useResume(resumeId)
 
   const templateId = searchParams.get('template')
-
-  const fetchResume = useCallback(async (): Promise<Resume | null> => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return null
-
-      const { data, error } = await supabase
-        .from('resumes')
-        .select('*')
-        .eq('id', resumeId)
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      if (error) {
-        console.error('Error fetching resume:', error)
-        return null
-      }
-      return data ? rowToResume(data) : null
-    } catch (error) {
-      console.error('Error fetching resume:', error)
-      return null
-    }
-  }, [supabase, resumeId])
-
-  useEffect(() => {
-    let active = true
-    fetchResume().then((data) => {
-      if (!active) return
-      setResume(data)
-      setLoading(false)
-    })
-    return () => {
-      active = false
-    }
-  }, [fetchResume])
 
   if (loading) {
     // This page opens in a new tab - never leave it blank.
@@ -87,7 +49,7 @@ function PreviewContent() {
   }
 
   const TemplateComponent = getTemplateDef(templateId ?? resume.template_id).component
-  const data = normalizeResumeData(resume.generated_data)
+  const data = resume.generated_data
   const settings = normalizeSettings(resume.generation_settings)
 
   return (

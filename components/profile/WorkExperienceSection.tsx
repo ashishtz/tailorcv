@@ -2,19 +2,18 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Briefcase, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Briefcase, Plus } from 'lucide-react'
 import { Card, CardHeader, CardBody } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Field, Input, Select } from '@/components/ui/field'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { SkeletonRows } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
-import EnhanceTextarea from '@/components/ui/EnhanceTextarea'
+import { EntryRow, endBeforeStart, useEntryForm } from '@/components/forms/entry-form'
+import { WorkFields } from '@/components/forms/entry-fields'
+import type { JobType, WorkExperienceDraft } from '@/lib/contexts/onboarding-context'
 import { formatMonthYear, monthInputToDate, dateToMonthInput } from '@/lib/utils'
-
-type JobType = 'Part-Time' | 'Full-Time' | 'Contract'
 
 interface WorkExperience {
   id: string
@@ -29,18 +28,7 @@ interface WorkExperience {
 }
 
 /** Form state keeps dates as <input type="month"> values ("YYYY-MM"). */
-interface WorkFormState {
-  company_name: string
-  position_title: string
-  location: string
-  job_type: JobType
-  start_date: string
-  end_date: string
-  is_current: boolean
-  description: string
-}
-
-const EMPTY_FORM: WorkFormState = {
+const EMPTY_FORM: WorkExperienceDraft = {
   company_name: '',
   position_title: '',
   location: '',
@@ -51,18 +39,14 @@ const EMPTY_FORM: WorkFormState = {
   description: '',
 }
 
-const JOB_TYPES: JobType[] = ['Full-Time', 'Part-Time', 'Contract']
-
 export default function WorkExperienceSection() {
   const [experiences, setExperiences] = useState<WorkExperience[]>([])
   const [loading, setLoading] = useState(true)
-  const [isAdding, setIsAdding] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState<WorkFormState>(EMPTY_FORM)
   const [dateError, setDateError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<WorkExperience | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const entryForm = useEntryForm<WorkExperienceDraft>()
   const supabase = createClient()
   const toast = useToast()
 
@@ -99,43 +83,44 @@ export default function WorkExperienceSection() {
     }
   }, [fetchExperiences])
 
-  const formVisible = isAdding || editingId !== null
-
   const startAdd = () => {
-    setForm(EMPTY_FORM)
     setDateError(null)
-    setIsAdding(true)
-    setEditingId(null)
+    entryForm.open({ ...EMPTY_FORM })
   }
 
   const startEdit = (exp: WorkExperience) => {
-    setForm({
-      company_name: exp.company_name,
-      position_title: exp.position_title,
-      location: exp.location ?? '',
-      job_type: exp.job_type ?? 'Full-Time',
-      start_date: dateToMonthInput(exp.start_date),
-      end_date: dateToMonthInput(exp.end_date),
-      is_current: exp.is_current,
-      description: exp.description ?? '',
-    })
     setDateError(null)
-    setEditingId(exp.id)
-    setIsAdding(false)
+    entryForm.open(
+      {
+        company_name: exp.company_name,
+        position_title: exp.position_title,
+        location: exp.location ?? '',
+        job_type: exp.job_type ?? 'Full-Time',
+        start_date: dateToMonthInput(exp.start_date),
+        end_date: dateToMonthInput(exp.end_date),
+        is_current: exp.is_current,
+        description: exp.description ?? '',
+      },
+      exp.id
+    )
   }
 
   const closeForm = () => {
-    setForm(EMPTY_FORM)
     setDateError(null)
-    setIsAdding(false)
-    setEditingId(null)
+    entryForm.close()
+  }
+
+  const handleFieldChange = (patch: Partial<WorkExperienceDraft>) => {
+    if ('start_date' in patch || 'end_date' in patch || 'is_current' in patch) setDateError(null)
+    entryForm.patch(patch)
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    const form = entryForm.form
+    if (!form) return
 
-    // "YYYY-MM" strings compare correctly as plain strings.
-    if (!form.is_current && form.start_date && form.end_date && form.end_date < form.start_date) {
+    if (!form.is_current && endBeforeStart(form.start_date, form.end_date)) {
       setDateError('End date must be on or after the start date.')
       return
     }
@@ -161,13 +146,14 @@ export default function WorkExperienceSection() {
       company_name: form.company_name.trim(),
       position_title: form.position_title.trim(),
       location: form.location.trim() || null,
-      job_type: form.job_type,
+      job_type: form.job_type || null,
       start_date: startDate,
       end_date: form.is_current ? null : monthInputToDate(form.end_date),
       is_current: form.is_current,
       description: form.description.trim() || null,
     }
 
+    const editingId = entryForm.editKey
     const { error } = editingId
       ? await supabase
           .from('work_experiences')
@@ -224,7 +210,7 @@ export default function WorkExperienceSection() {
         title="Work experience"
         description="Roles you have held, most recent first."
         actions={
-          !formVisible && (
+          !entryForm.isOpen && (
             <Button variant="secondary" size="sm" onClick={startAdd}>
               <Plus aria-hidden />
               Add experience
@@ -233,109 +219,29 @@ export default function WorkExperienceSection() {
         }
       />
 
-      {formVisible && (
+      {entryForm.form && (
         <CardBody className="border-b border-stone-200">
           <form
             onSubmit={handleSubmit}
             className="rounded-lg border border-stone-200 bg-stone-50 p-4 sm:p-5"
           >
             <h3 className="font-display text-sm font-semibold text-stone-900">
-              {editingId ? 'Edit experience' : 'New experience'}
+              {entryForm.editKey ? 'Edit experience' : 'New experience'}
             </h3>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <Field label="Company" required>
-                <Input
-                  required
-                  value={form.company_name}
-                  onChange={(e) => setForm((f) => ({ ...f, company_name: e.target.value }))}
-                  placeholder="e.g. Acme Corp"
-                />
-              </Field>
-              <Field label="Position" required>
-                <Input
-                  required
-                  value={form.position_title}
-                  onChange={(e) => setForm((f) => ({ ...f, position_title: e.target.value }))}
-                  placeholder="e.g. Senior Software Engineer"
-                />
-              </Field>
-              <Field label="Location">
-                <Input
-                  value={form.location}
-                  onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-                  placeholder="e.g. Toronto, Canada"
-                />
-              </Field>
-              <Field label="Job type">
-                <Select
-                  value={form.job_type}
-                  onChange={(e) => setForm((f) => ({ ...f, job_type: e.target.value as JobType }))}
-                >
-                  {JOB_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label="Start date" required>
-                <Input
-                  type="month"
-                  required
-                  value={form.start_date}
-                  onChange={(e) => {
-                    setDateError(null)
-                    setForm((f) => ({ ...f, start_date: e.target.value }))
-                  }}
-                />
-              </Field>
-              <div className="space-y-2.5">
-                <Field label="End date" error={dateError ?? undefined}>
-                  <Input
-                    type="month"
-                    value={form.end_date}
-                    disabled={form.is_current}
-                    onChange={(e) => {
-                      setDateError(null)
-                      setForm((f) => ({ ...f, end_date: e.target.value }))
-                    }}
-                  />
-                </Field>
-                <label className="flex items-center gap-2 text-sm text-stone-700">
-                  <input
-                    type="checkbox"
-                    checked={form.is_current}
-                    onChange={(e) => {
-                      setDateError(null)
-                      setForm((f) => ({
-                        ...f,
-                        is_current: e.target.checked,
-                        end_date: e.target.checked ? '' : f.end_date,
-                      }))
-                    }}
-                    className="h-4 w-4 accent-brand-600 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
-                  />
-                  I currently work here
-                </label>
-              </div>
-              <div className="sm:col-span-2">
-                <Field label="Description">
-                  <EnhanceTextarea
-                    value={form.description}
-                    onChange={(value) => setForm((f) => ({ ...f, description: value }))}
-                    rows={4}
-                    placeholder="Describe your responsibilities and achievements…"
-                    enhanceType="work_experience"
-                  />
-                </Field>
-              </div>
+            <div className="mt-4">
+              <WorkFields
+                form={entryForm.form}
+                onChange={handleFieldChange}
+                errors={{ end_date: dateError ?? undefined }}
+                nativeRequired
+              />
             </div>
             <div className="mt-5 flex justify-end gap-3">
               <Button variant="secondary" onClick={closeForm} disabled={saving}>
                 Cancel
               </Button>
               <Button type="submit" loading={saving}>
-                {editingId ? 'Save changes' : 'Add experience'}
+                {entryForm.editKey ? 'Save changes' : 'Add experience'}
               </Button>
             </div>
           </form>
@@ -347,7 +253,7 @@ export default function WorkExperienceSection() {
           <SkeletonRows rows={2} />
         </CardBody>
       ) : experiences.length === 0 ? (
-        !formVisible && (
+        !entryForm.isOpen && (
           <EmptyState
             icon={Briefcase}
             title="No work experience yet"
@@ -367,44 +273,24 @@ export default function WorkExperienceSection() {
               key={exp.id}
               className="flex items-start justify-between gap-4 px-5 py-4 sm:px-6"
             >
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-medium text-stone-900">{exp.position_title}</p>
-                  {exp.job_type && <Badge variant="stone">{exp.job_type}</Badge>}
-                  {exp.is_current && <Badge variant="brand">Current</Badge>}
-                </div>
-                <p className="mt-0.5 text-sm text-stone-600">
-                  {exp.company_name}
-                  {exp.location ? ` · ${exp.location}` : ''}
-                </p>
-                <p className="mt-0.5 text-xs text-stone-500">
-                  {formatMonthYear(exp.start_date)} –{' '}
-                  {exp.is_current || !exp.end_date ? 'Present' : formatMonthYear(exp.end_date)}
-                </p>
-                {exp.description && (
-                  <p className="mt-2 whitespace-pre-wrap text-sm text-stone-600">
-                    {exp.description}
-                  </p>
-                )}
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={`Edit ${exp.position_title} at ${exp.company_name}`}
-                  onClick={() => startEdit(exp)}
-                >
-                  <Pencil aria-hidden />
-                </Button>
-                <Button
-                  variant="danger-ghost"
-                  size="icon-sm"
-                  aria-label={`Delete ${exp.position_title} at ${exp.company_name}`}
-                  onClick={() => setDeleteTarget(exp)}
-                >
-                  <Trash2 aria-hidden />
-                </Button>
-              </div>
+              <EntryRow
+                title={exp.position_title}
+                titleExtra={
+                  <>
+                    {exp.job_type && <Badge variant="stone">{exp.job_type}</Badge>}
+                    {exp.is_current && <Badge variant="brand">Current</Badge>}
+                  </>
+                }
+                subtitle={`${exp.company_name}${exp.location ? ` · ${exp.location}` : ''}`}
+                meta={`${formatMonthYear(exp.start_date)} – ${
+                  exp.is_current || !exp.end_date ? 'Present' : formatMonthYear(exp.end_date)
+                }`}
+                description={exp.description ?? undefined}
+                editLabel={`Edit ${exp.position_title} at ${exp.company_name}`}
+                deleteLabel={`Delete ${exp.position_title} at ${exp.company_name}`}
+                onEdit={() => startEdit(exp)}
+                onDelete={() => setDeleteTarget(exp)}
+              />
             </li>
           ))}
         </ul>
@@ -421,7 +307,6 @@ export default function WorkExperienceSection() {
             : ''
         }
         confirmText="Delete"
-        type="danger"
         loading={deleting}
       />
     </Card>

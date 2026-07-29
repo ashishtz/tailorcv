@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { KeyRound, Save, Upload } from 'lucide-react'
-import { PageHeader } from '@/components/ui/page-header'
 import { Card, CardHeader, CardBody, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/field'
@@ -219,16 +218,22 @@ export default function ProfilePage() {
   return (
     <div className="px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl space-y-6">
-        <PageHeader
-          title="Profile"
-          description="Your master career data - the source every resume is generated from."
-          actions={
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="font-display text-2xl font-bold tracking-tight text-stone-900">
+              Profile
+            </h1>
+            <p className="mt-1 text-sm text-stone-500">
+              Your master career data - the source every resume is generated from.
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
             <Button variant="secondary" onClick={() => setIsImportModalOpen(true)}>
               <Upload aria-hidden />
               Import from resume
             </Button>
-          }
-        />
+          </div>
+        </div>
 
         {/* Personal information */}
         {loading ? (

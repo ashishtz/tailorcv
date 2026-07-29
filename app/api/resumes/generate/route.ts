@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { generateResume } from '@/lib/services/resume'
-import { fetchUserProfileData, fetchResumeById, saveResume } from '@/lib/repositories'
-import { normalizeResumeData, normalizeSettings } from '@/lib/utils/normalize-resume'
+import { fetchUserProfileData } from '@/lib/repositories'
+import { asJson, normalizeResumeData, normalizeSettings } from '@/lib/utils/normalize-resume'
 
 export const runtime = 'nodejs'
 // AI generation legitimately takes tens of seconds - don't let the default
@@ -63,11 +63,12 @@ export async function POST(request: NextRequest) {
     let resumeContext
 
     if (context_source === 'resume' && base_resume_id) {
-      const { data: existingResume, error: resumeError } = await fetchResumeById(
-        supabase,
-        user.id,
-        base_resume_id
-      )
+      const { data: existingResume, error: resumeError } = await supabase
+        .from('resumes')
+        .select('*')
+        .eq('id', base_resume_id)
+        .eq('user_id', user.id)
+        .maybeSingle()
 
       if (resumeError || !existingResume) {
         return NextResponse.json({ error: 'The selected base resume was not found.' }, { status: 404 })
@@ -108,14 +109,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { data: resume, error } = await saveResume(supabase, user.id, {
-      job_title,
-      job_description,
-      mode,
-      generated_data: resumeData,
-      template_id: template,
-      generation_settings
-    })
+    const { data: resume, error } = await supabase
+      .from('resumes')
+      .insert({
+        user_id: user.id,
+        job_title,
+        job_description,
+        mode,
+        generated_data: asJson(resumeData),
+        template_id: template,
+        generation_settings: asJson(generation_settings)
+      })
+      .select()
+      .single()
 
     if (error || !resume) {
       console.error('Error saving resume:', error)

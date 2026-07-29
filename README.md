@@ -42,7 +42,7 @@ npm install
 
 1. Create a new project at [supabase.com](https://supabase.com)
 2. Go to Settings > API to get your project URL and anon key
-3. Go to SQL Editor and run the schema from `supabase/schema.sql`
+3. Apply the migrations in `supabase/migrations/` (e.g. `supabase db push`)
 
 ### 4. Set up OpenRouter
 

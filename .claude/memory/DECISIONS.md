@@ -5,6 +5,17 @@
 
 ---
 
+## D-005 · 2026-07-29 · Ponytail cleanup: settled simplification decisions (session 2)
+
+- **No Docker/nginx/Make deploy stack.** Deleted as unused (no CI, README never referenced it, nginx duplicated Next's own behavior). Deploy = `next start` or a platform. Don't reintroduce without an actual deploy target.
+- **5 templates, not 7.** creative/executive deleted — decorative gradients contradicted the "ATS-friendly" product pitch. Template shared pieces live in `components/resume-templates/shared.tsx`.
+- **`GeneratedResumeData.skills` is `CategorizedSkill[]` only.** `normalizeSkills` folds legacy flat string arrays into a `{ category: 'Skills' }` bucket; every generated_data read path goes through `rowToResume`/`normalizeResumeData` (verified). Never reintroduce the `string[] |` union or per-consumer branches.
+- **Native platform over libraries where equivalent:** `components/ui/modal.tsx` = native `<dialog>`/`showModal()`; skill pickers = `<Input list>` + `<datalist>` (`components/forms/suggest-input.tsx`); documents table = plain `<table>` + filter/sort in `useMemo`. react-select, @tanstack/react-table, react-hook-form removed from package.json — don't re-add for these use cases.
+- **DB writes live in repositories, not components.** ImportResumeModal's inserts moved to `onboarding.repository.ts` (`importParsedResume`); name matching standardized on the `ilike` find-or-create (`ensureNamedRowId`).
+- **Profile/onboarding forms share `components/forms/`** (entry-form.tsx state machine + EntryRow, entry-fields.tsx field groups). Deliberately NOT a generic `<EntryListEditor>` — callers keep their own persistence/validation.
+- **jest runs in `node` env with no setup file**; testing-library/jsdom devDeps removed until a component test actually needs them. Overrides `jsdom`/`@swc/helpers` removed with their trigger packages.
+- Full audit + rationale: `PONYTAIL_AUDIT.md` (repo root).
+
 ## D-001 · 2026-07-29 · Memory system lives in `.claude/memory/`, committed to git
 
 - **Decision:** Cross-session memory = three committed markdown files (`STATUS.md`, `WORKLOG.md`, `DECISIONS.md`) plus feature docs (e.g. `FRONTEND_AUDIT.md`, `DESIGN_SYSTEM.md`) in `.claude/memory/`. CLAUDE.md instructs every session to read them at start and update them before ending a chunk.

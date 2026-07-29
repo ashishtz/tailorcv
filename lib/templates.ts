@@ -4,8 +4,6 @@ import { ClassicTemplate } from '@/components/resume-templates/classic-template'
 import { ModernTemplate } from '@/components/resume-templates/modern-template'
 import { MinimalTemplate } from '@/components/resume-templates/minimal-template'
 import { ProfessionalTemplate } from '@/components/resume-templates/professional-template'
-import { CreativeTemplate } from '@/components/resume-templates/creative-template'
-import { ExecutiveTemplate } from '@/components/resume-templates/executive-template'
 import { JakeTemplate } from '@/components/resume-templates/jake-template'
 
 export interface TemplateProps {
@@ -45,18 +43,6 @@ export const RESUME_TEMPLATES: ResumeTemplateDef[] = [
     name: 'Professional',
     description: 'Two-column layout with an experience timeline.',
     component: ProfessionalTemplate,
-  },
-  {
-    id: 'creative',
-    name: 'Creative',
-    description: 'Expressive gradient header for design-leaning roles.',
-    component: CreativeTemplate,
-  },
-  {
-    id: 'executive',
-    name: 'Executive',
-    description: 'Dark banner and stately serif-feel hierarchy.',
-    component: ExecutiveTemplate,
   },
   {
     id: 'jake',

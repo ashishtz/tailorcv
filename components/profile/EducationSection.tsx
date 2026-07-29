@@ -2,28 +2,17 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { GraduationCap, Pencil, Plus, Trash2 } from 'lucide-react'
+import { GraduationCap, Plus } from 'lucide-react'
 import { Card, CardHeader, CardBody } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Field, Input, Select } from '@/components/ui/field'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { SkeletonRows } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
+import { EntryRow, endBeforeStart, useEntryForm } from '@/components/forms/entry-form'
+import { EducationFields } from '@/components/forms/entry-fields'
+import type { Degree, EducationDraft } from '@/lib/contexts/onboarding-context'
 import { formatMonthYear, monthInputToDate, dateToMonthInput } from '@/lib/utils'
-
-const DEGREES = [
-  'High School',
-  'Associate',
-  "Bachelor's",
-  "Master's",
-  'PhD',
-  'Diploma',
-  'Certificate',
-  'Other',
-] as const
-
-type Degree = (typeof DEGREES)[number]
 
 interface Education {
   id: string
@@ -35,15 +24,7 @@ interface Education {
 }
 
 /** Form state keeps dates as <input type="month"> values ("YYYY-MM"). */
-interface EducationFormState {
-  institution_name: string
-  degree: Degree
-  field_of_study: string
-  start_date: string
-  end_date: string
-}
-
-const EMPTY_FORM: EducationFormState = {
+const EMPTY_FORM: EducationDraft = {
   institution_name: '',
   degree: "Bachelor's",
   field_of_study: '',
@@ -54,13 +35,11 @@ const EMPTY_FORM: EducationFormState = {
 export default function EducationSection() {
   const [educationList, setEducationList] = useState<Education[]>([])
   const [loading, setLoading] = useState(true)
-  const [isAdding, setIsAdding] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState<EducationFormState>(EMPTY_FORM)
   const [dateError, setDateError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Education | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const entryForm = useEntryForm<EducationDraft>()
   const supabase = createClient()
   const toast = useToast()
 
@@ -97,40 +76,41 @@ export default function EducationSection() {
     }
   }, [fetchEducation])
 
-  const formVisible = isAdding || editingId !== null
-
   const startAdd = () => {
-    setForm(EMPTY_FORM)
     setDateError(null)
-    setIsAdding(true)
-    setEditingId(null)
+    entryForm.open({ ...EMPTY_FORM })
   }
 
   const startEdit = (edu: Education) => {
-    setForm({
-      institution_name: edu.institution_name,
-      degree: edu.degree ?? "Bachelor's",
-      field_of_study: edu.field_of_study ?? '',
-      start_date: dateToMonthInput(edu.start_date),
-      end_date: dateToMonthInput(edu.end_date),
-    })
     setDateError(null)
-    setEditingId(edu.id)
-    setIsAdding(false)
+    entryForm.open(
+      {
+        institution_name: edu.institution_name,
+        degree: edu.degree ?? "Bachelor's",
+        field_of_study: edu.field_of_study ?? '',
+        start_date: dateToMonthInput(edu.start_date),
+        end_date: dateToMonthInput(edu.end_date),
+      },
+      edu.id
+    )
   }
 
   const closeForm = () => {
-    setForm(EMPTY_FORM)
     setDateError(null)
-    setIsAdding(false)
-    setEditingId(null)
+    entryForm.close()
+  }
+
+  const handleFieldChange = (patch: Partial<EducationDraft>) => {
+    if ('start_date' in patch || 'end_date' in patch) setDateError(null)
+    entryForm.patch(patch)
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    const form = entryForm.form
+    if (!form) return
 
-    // "YYYY-MM" strings compare correctly as plain strings.
-    if (form.start_date && form.end_date && form.end_date < form.start_date) {
+    if (endBeforeStart(form.start_date, form.end_date)) {
       setDateError('End date must be on or after the start date.')
       return
     }
@@ -154,12 +134,13 @@ export default function EducationSection() {
     }
     const payload = {
       institution_name: form.institution_name.trim(),
-      degree: form.degree,
+      degree: form.degree || null,
       field_of_study: form.field_of_study.trim() || null,
       start_date: startDate,
       end_date: monthInputToDate(form.end_date),
     }
 
+    const editingId = entryForm.editKey
     const { error } = editingId
       ? await supabase
           .from('education')
@@ -210,16 +191,13 @@ export default function EducationSection() {
     await loadEducation()
   }
 
-  const subtitle = (edu: Education) =>
-    [edu.degree, edu.field_of_study].filter(Boolean).join(' · ')
-
   return (
     <Card>
       <CardHeader
         title="Education"
         description="Degrees, diplomas and certificates."
         actions={
-          !formVisible && (
+          !entryForm.isOpen && (
             <Button variant="secondary" size="sm" onClick={startAdd}>
               <Plus aria-hidden />
               Add education
@@ -228,79 +206,29 @@ export default function EducationSection() {
         }
       />
 
-      {formVisible && (
+      {entryForm.form && (
         <CardBody className="border-b border-stone-200">
           <form
             onSubmit={handleSubmit}
             className="rounded-lg border border-stone-200 bg-stone-50 p-4 sm:p-5"
           >
             <h3 className="font-display text-sm font-semibold text-stone-900">
-              {editingId ? 'Edit education' : 'New education'}
+              {entryForm.editKey ? 'Edit education' : 'New education'}
             </h3>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <Field label="Institution" required>
-                  <Input
-                    required
-                    value={form.institution_name}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, institution_name: e.target.value }))
-                    }
-                    placeholder="e.g. University of Toronto"
-                  />
-                </Field>
-              </div>
-              <Field label="Degree">
-                <Select
-                  value={form.degree}
-                  onChange={(e) => setForm((f) => ({ ...f, degree: e.target.value as Degree }))}
-                >
-                  {DEGREES.map((degree) => (
-                    <option key={degree} value={degree}>
-                      {degree}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label="Field of study">
-                <Input
-                  value={form.field_of_study}
-                  onChange={(e) => setForm((f) => ({ ...f, field_of_study: e.target.value }))}
-                  placeholder="e.g. Computer Science"
-                />
-              </Field>
-              <Field label="Start date" required>
-                <Input
-                  type="month"
-                  required
-                  value={form.start_date}
-                  onChange={(e) => {
-                    setDateError(null)
-                    setForm((f) => ({ ...f, start_date: e.target.value }))
-                  }}
-                />
-              </Field>
-              <Field
-                label="End date"
-                error={dateError ?? undefined}
-                hint="Leave empty if you are currently studying."
-              >
-                <Input
-                  type="month"
-                  value={form.end_date}
-                  onChange={(e) => {
-                    setDateError(null)
-                    setForm((f) => ({ ...f, end_date: e.target.value }))
-                  }}
-                />
-              </Field>
+            <div className="mt-4">
+              <EducationFields
+                form={entryForm.form}
+                onChange={handleFieldChange}
+                errors={{ end_date: dateError ?? undefined }}
+                nativeRequired
+              />
             </div>
             <div className="mt-5 flex justify-end gap-3">
               <Button variant="secondary" onClick={closeForm} disabled={saving}>
                 Cancel
               </Button>
               <Button type="submit" loading={saving}>
-                {editingId ? 'Save changes' : 'Add education'}
+                {entryForm.editKey ? 'Save changes' : 'Add education'}
               </Button>
             </div>
           </form>
@@ -312,7 +240,7 @@ export default function EducationSection() {
           <SkeletonRows rows={2} />
         </CardBody>
       ) : educationList.length === 0 ? (
-        !formVisible && (
+        !entryForm.isOpen && (
           <EmptyState
             icon={GraduationCap}
             title="No education yet"
@@ -332,34 +260,17 @@ export default function EducationSection() {
               key={edu.id}
               className="flex items-start justify-between gap-4 px-5 py-4 sm:px-6"
             >
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-stone-900">{edu.institution_name}</p>
-                {subtitle(edu) && (
-                  <p className="mt-0.5 text-sm text-stone-600">{subtitle(edu)}</p>
-                )}
-                <p className="mt-0.5 text-xs text-stone-500">
-                  {formatMonthYear(edu.start_date)} –{' '}
-                  {edu.end_date ? formatMonthYear(edu.end_date) : 'Present'}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={`Edit education at ${edu.institution_name}`}
-                  onClick={() => startEdit(edu)}
-                >
-                  <Pencil aria-hidden />
-                </Button>
-                <Button
-                  variant="danger-ghost"
-                  size="icon-sm"
-                  aria-label={`Delete education at ${edu.institution_name}`}
-                  onClick={() => setDeleteTarget(edu)}
-                >
-                  <Trash2 aria-hidden />
-                </Button>
-              </div>
+              <EntryRow
+                title={edu.institution_name}
+                subtitle={[edu.degree, edu.field_of_study].filter(Boolean).join(' · ') || undefined}
+                meta={`${formatMonthYear(edu.start_date)} – ${
+                  edu.end_date ? formatMonthYear(edu.end_date) : 'Present'
+                }`}
+                editLabel={`Edit education at ${edu.institution_name}`}
+                deleteLabel={`Delete education at ${edu.institution_name}`}
+                onEdit={() => startEdit(edu)}
+                onDelete={() => setDeleteTarget(edu)}
+              />
             </li>
           ))}
         </ul>
@@ -376,7 +287,6 @@ export default function EducationSection() {
             : ''
         }
         confirmText="Delete"
-        type="danger"
         loading={deleting}
       />
     </Card>

@@ -1,14 +1,9 @@
-import { Resume } from '@/lib/types/database'
+import type { TemplateProps } from '@/lib/templates'
 import { Mail, Phone, MapPin, Link as LinkIcon } from 'lucide-react'
-import { LinkedInIcon, GitHubIcon, StackOverflowIcon } from '@/components/icons/SocialIcons'
 import { renderFormattedContent } from '@/lib/utils/render-content'
+import { ContactLinks } from './shared'
 
-interface ModernTemplateProps {
-  data: Resume['generated_data']
-  settings?: Resume['generation_settings']
-}
-
-export function ModernTemplate({ data, settings }: ModernTemplateProps) {
+export function ModernTemplate({ data, settings }: TemplateProps) {
   return (
     <div className="bg-white p-8 w-full shadow-lg font-poppins" style={{ minHeight: '11in' }}>
       {/* Header Section */}
@@ -27,21 +22,7 @@ export function ModernTemplate({ data, settings }: ModernTemplateProps) {
             <MapPin className="w-4 h-4" />
             <span>{data.contact.location}</span>
           </div>
-          {data.contact.socialLinks?.linkedin && (
-            <a href={data.contact.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <LinkedInIcon className="w-4 h-4" />
-            </a>
-          )}
-          {data.contact.socialLinks?.github && (
-            <a href={data.contact.socialLinks.github} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <GitHubIcon className="w-4 h-4" />
-            </a>
-          )}
-          {data.contact.socialLinks?.stackoverflow && (
-            <a href={data.contact.socialLinks.stackoverflow} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <StackOverflowIcon className="w-4 h-4" />
-            </a>
-          )}
+          <ContactLinks links={data.contact.socialLinks} className="flex items-center gap-6" linkClassName="hover:opacity-80 transition-opacity" />
         </div>
       </header>
 
@@ -60,30 +41,20 @@ export function ModernTemplate({ data, settings }: ModernTemplateProps) {
           {data.skills.length > 0 && (
             <section>
               <h2 className="text-lg font-bold text-blue-700 mb-3 border-b-2 border-blue-200 pb-1">SKILLS</h2>
-              {typeof data.skills[0] === 'string' ? (
-                <div className="space-y-1">
-                  {(data.skills as string[]).map((skill, index) => (
-                    <div key={index} className="text-sm text-gray-700">
-                      • {skill}
+              <div className="space-y-3">
+                {data.skills.map((category, index) => (
+                  <div key={index}>
+                    <h3 className="font-semibold text-blue-600 text-sm mb-1">{category.category}</h3>
+                    <div className="space-y-1">
+                      {category.skills.map((skill, skillIndex) => (
+                        <div key={skillIndex} className="text-sm text-gray-700">
+                          • {skill}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {(data.skills as Array<{ category: string; skills: string[] }>).map((category, index) => (
-                    <div key={index}>
-                      <h3 className="font-semibold text-blue-600 text-sm mb-1">{category.category}</h3>
-                      <div className="space-y-1">
-                        {category.skills.map((skill, skillIndex) => (
-                          <div key={skillIndex} className="text-sm text-gray-700">
-                            • {skill}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                ))}
+              </div>
             </section>
           )}
 

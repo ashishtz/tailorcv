@@ -10,7 +10,7 @@ export function cn(...inputs: ClassValue[]) {
  * `new Date("2023-05")` parses as UTC midnight, which renders as the previous
  * month in negative-offset timezones - always use this for date-only values.
  */
-export function parseDateOnly(dateString: string): Date | null {
+function parseDateOnly(dateString: string): Date | null {
   const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?/.exec(dateString.trim())
   if (!m) {
     const fallback = new Date(dateString)
@@ -19,22 +19,6 @@ export function parseDateOnly(dateString: string): Date | null {
   const [, y, mo, d] = m
   const date = new Date(Number(y), Number(mo) - 1, d ? Number(d) : 1)
   return isNaN(date.getTime()) ? null : date
-}
-
-/**
- * Formats a date string into YYYY-MMM format (e.g., "2023-Oct")
- * @param dateString ISO date string or any valid date string
- * @returns Formatted date string in YYYY-MMM format, or empty string if invalid date
- */
-export function formatResumeDate(dateString: string | null): string {
-  if (!dateString) return ''
-
-  const date = parseDateOnly(dateString)
-  if (!date) return ''
-
-  const year = date.getFullYear()
-  const month = date.toLocaleString('en', { month: 'short' })
-  return `${year}-${month}`
 }
 
 /** Formats a date-only string as "Mon YYYY" (e.g., "May 2023") for display. */

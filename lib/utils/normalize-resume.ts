@@ -46,15 +46,15 @@ const asContent = (v: unknown): string | string[] => {
 
 function normalizeSkills(raw: unknown): GeneratedResumeData['skills'] {
   if (!Array.isArray(raw)) return []
-  if (raw.every((s) => typeof s === 'string')) return raw as string[]
 
   const categorized: CategorizedSkill[] = []
   for (const item of raw) {
     if (typeof item === 'string') {
-      // Mixed array: fold stray strings into an "Other" bucket
-      const other = categorized.find((c) => c.category === 'Other')
-      if (other) other.skills.push(item)
-      else categorized.push({ category: 'Other', skills: [item] })
+      // Legacy flat arrays and stray strings fold into a "Skills" bucket so
+      // every consumer sees one shape: CategorizedSkill[]
+      const bucket = categorized.find((c) => c.category === 'Skills')
+      if (bucket) bucket.skills.push(item)
+      else categorized.push({ category: 'Skills', skills: [item] })
     } else if (isRecord(item)) {
       const category = asString(item.category, 'Other')
       const skills = Array.isArray(item.skills)

@@ -5,6 +5,36 @@
 
 ---
 
+## Session 2 — 2026-07-29 (ponytail audit + full cleanup)
+
+**Branch:** `claude/deps-ui-modernize-mkz7xm`
+
+### What was done
+Repo-wide over-engineering audit (`/ponytail-audit`, 3 parallel search agents) written to **`PONYTAIL_AUDIT.md` (repo root)** — 30 ranked findings. User then asked to fix ALL of them (skipping only the PII-in-git history concern, intentional). All 30 applied via phased parallel agents; **net −3,183 lines** (+2,177/−5,360 excl. lockfile), −3 deps, −6 devDeps, −2 overrides.
+
+Highlights (see PONYTAIL_AUDIT.md "Resolution" section for the full list):
+- Deleted: supabase/backup dumps (995), Docker/nginx/Makefile/health-route stack (374), instructions.md, jest.setup.ts + config trim, creative/executive templates (439), resume.repository.ts, page-header.tsx, enhance-field.tsx, select-styles.ts, skills-data.ts, dead barrels.
+- New shared code: `components/forms/` (entry-form.tsx, entry-fields.tsx, suggest-input.tsx) deduping profile sections ↔ onboarding steps; `components/resume-templates/shared.tsx` (ContactLinks, stripScheme); `lib/use-resume.ts` hook (3 pages); `lib/prompts/shared.ts` (ATS rules).
+- Rewrites: documents-table on plain `<table>` (react-table dropped); modal.tsx on native `<dialog>`; ImportResumeModal DB writes moved into onboarding.repository (`importParsedResume`); openrouter.service on LangChain's `parseJsonMarkdown` + `.text` (128→50 lines); resume-generator 494→331 (format-config theater + dead fallbacks removed).
+- Type narrowing: `GeneratedResumeData.skills` is now `CategorizedSkill[]` only — `normalizeSkills` folds legacy flat arrays into a "Skills" bucket (trust boundary verified across every generated_data read path); all `typeof skills[0]==='string'` branches deleted.
+- **Bug fixed**: generator's `skills.join(', ')` rendered `[object Object]` for categorized skills.
+- Edit page: one `bind(key,i,field)` helper replaced 13 copies of the map-splice onChange closure; seed effect replaced with render-time state adjust (React Compiler lint-clean).
+
+### Behavior deltas (deliberate, small)
+- Legacy flat-skills rows render under a "Skills" category label now.
+- Profile Work/Education selects gained an empty option (job_type/degree save as null when cleared).
+- AddSkillsModal picks skills via chips instead of react-select multi-select.
+- JSON extraction: prose *after* a bare unfenced JSON object no longer parses (fenced/truncated handled better than before).
+
+### Verification
+`tsc` ✓ · `eslint` 0 errors 0 warnings ✓ · `jest` 2/2 ✓ · `next build` ✓ (20 routes) · npm install/audit/outdated all clean ✓.
+
+### Open / for user
+- **Rotate the OpenRouter API key** — was committed in `.env.docker` (now deleted, but in git history).
+- Docker deploy stack removed — if Docker deployment is ever wanted, recreate from git history.
+
+---
+
 ## Session 1 — 2026-07-29
 
 **Branch:** `claude/deps-ui-modernize-mkz7xm`

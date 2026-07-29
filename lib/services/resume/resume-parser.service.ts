@@ -1,11 +1,7 @@
-import {
-  createOpenRouterClient,
-  messageContentToText,
-  extractJsonObject,
-} from '../ai/openrouter.service'
+import { createOpenRouterClient, extractJsonObject } from '../ai/openrouter.service'
 import { resumeParsingPrompt } from '@/lib/prompts'
 
-export interface ParsedResumeData {
+interface ParsedResumeData {
   contact: {
     name: string
     email: string
@@ -56,5 +52,5 @@ export async function parseResumeText(resumeText: string): Promise<ParsedResumeD
     resume_text: resumeText,
   })
 
-  return extractJsonObject<ParsedResumeData>(messageContentToText(response.content))
+  return extractJsonObject<ParsedResumeData>(response.text)
 }

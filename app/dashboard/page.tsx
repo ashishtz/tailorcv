@@ -10,7 +10,6 @@ import {
   Circle,
   Layout,
 } from 'lucide-react'
-import { PageHeader } from '@/components/ui/page-header'
 import { Card, CardBody } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -58,18 +57,24 @@ export default async function DashboardPage() {
   return (
     <div className="px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl space-y-8">
-        <PageHeader
-          title={firstName ? `Welcome back, ${firstName}` : 'Welcome back'}
-          description="Generate a tailored resume for your next application."
-          actions={
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="font-display text-2xl font-bold tracking-tight text-stone-900">
+              {firstName ? `Welcome back, ${firstName}` : 'Welcome back'}
+            </h1>
+            <p className="mt-1 text-sm text-stone-500">
+              Generate a tailored resume for your next application.
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
             <Link href="/dashboard/documents?new=1">
               <Button>
                 <Plus aria-hidden />
                 New resume
               </Button>
             </Link>
-          }
-        />
+          </div>
+        </div>
 
         {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-3">

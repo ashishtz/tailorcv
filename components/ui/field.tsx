@@ -16,7 +16,7 @@ interface FieldContextValue {
 
 const FieldContext = createContext<FieldContextValue | null>(null)
 
-export function useFieldContext() {
+function useFieldContext() {
   return useContext(FieldContext)
 }
 
@@ -75,9 +75,9 @@ const controlStates = (invalid: boolean) =>
     ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
     : 'border-stone-300 focus:border-brand-500 focus:ring-brand-500/20'
 
-function useControlProps(invalid?: boolean) {
+function useControlProps() {
   const ctx = useFieldContext()
-  const isInvalid = invalid ?? ctx?.invalid ?? false
+  const isInvalid = ctx?.invalid ?? false
   return {
     id: ctx?.id,
     'aria-invalid': isInvalid || undefined,
@@ -86,13 +86,11 @@ function useControlProps(invalid?: boolean) {
   }
 }
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  invalid?: boolean
-}
+export type InputProps = React.InputHTMLAttributes<HTMLInputElement>
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, invalid, ...props }, ref) => {
-    const { isInvalid, ...wired } = useControlProps(invalid)
+  ({ className, ...props }, ref) => {
+    const { isInvalid, ...wired } = useControlProps()
     return (
       <input
         ref={ref}
@@ -105,13 +103,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 )
 Input.displayName = 'Input'
 
-export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  invalid?: boolean
-}
-
-export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, invalid, ...props }, ref) => {
-    const { isInvalid, ...wired } = useControlProps(invalid)
+export const Textarea = forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
+  ({ className, ...props }, ref) => {
+    const { isInvalid, ...wired } = useControlProps()
     return (
       <textarea
         ref={ref}
@@ -124,13 +118,9 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
 )
 Textarea.displayName = 'Textarea'
 
-export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  invalid?: boolean
-}
-
-export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, invalid, children, ...props }, ref) => {
-    const { isInvalid, ...wired } = useControlProps(invalid)
+export const Select = forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(
+  ({ className, children, ...props }, ref) => {
+    const { isInvalid, ...wired } = useControlProps()
     return (
       <select
         ref={ref}

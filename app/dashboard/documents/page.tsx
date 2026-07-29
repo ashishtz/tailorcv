@@ -6,7 +6,6 @@ import { FileText, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { GenerateResumeModal } from '@/components/documents/generate-resume-modal'
 import { DocumentsTable } from '@/components/documents/documents-table'
-import { PageHeader } from '@/components/ui/page-header'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -88,16 +87,22 @@ function DocumentsPageInner() {
   return (
     <div className="px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
-        <PageHeader
-          title="Documents"
-          description="Every resume you've generated, ready to view, edit, or export."
-          actions={
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="font-display text-2xl font-bold tracking-tight text-stone-900">
+              Documents
+            </h1>
+            <p className="mt-1 text-sm text-stone-500">
+              Every resume you&apos;ve generated, ready to view, edit, or export.
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
             <Button onClick={() => setIsModalOpen(true)}>
               <Plus aria-hidden />
               Generate resume
             </Button>
-          }
-        />
+          </div>
+        </div>
 
         {loading ? (
           <Card className="p-6">

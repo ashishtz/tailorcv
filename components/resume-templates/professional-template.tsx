@@ -1,14 +1,9 @@
 import { Mail, Phone, MapPin, Globe } from 'lucide-react'
-import { LinkedInIcon, GitHubIcon, StackOverflowIcon } from '@/components/icons/SocialIcons'
-import { Resume } from '@/lib/types/database'
+import type { TemplateProps } from '@/lib/templates'
 import { renderFormattedContent } from '@/lib/utils/render-content'
+import { ContactLinks } from './shared'
 
-interface ProfessionalTemplateProps {
-  data: Resume['generated_data']
-  settings?: Resume['generation_settings']
-}
-
-export function ProfessionalTemplate({ data, settings }: ProfessionalTemplateProps) {
+export function ProfessionalTemplate({ data, settings }: TemplateProps) {
   return (
     <div className="bg-white w-full shadow-lg font-inter" style={{ minHeight: '11in' }}>
       {/* Header Section with Sidebar */}
@@ -42,21 +37,7 @@ export function ProfessionalTemplate({ data, settings }: ProfessionalTemplatePro
                   <span className="text-sm">{data.contact.address}</span>
                 </div>
               )}
-              {data.contact.socialLinks?.linkedin && (
-                <a href={data.contact.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center text-blue-300 hover:text-white transition-colors">
-                  <LinkedInIcon className="w-4 h-4" />
-                </a>
-              )}
-              {data.contact.socialLinks?.github && (
-                <a href={data.contact.socialLinks.github} target="_blank" rel="noopener noreferrer" className="flex items-center text-blue-300 hover:text-white transition-colors">
-                  <GitHubIcon className="w-4 h-4" />
-                </a>
-              )}
-              {data.contact.socialLinks?.stackoverflow && (
-                <a href={data.contact.socialLinks.stackoverflow} target="_blank" rel="noopener noreferrer" className="flex items-center text-blue-300 hover:text-white transition-colors">
-                  <StackOverflowIcon className="w-4 h-4" />
-                </a>
-              )}
+              <ContactLinks links={data.contact.socialLinks} className="space-y-3" linkClassName="flex items-center text-blue-300 hover:text-white transition-colors" />
             </div>
           </section>
 
@@ -64,30 +45,20 @@ export function ProfessionalTemplate({ data, settings }: ProfessionalTemplatePro
           {data.skills.length > 0 && (
             <section className="mb-8">
               <h2 className="text-sm font-semibold uppercase tracking-wider text-blue-300 mb-4">Skills</h2>
-              {typeof data.skills[0] === 'string' ? (
-                <div className="flex flex-wrap gap-1">
-                  {(data.skills as string[]).map((skill, index) => (
-                    <span key={index} className="text-xs bg-slate-700 px-2 py-1 rounded-sm">
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {(data.skills as Array<{ category: string; skills: string[] }>).map((category, index) => (
-                    <div key={index}>
-                      <h3 className="text-xs font-semibold text-blue-200 mb-2 uppercase tracking-wide">{category.category}</h3>
-                      <div className="flex flex-wrap gap-1">
-                        {category.skills.map((skill, skillIndex) => (
-                          <span key={skillIndex} className="text-xs bg-slate-700 px-2 py-1 rounded-sm">
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
+              <div className="space-y-4">
+                {data.skills.map((category, index) => (
+                  <div key={index}>
+                    <h3 className="text-xs font-semibold text-blue-200 mb-2 uppercase tracking-wide">{category.category}</h3>
+                    <div className="flex flex-wrap gap-1">
+                      {category.skills.map((skill, skillIndex) => (
+                        <span key={skillIndex} className="text-xs bg-slate-700 px-2 py-1 rounded-sm">
+                          {skill}
+                        </span>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                ))}
+              </div>
             </section>
           )}
 

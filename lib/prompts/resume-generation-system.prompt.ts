@@ -40,11 +40,9 @@ Mode: {mode}
 - This mode instructions should be strictly followed.
 
 SUMMARY REQUIREMENTS:
-- Summary format: {summary_format}
-{summary_format_instructions}
+{summary_instructions}
 
 FORMATTING REQUIREMENTS:
-- Summary format: {summary_format} - {summary_format_type}
 - Skills (CATEGORIZED FORMAT):
   {skills_instructions}
   - Skills must be returned in categorized format with category names
@@ -52,8 +50,8 @@ FORMATTING REQUIREMENTS:
   - If creating new categories, use professional, industry-standard category names (e.g., "Programming Languages", "Frameworks & Libraries", "Cloud & DevOps", "Databases", "Tools & Technologies")
   - Group similar skills together under appropriate categories
   - Ensure each category contains relevant skills only
-- Work Experience format: {work_experience_format} - {work_experience_format_type}
-- Projects format: {projects_format} - {projects_format_type}
+- Work Experience format: {work_experience_instructions}
+- Projects format: {projects_instructions}
 {highlight_instructions}
 
 Return ONLY valid JSON with this exact structure:

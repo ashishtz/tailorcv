@@ -7,32 +7,11 @@ const createJestConfig = nextJest({
 
 /** @type {import('jest').Config} */
 const config = {
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
-  testEnvironment: 'jest-environment-jsdom',
+  testEnvironment: 'node',
   // Keep the build output out of jest's module scanner
   modulePathIgnorePatterns: ['<rootDir>/.next/'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
-  },
-  transformIgnorePatterns: [
-    // Transform ESM modules from node_modules
-    'node_modules/(?!(@supabase|isows|@react-aria|@internationalized|@floating-ui)/)',
-  ],
-  transform: {
-    '^.+\\.(t|j)sx?$': ['@swc/jest', {
-      jsc: {
-        parser: {
-          syntax: 'typescript',
-          tsx: true,
-          decorators: true,
-        },
-        transform: {
-          react: {
-            runtime: 'automatic',
-          },
-        },
-      },
-    }],
   },
 }
 

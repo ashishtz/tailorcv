@@ -1,13 +1,8 @@
-import { Resume } from '@/lib/types/database'
+import type { TemplateProps } from '@/lib/templates'
 import { renderFormattedContent } from '@/lib/utils/render-content'
-import { LinkedInIcon, GitHubIcon, StackOverflowIcon } from '@/components/icons/SocialIcons'
+import { ContactLinks } from './shared'
 
-interface MinimalTemplateProps {
-  data: Resume['generated_data']
-  settings?: Resume['generation_settings']
-}
-
-export function MinimalTemplate({ data, settings }: MinimalTemplateProps) {
+export function MinimalTemplate({ data, settings }: TemplateProps) {
   return (
     <div className="bg-white p-8 w-full shadow-lg font-source-sans" style={{ minHeight: '11in' }}>
       {/* Header Section */}
@@ -17,25 +12,7 @@ export function MinimalTemplate({ data, settings }: MinimalTemplateProps) {
           <p>{data.contact.email} • {data.contact.phone}</p>
           <p>{data.contact.location}</p>
           {data.contact.address && <p>{data.contact.address}</p>}
-          {(data.contact.socialLinks?.linkedin || data.contact.socialLinks?.github || data.contact.socialLinks?.stackoverflow) && (
-            <div className="flex justify-center gap-4 mt-2">
-              {data.contact.socialLinks?.linkedin && (
-                <a href={data.contact.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 transition-colors">
-                  <LinkedInIcon className="w-4 h-4" />
-                </a>
-              )}
-              {data.contact.socialLinks?.github && (
-                <a href={data.contact.socialLinks.github} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 transition-colors">
-                  <GitHubIcon className="w-4 h-4" />
-                </a>
-              )}
-              {data.contact.socialLinks?.stackoverflow && (
-                <a href={data.contact.socialLinks.stackoverflow} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700 transition-colors">
-                  <StackOverflowIcon className="w-4 h-4" />
-                </a>
-              )}
-            </div>
-          )}
+          <ContactLinks links={data.contact.socialLinks} className="flex justify-center gap-4 mt-2" linkClassName="text-gray-500 hover:text-gray-700 transition-colors" />
         </div>
       </header>
 
@@ -124,22 +101,16 @@ export function MinimalTemplate({ data, settings }: MinimalTemplateProps) {
         <section>
           <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-widest">Skills</h2>
           <div className="border-l-2 border-gray-200 pl-4">
-            {typeof data.skills[0] === 'string' ? (
-              <p className="text-gray-700 leading-relaxed">
-                {(data.skills as string[]).join(' • ')}
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {(data.skills as Array<{ category: string; skills: string[] }>).map((category, index) => (
-                  <div key={index}>
-                    <h3 className="font-semibold text-gray-800 mb-2">{category.category}</h3>
-                    <p className="text-gray-700 leading-relaxed">
-                      {category.skills.join(' • ')}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="space-y-4">
+              {data.skills.map((category, index) => (
+                <div key={index}>
+                  <h3 className="font-semibold text-gray-800 mb-2">{category.category}</h3>
+                  <p className="text-gray-700 leading-relaxed">
+                    {category.skills.join(' • ')}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}

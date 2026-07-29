@@ -2,14 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Edit2, ExternalLink, Plus, Rocket, Trash2 } from 'lucide-react'
+import { ExternalLink, Plus, Rocket } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useOnboarding, type ProjectDraft } from '@/lib/contexts/onboarding-context'
-import { saveOnboardingData } from '@/lib/repositories/onboarding.repository'
+import { normalizeLink, saveOnboardingData } from '@/lib/repositories/onboarding.repository'
 import { StepShell, StepSkeleton } from '@/components/onboarding/step-shell'
-import { EnhanceField } from '@/components/onboarding/enhance-field'
+import { AddEntryButton, EntryRow, useEntryForm } from '@/components/forms/entry-form'
+import { ProjectFields, type FieldErrors } from '@/components/forms/entry-fields'
 import { Card, CardBody } from '@/components/ui/card'
-import { Field, Input } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useToast } from '@/components/ui/toast'
@@ -19,16 +19,6 @@ const EMPTY_FORM: ProjectDraft = {
   role_title: '',
   description: '',
   link: '',
-}
-
-type ProjectErrors = Partial<Record<'project_name', string>>
-
-/** Prepends https:// when the link has no scheme, so stored links always open. */
-function normalizeLink(raw: string): string {
-  const value = raw.trim()
-  if (!value) return ''
-  if (/^https?:\/\//i.test(value)) return value
-  return `https://${value}`
 }
 
 function formatList(items: string[]): string {
@@ -50,44 +40,35 @@ function ProjectsList() {
   const supabase = createClient()
   const entries = data.projects
 
-  const [form, setForm] = useState<ProjectDraft | null>(null)
-  const [editIndex, setEditIndex] = useState<number | null>(null)
-  const [errors, setErrors] = useState<ProjectErrors>({})
+  const entryForm = useEntryForm<ProjectDraft, number>()
+  const [errors, setErrors] = useState<FieldErrors<ProjectDraft>>({})
   const [footerNote, setFooterNote] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const formOpen = form !== null
-
-  const setFormField = <K extends keyof ProjectDraft>(key: K, value: ProjectDraft[K]) => {
-    setForm((current) => (current ? { ...current, [key]: value } : current))
-  }
-
   const openAdd = () => {
-    setForm({ ...EMPTY_FORM })
-    setEditIndex(null)
     setErrors({})
     setFooterNote('')
+    entryForm.open({ ...EMPTY_FORM })
   }
 
   const openEdit = (index: number) => {
-    setForm({ ...entries[index] })
-    setEditIndex(index)
     setErrors({})
     setFooterNote('')
+    entryForm.open({ ...entries[index] }, index)
   }
 
   const closeForm = () => {
-    setForm(null)
-    setEditIndex(null)
     setErrors({})
     setFooterNote('')
+    entryForm.close()
   }
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const form = entryForm.form
     if (!form) return
 
-    const nextErrors: ProjectErrors = {}
+    const nextErrors: FieldErrors<ProjectDraft> = {}
     if (!form.project_name.trim()) nextErrors.project_name = 'Project name is required.'
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) return
@@ -98,6 +79,7 @@ function ProjectsList() {
       description: form.description.trim(),
       link: normalizeLink(form.link),
     }
+    const editIndex = entryForm.editKey
     updateData({
       projects:
         editIndex === null
@@ -112,7 +94,7 @@ function ProjectsList() {
   }
 
   const handleFinish = async () => {
-    if (formOpen) {
+    if (entryForm.isOpen) {
       setFooterNote('Add or cancel the project you are working on before finishing.')
       return
     }
@@ -165,43 +147,24 @@ function ProjectsList() {
               <li key={`${entry.project_name}-${index}`}>
                 <Card>
                   <CardBody className="flex items-start justify-between gap-4 py-4">
-                    <div className="min-w-0">
-                      <p className="font-medium text-stone-900">{entry.project_name}</p>
-                      {entry.role_title && (
-                        <p className="text-sm text-stone-600">{entry.role_title}</p>
-                      )}
+                    <EntryRow
+                      title={entry.project_name}
+                      subtitle={entry.role_title || undefined}
+                      description={entry.description || undefined}
+                      clampDescription
+                      editLabel={`Edit project ${entry.project_name}`}
+                      deleteLabel={`Remove project ${entry.project_name}`}
+                      onEdit={() => openEdit(index)}
+                      onDelete={() => removeEntry(index)}
+                      disabled={entryForm.isOpen || saving}
+                    >
                       {entry.link && (
                         <p className="mt-1 flex items-center gap-1 text-xs text-stone-500">
                           <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
                           <span className="truncate">{entry.link}</span>
                         </p>
                       )}
-                      {entry.description && (
-                        <p className="mt-2 line-clamp-2 text-sm text-stone-600">
-                          {entry.description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => openEdit(index)}
-                        disabled={formOpen || saving}
-                        aria-label={`Edit project ${entry.project_name}`}
-                      >
-                        <Edit2 aria-hidden />
-                      </Button>
-                      <Button
-                        variant="danger-ghost"
-                        size="icon-sm"
-                        onClick={() => removeEntry(index)}
-                        disabled={formOpen || saving}
-                        aria-label={`Remove project ${entry.project_name}`}
-                      >
-                        <Trash2 aria-hidden />
-                      </Button>
-                    </div>
+                    </EntryRow>
                   </CardBody>
                 </Card>
               </li>
@@ -209,52 +172,20 @@ function ProjectsList() {
           </ul>
         )}
 
-        {form ? (
+        {entryForm.form ? (
           <Card>
             <CardBody>
               <h2 className="text-sm font-semibold text-stone-900">
-                {editIndex === null ? 'Add project' : 'Edit project'}
+                {entryForm.editKey === null ? 'Add project' : 'Edit project'}
               </h2>
               <form onSubmit={handleSubmit} className="mt-4 space-y-5">
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <Field label="Project name" required error={errors.project_name}>
-                    <Input
-                      value={form.project_name}
-                      onChange={(event) => setFormField('project_name', event.target.value)}
-                      placeholder="Open source dashboard"
-                    />
-                  </Field>
-                  <Field label="Your role">
-                    <Input
-                      value={form.role_title}
-                      onChange={(event) => setFormField('role_title', event.target.value)}
-                      placeholder="Maintainer"
-                    />
-                  </Field>
-                </div>
-                <Field label="Link" hint="We add https:// for you if it is missing.">
-                  <Input
-                    inputMode="url"
-                    value={form.link}
-                    onChange={(event) => setFormField('link', event.target.value)}
-                    placeholder="github.com/you/project"
-                  />
-                </Field>
-                <EnhanceField
-                  label="Description"
-                  value={form.description}
-                  onChange={(description) => setFormField('description', description)}
-                  rows={4}
-                  enhanceType="project"
-                  placeholder="What does it do, and what did you build it with?"
-                  hint="Write about 10 words and an AI enhance button appears."
-                />
+                <ProjectFields form={entryForm.form} onChange={entryForm.patch} errors={errors} />
                 <div className="flex items-center justify-end gap-3">
                   <Button variant="ghost" onClick={closeForm}>
                     Cancel
                   </Button>
                   <Button type="submit" variant="secondary">
-                    {editIndex === null ? 'Add project' : 'Save changes'}
+                    {entryForm.editKey === null ? 'Add project' : 'Save changes'}
                   </Button>
                 </div>
               </form>
@@ -276,14 +207,7 @@ function ProjectsList() {
             />
           </Card>
         ) : (
-          <button
-            type="button"
-            onClick={openAdd}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 bg-white px-4 py-3.5 text-sm font-medium text-stone-600 transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
-          >
-            <Plus className="h-4 w-4" aria-hidden />
-            Add another project
-          </button>
+          <AddEntryButton label="Add another project" onClick={openAdd} />
         )}
       </div>
     </StepShell>

@@ -1,13 +1,9 @@
-import { Resume } from '@/lib/types/database'
+import type { TemplateProps } from '@/lib/templates'
 import { renderFormattedContent } from '@/lib/utils/render-content'
 import { Fragment } from 'react'
+import { ContactLinks, stripScheme } from './shared'
 
-interface JakeTemplateProps {
-  data: Resume['generated_data']
-  settings?: Resume['generation_settings']
-}
-
-export function JakeTemplate({ data, settings }: JakeTemplateProps) {
+export function JakeTemplate({ data, settings }: TemplateProps) {
   return (
     <div className="bg-white px-10 py-8 w-full font-libre-baskerville" style={{ minHeight: '11in' }}>
       {/* Header Section - Centered with small caps name */}
@@ -25,30 +21,7 @@ export function JakeTemplate({ data, settings }: JakeTemplateProps) {
                 <span className="underline">{data.contact.email}</span>
               </>
             )}
-            {data.contact.socialLinks?.linkedin && (
-              <>
-                {' | '}
-                <span className="underline">
-                  {data.contact.socialLinks.linkedin.replace(/^https?:\/\/(www\.)?/, '')}
-                </span>
-              </>
-            )}
-            {data.contact.socialLinks?.github && (
-              <>
-                {' | '}
-                <span className="underline">
-                  {data.contact.socialLinks.github.replace(/^https?:\/\/(www\.)?/, '')}
-                </span>
-              </>
-            )}
-            {data.contact.socialLinks?.stackoverflow && (
-              <>
-                {' | '}
-                <span className="underline">
-                  {data.contact.socialLinks.stackoverflow.replace(/^https?:\/\/(www\.)?/, '')}
-                </span>
-              </>
-            )}
+            <ContactLinks links={data.contact.socialLinks} variant="inline" linkClassName="underline" />
           </p>
         </div>
       </header>
@@ -122,7 +95,7 @@ export function JakeTemplate({ data, settings }: JakeTemplateProps) {
                   </div>
                   {project.link && (
                     <span className="text-sm text-gray-600 underline">
-                      {project.link.replace(/^https?:\/\/(www\.)?/, '')}
+                      {stripScheme(project.link)}
                     </span>
                   )}
                 </div>
@@ -141,25 +114,18 @@ export function JakeTemplate({ data, settings }: JakeTemplateProps) {
           <h2 className="text-lg font-bold text-gray-900 border-b border-gray-900 pb-0.5 mb-2" style={{ fontVariant: 'small-caps' }}>
             Technical Skills
           </h2>
-          {typeof data.skills[0] === 'string' ? (
-            <p className="text-sm text-gray-800">
-              <span className="font-bold">Skills: </span>
-              {(data.skills as string[]).join(', ')}
-            </p>
-          ) : (
-            <div className="space-y-1">
-              {(data.skills as Array<{ category: string; skills: string[] }>).map((category, index) => (
-                <p key={index} className="text-sm text-gray-800">
-                  <span className="font-bold">{category.category}: </span>
-                  {category.skills.map((skill, skillIndex) => (
-                    <Fragment key={skillIndex}>
-                      {skill}{skillIndex < category.skills.length - 1 ? ', ' : ''}
-                    </Fragment>
-                  ))}
-                </p>
-              ))}
-            </div>
-          )}
+          <div className="space-y-1">
+            {data.skills.map((category, index) => (
+              <p key={index} className="text-sm text-gray-800">
+                <span className="font-bold">{category.category}: </span>
+                {category.skills.map((skill, skillIndex) => (
+                  <Fragment key={skillIndex}>
+                    {skill}{skillIndex < category.skills.length - 1 ? ', ' : ''}
+                  </Fragment>
+                ))}
+              </p>
+            ))}
+          </div>
         </section>
       )}
 

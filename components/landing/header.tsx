@@ -12,6 +12,38 @@ const NAV_ITEMS = [
   { label: 'Templates', href: '#templates' },
 ]
 
+function NavLinks({ className, onClick }: { className: string; onClick?: () => void }) {
+  return (
+    <>
+      {NAV_ITEMS.map((item) => (
+        <a key={item.href} href={item.href} onClick={onClick} className={className}>
+          {item.label}
+        </a>
+      ))}
+    </>
+  )
+}
+
+function AuthButtons({ isAuthenticated, mobile }: { isAuthenticated: boolean; mobile?: boolean }) {
+  const width = mobile ? 'w-full' : undefined
+  return isAuthenticated ? (
+    <Link href="/dashboard">
+      <Button className={width}>Go to dashboard</Button>
+    </Link>
+  ) : (
+    <>
+      <Link href="/auth/login">
+        <Button variant={mobile ? 'secondary' : 'ghost'} className={width}>
+          Sign in
+        </Button>
+      </Link>
+      <Link href="/auth/register">
+        <Button className={width}>Get started</Button>
+      </Link>
+    </>
+  )
+}
+
 interface LandingHeaderProps {
   isAuthenticated: boolean
 }
@@ -26,32 +58,11 @@ export function LandingHeader({ isAuthenticated }: LandingHeaderProps) {
 
         {/* Desktop nav */}
         <div className="hidden items-center gap-8 md:flex">
-          {NAV_ITEMS.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="text-sm font-medium text-stone-600 transition-colors hover:text-stone-900"
-            >
-              {item.label}
-            </a>
-          ))}
+          <NavLinks className="text-sm font-medium text-stone-600 transition-colors hover:text-stone-900" />
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
-          {isAuthenticated ? (
-            <Link href="/dashboard">
-              <Button>Go to dashboard</Button>
-            </Link>
-          ) : (
-            <>
-              <Link href="/auth/login">
-                <Button variant="ghost">Sign in</Button>
-              </Link>
-              <Link href="/auth/register">
-                <Button>Get started</Button>
-              </Link>
-            </>
-          )}
+          <AuthButtons isAuthenticated={isAuthenticated} />
         </div>
 
         {/* Mobile toggle */}
@@ -71,33 +82,12 @@ export function LandingHeader({ isAuthenticated }: LandingHeaderProps) {
       {menuOpen && (
         <div id="mobile-nav" className="border-t border-stone-200 bg-stone-50 px-4 py-4 md:hidden">
           <div className="flex flex-col gap-1">
-            {NAV_ITEMS.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={() => setMenuOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100"
-              >
-                {item.label}
-              </a>
-            ))}
+            <NavLinks
+              onClick={() => setMenuOpen(false)}
+              className="rounded-lg px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100"
+            />
             <div className="mt-3 flex flex-col gap-2 border-t border-stone-200 pt-4">
-              {isAuthenticated ? (
-                <Link href="/dashboard">
-                  <Button className="w-full">Go to dashboard</Button>
-                </Link>
-              ) : (
-                <>
-                  <Link href="/auth/login">
-                    <Button variant="secondary" className="w-full">
-                      Sign in
-                    </Button>
-                  </Link>
-                  <Link href="/auth/register">
-                    <Button className="w-full">Get started</Button>
-                  </Link>
-                </>
-              )}
+              <AuthButtons isAuthenticated={isAuthenticated} mobile />
             </div>
           </div>
         </div>
