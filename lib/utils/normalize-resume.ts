@@ -1,7 +1,36 @@
 import type { Resume, CategorizedSkill } from '@/lib/types/database'
+import type { Database, Json } from '@/lib/types/database_types'
 
 export type GeneratedResumeData = Resume['generated_data']
 export type GenerationSettings = NonNullable<Resume['generation_settings']>
+
+type ResumeRow = Database['public']['Tables']['resumes']['Row']
+
+/**
+ * Marks a JSON-serializable domain value for a Json column write. Our domain
+ * interfaces have no index signatures, so they aren't assignable to Json even
+ * though their runtime values are plain JSON - this cast is the single,
+ * documented bridge.
+ */
+export function asJson(value: GeneratedResumeData | GenerationSettings | object): Json {
+  return value as unknown as Json
+}
+
+/** Converts a raw resumes row into the app's Resume domain type, narrowing
+ * every Json column through the normalizers. */
+export function rowToResume(row: ResumeRow): Resume {
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    job_title: row.job_title,
+    job_description: row.job_description,
+    mode: row.mode === 'free' ? 'free' : 'strict',
+    template_id: row.template_id,
+    generation_settings: normalizeSettings(row.generation_settings),
+    generated_data: normalizeResumeData(row.generated_data),
+    created_at: row.created_at,
+  }
+}
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v)

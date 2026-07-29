@@ -31,18 +31,20 @@
   `npm install`/`npm ci` fresh: **0 warnings, 0 deprecations** · `npm audit`: **0 vulnerabilities** · `npm outdated`: **empty** · lint ✓ · `tsc --noEmit` ✓ · jest 4/4 ✓ · `next build` ✓ (19 routes, Turbopack).
   Key moves: Tailwind v4 (CSS-first, official tool), Next 16.2.12 (`middleware.ts`→`proxy.ts`, `next lint`→eslint CLI, no `--turbopack` flag), React 19.2.8, LangChain 1.x, @supabase/ssr 0.12.4, jsPDF 4, html2canvas→**html2canvas-pro** (oklch support), lucide 1.27, ESLint 10 with **lean flat config** (@next/eslint-plugin-next + typescript-eslint + react-hooks v7 — replaced eslint-config-next, see D-002), TS = `npm:@typescript/typescript6@6.0.2` alias (see D-003), jest 30.4 + jsdom 30 override, jest.config.ts→.mjs (ts-node dropped), `typecheck` script added, removed `ignoreBuildErrors`, tsbuildinfo untracked. Overrides documented in D-004. React-compiler lint errors fixed properly (fetch/setState split, module-scope canvas painters, derived state).
 
+- **Frontend audit COMPLETE** (2026-07-29): two exhaustive code audits + live browser walkthrough; findings in `FRONTEND_AUDIT.md`. Root cause of broken CRUD found: missing DB grants (42501 on every request) → fixed by migration.
+- **UI modernization + bug-fix rebuild COMPLETE** (2026-07-29): entire app rebuilt on the Atelier design system (`DESIGN_SYSTEM.md`); every 🔴 BROKEN and major 🟠 BUG item in FRONTEND_AUDIT.md fixed. E2E-verified in the browser against local Supabase: registration → full onboarding (data verified row-by-row in psql) → profile CRUD → REAL AI generation via OpenRouter → template render → **PDF download**. Typed Supabase clients (`Database` generics) with boundary converters (`rowToResume`/`asJson`); legacy theme tokens fully removed. Final matrix: `tsc` ✓ `eslint` ✓ (0 errors 0 warnings) `jest` 4/4 ✓ `next build` 22 routes ✓ npm install/audit/outdated all clean ✓.
+
 ## 🔄 In Progress
 
-- Frontend phase starting: audit broken UI/CRUD, then design system + modernization.
+- Nothing — awaiting next task from the user.
 
 ## 📋 Backlog (ordered)
 
-1. Frontend audit: run app (with local Supabase via CLI), walk every route, catalog broken UI/CRUD/UX into `FRONTEND_AUDIT.md`.
-2. Define new design system (branding, tokens, guidelines) → `DESIGN_SYSTEM.md`.
-3. Rebuild/modernize UI per design system; fix all CRUD bugs.
-4. Final report to user.
-5. (Deferred) Revisit TypeScript 7 + real `typescript` package when Next 16.3 stable ships `experimental.useTypeScriptCli` AND typescript-eslint supports TS7 peers.
-6. (Flag to user) `.env.docker` contains a real-looking OpenRouter API key committed to git — recommend rotating it and moving to untracked env.
+1. (Deferred) Revisit TypeScript 7 + real `typescript` package when Next 16.3 stable ships `experimental.useTypeScriptCli` AND typescript-eslint supports TS7 peers.
+2. (Flag to user — SECURITY) `.env.docker` contains a real OpenRouter API key committed to git history — rotate it and move to untracked env.
+3. (Nice-to-have) Test coverage is thin (one utils suite); add component/API tests for the rebuilt flows.
+4. (Nice-to-have) PDF export is raster (html2canvas image); a text-based PDF (e.g. react-pdf or print-to-PDF flow) would give selectable/ATS-parseable output and smaller files.
+5. (Nice-to-have) `imported_resumes` rows accumulate per import; no UI lists them — either surface import history or prune old rows.
 
 ## ⛔ Known Constraints / Gotchas
 

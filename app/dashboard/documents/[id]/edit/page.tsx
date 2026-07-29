@@ -13,8 +13,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useToast } from '@/components/ui/toast'
 import {
+  asJson,
   normalizeResumeData,
   normalizeSettings,
+  rowToResume,
   type GeneratedResumeData,
   type GenerationSettings,
 } from '@/lib/utils/normalize-resume'
@@ -231,7 +233,7 @@ export default function ResumeEditPage() {
         console.error('Error fetching resume:', error)
         return null
       }
-      return row
+      return row ? rowToResume(row) : null
     } catch (error) {
       console.error('Error fetching resume:', error)
       return null
@@ -277,7 +279,7 @@ export default function ResumeEditPage() {
         .from('resumes')
         .update({
           job_title: jobTitle.trim(),
-          generated_data: data,
+          generated_data: asJson(data),
         })
         .eq('id', resumeId)
         .eq('user_id', user.id)

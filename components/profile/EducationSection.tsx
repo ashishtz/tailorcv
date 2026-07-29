@@ -146,11 +146,17 @@ export default function EducationSection() {
 
     // Explicit payload: month values converted to DATE-safe strings, empty
     // strings to null - never spread raw form state into the table.
+    const startDate = monthInputToDate(form.start_date)
+    if (!startDate) {
+      setSaving(false)
+      setDateError('A start date is required.')
+      return
+    }
     const payload = {
       institution_name: form.institution_name.trim(),
       degree: form.degree,
       field_of_study: form.field_of_study.trim() || null,
-      start_date: monthInputToDate(form.start_date),
+      start_date: startDate,
       end_date: monthInputToDate(form.end_date),
     }
 

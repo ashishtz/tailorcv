@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { parseResumeText } from '@/lib/services/resume'
+import { asJson } from '@/lib/utils/normalize-resume'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     const { error: insertError } = await supabase.from('imported_resumes').insert({
       user_id: user.id,
       name: importName,
-      content: parsedData,
+      content: asJson(parsedData),
     })
 
     if (insertError) {

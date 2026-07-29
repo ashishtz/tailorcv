@@ -15,7 +15,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Card } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
 import { getTemplateDef, RESUME_TEMPLATES, RESUME_PAGE_WIDTH_PX } from '@/lib/templates'
-import { normalizeResumeData, normalizeSettings } from '@/lib/utils/normalize-resume'
+import { normalizeResumeData, normalizeSettings, rowToResume } from '@/lib/utils/normalize-resume'
 
 export default function ResumeViewPage() {
   const params = useParams<{ id: string }>()
@@ -44,7 +44,7 @@ export default function ResumeViewPage() {
         console.error('Error fetching resume:', error)
         return 'error'
       }
-      return data
+      return data ? rowToResume(data) : null
     } catch (error) {
       console.error('Error fetching resume:', error)
       return 'error'

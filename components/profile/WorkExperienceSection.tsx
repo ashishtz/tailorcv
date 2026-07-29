@@ -151,12 +151,18 @@ export default function WorkExperienceSection() {
 
     // Explicit payload: month values converted to DATE-safe strings, empty
     // strings to null - never spread raw form state into the table.
+    const startDate = monthInputToDate(form.start_date)
+    if (!startDate) {
+      setSaving(false)
+      setDateError('A start date is required.')
+      return
+    }
     const payload = {
       company_name: form.company_name.trim(),
       position_title: form.position_title.trim(),
       location: form.location.trim() || null,
       job_type: form.job_type,
-      start_date: monthInputToDate(form.start_date),
+      start_date: startDate,
       end_date: form.is_current ? null : monthInputToDate(form.end_date),
       is_current: form.is_current,
       description: form.description.trim() || null,

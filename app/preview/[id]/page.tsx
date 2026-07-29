@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Resume } from '@/lib/types/database'
 import { Button } from '@/components/ui/button'
 import { getTemplateDef, RESUME_PAGE_WIDTH_PX } from '@/lib/templates'
-import { normalizeResumeData, normalizeSettings } from '@/lib/utils/normalize-resume'
+import { normalizeResumeData, normalizeSettings, rowToResume } from '@/lib/utils/normalize-resume'
 
 function PreviewContent() {
   const params = useParams<{ id: string }>()
@@ -36,7 +36,7 @@ function PreviewContent() {
         console.error('Error fetching resume:', error)
         return null
       }
-      return data
+      return data ? rowToResume(data) : null
     } catch (error) {
       console.error('Error fetching resume:', error)
       return null

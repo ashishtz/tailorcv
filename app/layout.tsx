@@ -36,7 +36,7 @@ const libreBaskerville = Libre_Baskerville({
   weight: ["400", "700"],
 });
 
-// LEGACY: still referenced by not-yet-rebuilt screens
+// Template font (Modern/Creative resume templates)
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],

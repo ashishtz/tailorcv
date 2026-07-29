@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { SkeletonRows } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
 import { Resume } from '@/lib/types/database'
+import { rowToResume } from '@/lib/utils/normalize-resume'
 
 function DocumentsPageInner() {
   const searchParams = useSearchParams()
@@ -41,7 +42,7 @@ function DocumentsPageInner() {
         console.error('Error fetching resumes:', error)
         return null
       }
-      return data ?? []
+      return (data ?? []).map(rowToResume)
     } catch (error) {
       console.error('Error fetching resumes:', error)
       return null

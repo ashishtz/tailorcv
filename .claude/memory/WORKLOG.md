@@ -83,6 +83,15 @@
 - ✅ E2E verified with REAL OpenRouter generation (key from .env.docker): generated resume rendered + PDF downloaded. Seed data SQL in scratchpad.
 - 🔄 Two subagents rebuilding in parallel: profile page + sections (incl. import flow apply + EnhanceTextarea) and onboarding flow (persistence, categories, month→DATE, completion flag). Review + verify + commit when done.
 
-### Next
-- Review agent output, browser-verify profile + onboarding, fix issues, commit.
-- Cleanup phase: legacy tokens/utilities out of globals.css, typed Supabase clients (Database generics), remove poppins once unused, final full verification (lint/tsc/tests/build), memory finalize, report.
+### Session completion (final entries)
+- Profile + onboarding agent rebuilds landed and were browser-verified E2E: fresh user registered → onboarding all 5 steps → rows verified in psql (month→DATE conversion, is_current NULL end, categorized skill, onboarding_completed=true) → profile page renders/mutates everything with toasts.
+- Real AI generation E2E-verified (OpenRouter key from .env.docker): generate modal → 30s generation → normalized storage → Modern template render → PDF download worked (switched capture to JPEG, ~10x smaller).
+- Cleanup: ALL legacy tokens/utilities/keyframes removed from globals.css (poppins reclassified as template font); base element styling reduced to checkbox/radio accents (kit components own all control styling).
+- Typed Supabase clients enabled (`createBrowserClient<Database>` / `createServerClient<Database>`); Json↔domain boundaries handled via `rowToResume()` + `asJson()` in `lib/utils/normalize-resume.ts`; required-date guards added in Work/Education forms.
+- jest haste warning silenced (modulePathIgnorePatterns .next). Final verification matrix all green: tsc 0, eslint 0/0, jest 4/4, next build 22 routes, npm install/ci 0 warnings, audit 0 vulns, outdated empty.
+
+### How to run locally (for future sessions)
+1. `dockerd` needs manual start in this sandbox: `(dockerd &)`, wait for `docker info`.
+2. `npx supabase start -x realtime -x storage-api -x imgproxy -x studio -x logflare -x vector -x edge-runtime -x mailpit -x supavisor` (full stack hits the sandbox's 4096-ulimit cap).
+3. `.env.local`: NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321, the standard local demo ANON_KEY (printed by supabase start), OPENROUTER_API_KEY as needed.
+4. `npm run dev`; Playwright E2E scripts live in the session scratchpad (pw/), chromium at /opt/pw-browsers/chromium.
