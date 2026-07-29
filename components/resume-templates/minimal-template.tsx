@@ -33,7 +33,7 @@ export function MinimalTemplate({ data, settings }: TemplateProps) {
           <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-widest">Experience</h2>
           <div className="space-y-6">
             {data.workExperience.map((exp, index) => (
-              <div key={index} className="border-l-2 border-gray-200 pl-4">
+              <div key={index} className="break-inside-avoid border-l-2 border-gray-200 pl-4">
                 <div className="flex justify-between items-baseline mb-1">
                   <h3 className="text-lg font-bold text-gray-900">{exp.position}</h3>
                   <span className="text-sm text-gray-500 font-medium">{exp.duration}</span>
@@ -54,7 +54,7 @@ export function MinimalTemplate({ data, settings }: TemplateProps) {
           <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-widest">Education</h2>
           <div className="space-y-3">
             {data.education.map((edu, index) => (
-              <div key={index} className="border-l-2 border-gray-200 pl-4">
+              <div key={index} className="break-inside-avoid border-l-2 border-gray-200 pl-4">
                 <div className="flex justify-between items-baseline">
                   <div>
                     <h3 className="text-lg font-medium text-gray-900">{edu.degree}</h3>
@@ -75,7 +75,7 @@ export function MinimalTemplate({ data, settings }: TemplateProps) {
           <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-widest">Projects</h2>
           <div className="space-y-4">
             {data.projects.map((project, index) => (
-              <div key={index} className="border-l-2 border-gray-200 pl-4">
+              <div key={index} className="break-inside-avoid border-l-2 border-gray-200 pl-4">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-lg font-bold text-gray-900">{project.name}</h3>
@@ -103,7 +103,7 @@ export function MinimalTemplate({ data, settings }: TemplateProps) {
           <div className="border-l-2 border-gray-200 pl-4">
             <div className="space-y-4">
               {data.skills.map((category, index) => (
-                <div key={index}>
+                <div key={index} className="break-inside-avoid">
                   <h3 className="font-semibold text-gray-800 mb-2">{category.category}</h3>
                   <p className="text-gray-700 leading-relaxed">
                     {category.skills.join(' • ')}

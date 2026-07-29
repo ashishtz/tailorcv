@@ -43,7 +43,7 @@ export function ModernTemplate({ data, settings }: TemplateProps) {
               <h2 className="text-lg font-bold text-blue-700 mb-3 border-b-2 border-blue-200 pb-1">SKILLS</h2>
               <div className="space-y-3">
                 {data.skills.map((category, index) => (
-                  <div key={index}>
+                  <div key={index} className="break-inside-avoid">
                     <h3 className="font-semibold text-blue-600 text-sm mb-1">{category.category}</h3>
                     <div className="space-y-1">
                       {category.skills.map((skill, skillIndex) => (
@@ -64,7 +64,7 @@ export function ModernTemplate({ data, settings }: TemplateProps) {
               <h2 className="text-lg font-bold text-blue-700 mb-3 border-b-2 border-blue-200 pb-1">EDUCATION</h2>
               <div className="space-y-3">
                 {data.education.map((edu, index) => (
-                  <div key={index}>
+                  <div key={index} className="break-inside-avoid">
                     <h3 className="font-semibold text-gray-800 text-sm">{edu.institution}</h3>
                     <p className="text-xs text-gray-600">{edu.degree}</p>
                     <p className="text-xs text-gray-600">{edu.field}</p>
@@ -84,7 +84,7 @@ export function ModernTemplate({ data, settings }: TemplateProps) {
               <h2 className="text-lg font-bold text-blue-700 mb-3 border-b-2 border-blue-200 pb-1">EXPERIENCE</h2>
               <div className="space-y-4">
                 {data.workExperience.map((exp, index) => (
-                  <div key={index}>
+                  <div key={index} className="break-inside-avoid">
                     <div className="flex justify-between items-start mb-1">
                       <div>
                         <h3 className="font-bold text-gray-800 text-lg">{exp.position}</h3>
@@ -107,7 +107,7 @@ export function ModernTemplate({ data, settings }: TemplateProps) {
               <h2 className="text-lg font-bold text-blue-700 mb-3 border-b-2 border-blue-200 pb-1">PROJECTS</h2>
               <div className="space-y-3">
                 {data.projects.map((project, index) => (
-                  <div key={index}>
+                  <div key={index} className="break-inside-avoid">
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="font-bold text-gray-800 text-lg">{project.name}</h3>

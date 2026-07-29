@@ -65,6 +65,17 @@ export async function POST(request: NextRequest) {
       console.error('Error storing parsed resume:', insertError)
       // The parse itself succeeded - return the data anyway so the client
       // can still apply it to the profile.
+    } else {
+      // Nothing lists these yet - bound growth to the 5 most recent per user.
+      const { data: stale } = await supabase
+        .from('imported_resumes')
+        .select('id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .range(5, 1000)
+      if (stale?.length) {
+        await supabase.from('imported_resumes').delete().in('id', stale.map((row) => row.id))
+      }
     }
 
     return NextResponse.json({ success: true, data: parsedData })

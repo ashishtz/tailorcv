@@ -34,7 +34,7 @@ export function JakeTemplate({ data, settings }: TemplateProps) {
           </h2>
           <div className="space-y-2">
             {data.education.map((edu, index) => (
-              <div key={index}>
+              <div key={index} className="break-inside-avoid">
                 <div className="flex justify-between items-start">
                   <span className="font-bold text-gray-900">{edu.institution}</span>
                   <span className="text-sm text-gray-800 text-right">{edu.duration}</span>
@@ -58,7 +58,7 @@ export function JakeTemplate({ data, settings }: TemplateProps) {
           </h2>
           <div className="space-y-3">
             {data.workExperience.map((exp, index) => (
-              <div key={index}>
+              <div key={index} className="break-inside-avoid">
                 <div className="flex justify-between items-start">
                   <span className="font-bold text-gray-900">{exp.position}</span>
                   <span className="text-sm text-gray-800">{exp.duration}</span>
@@ -85,7 +85,7 @@ export function JakeTemplate({ data, settings }: TemplateProps) {
           </h2>
           <div className="space-y-3">
             {data.projects.map((project, index) => (
-              <div key={index}>
+              <div key={index} className="break-inside-avoid">
                 <div className="flex justify-between items-start">
                   <div>
                     <span className="font-bold text-gray-900">{project.name}</span>

@@ -153,4 +153,8 @@
     margin: 0;
     padding: 0;
   }
+  .resume-container h2,
+  .resume-container h3 {
+    break-after: avoid;
+  }
 }

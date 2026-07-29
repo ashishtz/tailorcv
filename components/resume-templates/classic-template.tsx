@@ -36,7 +36,7 @@ export function ClassicTemplate({ data, settings }: TemplateProps) {
           <h2 className="text-xl font-bold text-gray-800 mb-3 uppercase tracking-wide">Skills</h2>
           <div className="space-y-3">
             {data.skills.map((category, index) => (
-              <div key={index}>
+              <div key={index} className="break-inside-avoid">
                 <h3 className="font-semibold mb-2 text-base">{category.category}:{' '}
                   <span className="text-sm font-medium">
                   {category.skills.map((skill, skillIndex) => (
@@ -58,7 +58,7 @@ export function ClassicTemplate({ data, settings }: TemplateProps) {
           <h2 className="text-xl font-bold text-gray-800 mb-3 uppercase tracking-wide">Work Experience</h2>
           <div className="space-y-4">
             {data.workExperience.map((exp, index) => (
-              <div key={index}>
+              <div key={index} className="break-inside-avoid">
                 <div className="flex justify-between items-start mb-1">
                   <div>
                     <h3 className="font-bold text-gray-900 text-lg">{exp.position}</h3>
@@ -84,7 +84,7 @@ export function ClassicTemplate({ data, settings }: TemplateProps) {
           <h2 className="text-xl font-bold text-gray-800 mb-3 uppercase tracking-wide">Projects</h2>
           <div className="space-y-3">
             {data.projects.map((project, index) => (
-              <div key={index}>
+              <div key={index} className="break-inside-avoid">
                 <h3 className="font-bold text-gray-900 text-lg">{project.name}</h3>
                 {project.role && <p className="text-gray-700 text-sm font-semibold">{project.role}</p>}
                 {project.link && (
@@ -107,7 +107,7 @@ export function ClassicTemplate({ data, settings }: TemplateProps) {
           <h2 className="text-xl font-bold text-gray-800 mb-3 uppercase tracking-wide">Education</h2>
           <div className="space-y-3">
             {data.education.map((edu, index) => (
-              <div key={index}>
+              <div key={index} className="break-inside-avoid">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-semibold text-gray-900">{edu.institution}</h3>

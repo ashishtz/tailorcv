@@ -47,7 +47,7 @@ export function ProfessionalTemplate({ data, settings }: TemplateProps) {
               <h2 className="text-sm font-semibold uppercase tracking-wider text-blue-300 mb-4">Skills</h2>
               <div className="space-y-4">
                 {data.skills.map((category, index) => (
-                  <div key={index}>
+                  <div key={index} className="break-inside-avoid">
                     <h3 className="text-xs font-semibold text-blue-200 mb-2 uppercase tracking-wide">{category.category}</h3>
                     <div className="flex flex-wrap gap-1">
                       {category.skills.map((skill, skillIndex) => (
@@ -68,7 +68,7 @@ export function ProfessionalTemplate({ data, settings }: TemplateProps) {
               <h2 className="text-sm font-semibold uppercase tracking-wider text-blue-300 mb-4">Education</h2>
               <div className="space-y-4">
                 {data.education.map((edu, index) => (
-                  <div key={index}>
+                  <div key={index} className="break-inside-avoid">
                     <h3 className="font-semibold text-sm">{edu.degree}</h3>
                     <p className="text-xs text-slate-300 mb-1">{edu.institution}</p>
                     <p className="text-xs text-slate-300">{edu.field}</p>
@@ -100,7 +100,7 @@ export function ProfessionalTemplate({ data, settings }: TemplateProps) {
               <div className="w-16 h-0.5 bg-blue-400 mb-4"></div>
               <div className="space-y-6">
                 {data.workExperience.map((exp, index) => (
-                  <div key={index} className="relative pl-6">
+                  <div key={index} className="break-inside-avoid relative pl-6">
                     <div className="absolute left-0 top-1 w-3 h-3 bg-blue-400 rounded-full"></div>
                     <div className="absolute left-1.5 top-4 w-0.5 h-full bg-slate-200"></div>
                     <div className="flex justify-between items-start mb-2">
@@ -127,7 +127,7 @@ export function ProfessionalTemplate({ data, settings }: TemplateProps) {
               <div className="w-16 h-0.5 bg-blue-400 mb-4"></div>
               <div className="space-y-4">
                 {data.projects.map((project, index) => (
-                  <div key={index} className="border-l-4 border-blue-400 pl-4">
+                  <div key={index} className="break-inside-avoid border-l-4 border-blue-400 pl-4">
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="font-bold text-slate-800">{project.name}</h3>

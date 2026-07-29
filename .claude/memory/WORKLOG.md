@@ -5,6 +5,20 @@
 
 ---
 
+## Session 2h — 2026-07-29 (small wins + backlog batch)
+
+All applied and verified (jest 9/9, tsc, eslint, build, prod smoke):
+- **Print page breaks**: `break-inside-avoid` on all 19 entry divs across the 5 templates; `break-after: avoid` on resume h2/h3 in print CSS. Entries no longer split across PDF pages.
+- **.env.example filled** (was empty): supabase pair, OPENROUTER_API_KEY, optional OPENROUTER_MODEL / NEXT_PUBLIC_URL.
+- **CI added**: .github/workflows/ci.yml — node from .nvmrc, npm ci, lint, typecheck, test, build (dummy NEXT_PUBLIC_* env for prerender). First CI in repo.
+- **Middleware skips landing**: `$|` added to matcher lookahead — anonymous `/` visits no longer pay a Supabase auth RTT; auth gate verified intact (dashboard 307s).
+- **imported_resumes bounded**: parse-resume route prunes to 5 most recent per user after each insert (resolves backlog 5; table remains write-only debug storage).
+- **tailwindcss + @tailwindcss/postcss → devDependencies** (build-time only).
+- **Tests 6 → 9**: `stream-resume.test.ts` runs the real prompt→stream→partial-parse→normalize pipeline against `FakeListChatModel` (dynamic import after jest.mock — static import defeats mock hoisting under next/jest+SWC); `normalize-resume.test.ts` covers the trust boundary (legacy skills fold, junk coercion).
+- Backlog 11 (TS7) untouched — still blocked upstream (D-003).
+
+---
+
 ## Session 2g — 2026-07-29 (PDF export → print-to-PDF, deps deleted)
 
 User call: raster PDF (html2canvas image) not ATS-friendly; use print instead. Done:
