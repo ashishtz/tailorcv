@@ -7,6 +7,7 @@ import {
   useCallback,
   useRef,
   useMemo,
+  useEffect,
 } from 'react'
 import { createPortal } from 'react-dom'
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react'
@@ -46,7 +47,14 @@ const AUTO_DISMISS_MS = 5000
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([])
+  // Portal only renders after mount - document doesn't exist during SSR and
+  // branching on it directly causes a hydration mismatch.
+  const [mounted, setMounted] = useState(false)
   const nextId = useRef(1)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const dismiss = useCallback((id: number) => {
     setToasts((list) => list.filter((t) => t.id !== id))
@@ -74,7 +82,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      {typeof document !== 'undefined' &&
+      {mounted &&
         createPortal(
           <div
             aria-live="polite"
