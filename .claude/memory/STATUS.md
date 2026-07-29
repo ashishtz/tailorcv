@@ -5,7 +5,7 @@
 > and MUST update all three before finishing a work chunk. Keep entries detailed enough
 > that a brand-new session can resume without any other context.
 
-**Last updated:** 2026-07-29 (session 2c)
+**Last updated:** 2026-07-29 (session 2d)
 **Working branch:** `claude/deps-ui-modernize-mkz7xm` (never push to main)
 
 ---
@@ -38,7 +38,7 @@
 
 ## 🔄 In Progress
 
-- Nothing — awaiting next task from the user.
+- Live-streaming generation shipped (session 2d) but NOT yet E2E-verified against a real OpenRouter call — do a live run when env is available.
 
 ## 📋 Backlog (ordered)
 

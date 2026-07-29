@@ -1,5 +1,5 @@
 import { ChatOpenAI } from "@langchain/openai"
-import { parseJsonMarkdown } from "@langchain/core/output_parsers"
+import { parseJsonMarkdown, parsePartialJson } from "@langchain/core/output_parsers"
 
 interface OpenRouterClientOptions {
   temperature?: number
@@ -37,6 +37,15 @@ export function createOpenRouterClient(options?: OpenRouterClientOptions) {
  * Extracts and parses a JSON object from model output, tolerating markdown
  * code fences, truncated JSON, and prose before a bare object.
  */
+/**
+ * Best-effort parse of an in-flight (truncated) model response. Returns null
+ * until the accumulated text contains at least a parseable JSON prefix.
+ */
+export function extractPartialJson(raw: string): unknown {
+  const start = raw.indexOf('{')
+  return start === -1 ? null : parsePartialJson(raw.slice(start))
+}
+
 export function extractJsonObject<T = unknown>(raw: string): T {
   // parseJsonMarkdown handles fenced/truncated JSON but not prose before a
   // bare "{" - the slice retry covers that case.

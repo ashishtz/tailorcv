@@ -4,11 +4,12 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AlertCircle, Sparkles } from 'lucide-react'
 import { Resume } from '@/lib/types/database'
+import type { GeneratedResumeData } from '@/lib/utils/normalize-resume'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Textarea, Select } from '@/components/ui/field'
 import { TemplateThumbnail } from '@/components/landing/template-thumbnail'
-import { RESUME_TEMPLATES } from '@/lib/templates'
+import { RESUME_TEMPLATES, getTemplateDef, RESUME_PAGE_WIDTH_PX } from '@/lib/templates'
 import { cn } from '@/lib/utils'
 
 interface GenerateResumeModalProps {
@@ -58,6 +59,7 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
   const [contextSource, setContextSource] = useState<'scratch' | 'resume'>('scratch')
   const [selectedResumeId, setSelectedResumeId] = useState<string>('')
   const [formData, setFormData] = useState<GenerationFormState>(INITIAL_FORM)
+  const [preview, setPreview] = useState<GeneratedResumeData | null>(null)
 
   const canUseExisting = existingResumes.length > 0
 
@@ -91,20 +93,49 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
         }),
       })
 
-      const payload = (await response.json().catch(() => null)) as
-        | { resumeId?: string; error?: string }
-        | null
-
-      if (!response.ok || !payload?.resumeId) {
+      // Pre-stream failures (auth, validation) are plain JSON with a status.
+      if (!response.ok || !response.body) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null
         throw new Error(payload?.error || 'Resume generation failed. Please try again.')
       }
 
-      router.push(`/dashboard/documents/${payload.resumeId}`)
+      // NDJSON stream: {partial} lines while the model writes, then
+      // a final {resumeId} or {error} line.
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let resumeId: string | null = null
+
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+        for (const line of lines) {
+          if (!line.trim()) continue
+          const msg = JSON.parse(line) as {
+            partial?: GeneratedResumeData
+            resumeId?: string
+            error?: string
+          }
+          if (msg.error) throw new Error(msg.error)
+          if (msg.partial) setPreview(msg.partial)
+          if (msg.resumeId) resumeId = msg.resumeId
+        }
+      }
+
+      if (!resumeId) {
+        throw new Error('Resume generation failed. Please try again.')
+      }
+
+      router.push(`/dashboard/documents/${resumeId}`)
       router.refresh()
       // Keep the modal in its loading state while navigation commits.
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Resume generation failed. Please try again.')
       setLoading(false)
+      setPreview(null)
     }
   }
 
@@ -117,6 +148,13 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
       size="xl"
       locked={loading}
     >
+      {loading ? (
+        <LiveBuildPreview
+          templateId={formData.template}
+          data={preview}
+          settings={formData.generation_settings}
+        />
+      ) : (
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
           <div
@@ -363,6 +401,44 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
           </div>
         </div>
       </form>
+      )}
     </Modal>
+  )
+}
+
+/** Renders the selected template live from streamed partial data, scaled to fit. */
+function LiveBuildPreview({
+  templateId,
+  data,
+  settings,
+}: {
+  templateId: string
+  data: GeneratedResumeData | null
+  settings: GenerationFormState['generation_settings']
+}) {
+  const Template = getTemplateDef(templateId).component
+  return (
+    <div className="space-y-3">
+      <p className="flex items-center gap-2 text-sm text-stone-600" aria-live="polite">
+        <Sparkles className="h-4 w-4 animate-pulse text-brand-600" aria-hidden />
+        Building your resume - watch it take shape. This usually takes 30-60 seconds.
+      </p>
+      <div className="flex max-h-[65vh] justify-center overflow-y-auto rounded-lg border border-stone-200 bg-stone-100 p-4">
+        {data ? (
+          <div
+            className="w-full max-w-[520px] rounded bg-white shadow-sm"
+            // zoom (not transform) so the scaled height participates in layout
+            // and the container scrollbar matches what you see.
+            style={{ zoom: 520 / RESUME_PAGE_WIDTH_PX }}
+          >
+            <Template data={data} settings={settings} />
+          </div>
+        ) : (
+          <div className="flex h-48 items-center justify-center text-sm text-stone-500">
+            <span className="animate-pulse">Contacting the AI and drafting the first section…</span>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }

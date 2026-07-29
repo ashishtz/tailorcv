@@ -1,7 +1,9 @@
 import {
   createOpenRouterClient,
   extractJsonObject,
+  extractPartialJson,
 } from "../ai/openrouter.service";
+import { normalizeResumeData } from "@/lib/utils/normalize-resume";
 import {
   resumeGenerationPrompt,
   MODE_RULES,
@@ -40,21 +42,36 @@ interface ResumeGenerationParams {
 }
 
 /**
- * Generates a tailored resume using AI based on user data and job requirements
- * @param params Resume generation parameters
- * @returns Generated resume data in structured format
+ * Streams a tailored resume as it is generated. Yields normalized snapshots
+ * of the partially-received JSON (safe to render in any template) and returns
+ * the final raw parsed object for the caller to validate and save.
  */
-export async function generateResume(params: ResumeGenerationParams) {
+export async function* streamResume(
+  params: ResumeGenerationParams
+): AsyncGenerator<GeneratedResumeData, unknown> {
   const client = createOpenRouterClient({
     temperature: 0.7,
     maxTokens: 8000,
   });
 
-  const response = await resumeGenerationPrompt
+  const stream = await resumeGenerationPrompt
     .pipe(client)
-    .invoke(buildPromptVariables(params));
+    .stream(buildPromptVariables(params));
 
-  return extractJsonObject(response.text);
+  let acc = "";
+  let lastYield = 0;
+  for await (const chunk of stream) {
+    acc += chunk.text;
+    // ponytail: time-based throttle; snapshot diffing if bandwidth ever matters
+    if (Date.now() - lastYield < 250) continue;
+    const partial = extractPartialJson(acc);
+    if (partial && typeof partial === "object") {
+      lastYield = Date.now();
+      yield normalizeResumeData(partial);
+    }
+  }
+
+  return extractJsonObject(acc);
 }
 
 const joinContent = (value: string | string[]): string =>

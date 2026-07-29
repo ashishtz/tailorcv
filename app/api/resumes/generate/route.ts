@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { generateResume } from '@/lib/services/resume'
+import { streamResume } from '@/lib/services/resume'
 import { fetchUserProfileData } from '@/lib/repositories'
 import { asJson, normalizeResumeData, normalizeSettings } from '@/lib/utils/normalize-resume'
 
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       resumeContext = undefined
     }
 
-    const rawResumeData = await generateResume({
+    const generation = streamResume({
       ...userData,
       jobTitle: job_title,
       jobDescription: job_description,
@@ -99,45 +99,76 @@ export async function POST(request: NextRequest) {
       resumeContext
     })
 
-    // Never store unvalidated model output - normalize to the exact shape
-    // the templates render, so a missing key can't crash the viewer.
-    const resumeData = normalizeResumeData(rawResumeData)
-    if (!resumeData.contact.name && !resumeData.summary && resumeData.workExperience.length === 0) {
-      return NextResponse.json(
-        { error: 'The AI returned an unusable resume. Please try again.' },
-        { status: 502 }
-      )
-    }
+    // From here on the response is an NDJSON stream: {partial} lines while
+    // the model writes, then a final {resumeId} or {error} line. HTTP status
+    // can no longer signal failure once streaming starts.
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream({
+      async start(controller) {
+        const send = (obj: object) =>
+          controller.enqueue(encoder.encode(JSON.stringify(obj) + '\n'))
+        try {
+          let step = await generation.next()
+          while (!step.done) {
+            send({ partial: step.value })
+            step = await generation.next()
+          }
 
-    const { data: resume, error } = await supabase
-      .from('resumes')
-      .insert({
-        user_id: user.id,
-        job_title,
-        job_description,
-        mode,
-        generated_data: asJson(resumeData),
-        template_id: template,
-        generation_settings: asJson(generation_settings)
-      })
-      .select()
-      .single()
+          // Never store unvalidated model output - normalize to the exact shape
+          // the templates render, so a missing key can't crash the viewer.
+          const resumeData = normalizeResumeData(step.value)
+          if (
+            !resumeData.contact.name &&
+            !resumeData.summary &&
+            resumeData.workExperience.length === 0
+          ) {
+            send({ error: 'The AI returned an unusable resume. Please try again.' })
+            return
+          }
 
-    if (error || !resume) {
-      console.error('Error saving resume:', error)
-      return NextResponse.json(
-        { error: 'The resume was generated but could not be saved. Please try again.' },
-        { status: 500 }
-      )
-    }
+          const { data: resume, error } = await supabase
+            .from('resumes')
+            .insert({
+              user_id: user.id,
+              job_title,
+              job_description,
+              mode,
+              generated_data: asJson(resumeData),
+              template_id: template,
+              generation_settings: asJson(generation_settings)
+            })
+            .select()
+            .single()
 
-    return NextResponse.json({ resumeId: resume.id })
+          if (error || !resume) {
+            console.error('Error saving resume:', error)
+            send({ error: 'The resume was generated but could not be saved. Please try again.' })
+            return
+          }
+
+          send({ resumeId: resume.id })
+        } catch (error) {
+          console.error('Error generating resume:', error)
+          send({
+            error:
+              error instanceof Error && error.message === 'OPENROUTER_API_KEY is not configured'
+                ? 'The AI service is not configured (missing API key).'
+                : 'Resume generation failed. This is usually temporary - please try again.'
+          })
+        } finally {
+          controller.close()
+        }
+      }
+    })
+
+    return new Response(stream, {
+      headers: { 'Content-Type': 'application/x-ndjson', 'Cache-Control': 'no-cache' }
+    })
   } catch (error) {
     console.error('Error generating resume:', error)
-    const message =
-      error instanceof Error && error.message === 'OPENROUTER_API_KEY is not configured'
-        ? 'The AI service is not configured (missing API key).'
-        : 'Resume generation failed. This is usually temporary - please try again.'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Resume generation failed. This is usually temporary - please try again.' },
+      { status: 500 }
+    )
   }
 }

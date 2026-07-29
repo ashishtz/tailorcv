@@ -5,6 +5,18 @@
 
 ---
 
+## Session 2d — 2026-07-29 (live streaming resume generation)
+
+User asked for live preview during generation (no infinite-loading feel). Shipped with zero new dependencies:
+- `lib/services/ai/openrouter.service.ts`: `extractPartialJson()` — `parsePartialJson` from @langchain/core (already installed) over the accumulated text from the first `{`.
+- `lib/services/resume/resume-generator.service.ts`: `generateResume` replaced by `streamResume` async generator — `prompt.pipe(client).stream(vars)`, accumulates chunks, throttled to ≥250ms, yields `normalizeResumeData(partial)` snapshots (normalize makes ANY partial renderable — missing sections become empty), returns final parsed object.
+- `app/api/resumes/generate/route.ts`: pre-flight (auth/validation) errors stay JSON+status; after that the response is an NDJSON `ReadableStream` — `{partial}` lines, then `{resumeId}` or `{error}`. Save/validation logic unchanged, just moved inside the stream.
+- `components/documents/generate-resume-modal.tsx`: reads the stream via `response.body.getReader()` + line splitting; while loading the form swaps for `LiveBuildPreview` — the SELECTED template component rendering each snapshot, scaled with CSS `zoom` (not transform, so scroll height is correct). Error mid-stream returns to the form with the message.
+- Test `lib/services/ai/__tests__/partial-json.test.ts`: truncated fenced JSON → renderable normalized data; prose-only → null.
+- Verified: jest 6/6 ✓ tsc ✓ eslint ✓ build ✓. NOT yet verified against a live OpenRouter run — needs env with key + local Supabase (next session or user).
+
+---
+
 ## Session 2c — 2026-07-29 (prompt reorganization on strict LangChain patterns)
 
 User asked to reorganize scattered/duplicated prompts for reliability. Done:
