@@ -71,5 +71,18 @@
 - Verification matrix: fresh `npm ci` 0 warns/0 deprecations · audit 0 vulns · outdated empty · eslint clean · tsc clean · jest 4/4 · next build 19 routes OK.
 - Env note: build needs Supabase env; created untracked `.env.local` with local-dev placeholders (supabase CLI defaults). `.env.docker` in repo contains a real-looking OpenRouter key — flag to user.
 
+### Frontend rebuild progress (same session)
+- ✅ DB: grants migration (fixed global 403s) + imported_resumes RLS + onboarding_completed flag + widened degree CHECK; database_types.ts regenerated from live schema.
+- ✅ Local env: dockerd started manually; `supabase start -x realtime -x storage-api -x imgproxy -x studio -x logflare -x vector -x edge-runtime -x mailpit -x supavisor` (sandbox ulimit cap). Dev server + Playwright E2E loop working (scratchpad pw/).
+- ✅ Design foundation + UI kit committed (Atelier tokens, Button/Field/Modal/Toast/Card/etc., error/not-found/loading pages, proxy ?next=).
+- ✅ Landing + auth rebuilt (faithful template thumbnails via fixed-816px scale; email-confirmation + forgot/reset password flows added; /auth/callback route).
+- ✅ Dashboard chrome + home rebuilt (light sidebar, mobile drawer, REAL stats + readiness checklist).
+- ✅ Documents flow rebuilt by me: list/table/generate-modal/view/edit/preview — PDF export ENABLED and E2E-verified (JPEG capture); template choice persists; edit no longer destroys summaries/skills; generate modal surfaces real API errors.
+- ✅ API/services hardened: enhance-text auth+cap, generate route validation+maxDuration+normalized storage, parse-resume returns data, LangChain formatMessages fix, maxTokens honored, fenced-JSON extraction, PII logs removed, repo update/delete methods.
+- ✅ Template fixes: jake education-location bug, professional fake skill bars removed, render-content v3-class + '.'-split fixes; canvas template-preview + dummy-resume deleted; single RESUME_TEMPLATES registry.
+- ✅ E2E verified with REAL OpenRouter generation (key from .env.docker): generated resume rendered + PDF downloaded. Seed data SQL in scratchpad.
+- 🔄 Two subagents rebuilding in parallel: profile page + sections (incl. import flow apply + EnhanceTextarea) and onboarding flow (persistence, categories, month→DATE, completion flag). Review + verify + commit when done.
+
 ### Next
-- Frontend audit with running app + local Supabase (`supabase start`), catalog into FRONTEND_AUDIT.md, then design system + rebuild.
+- Review agent output, browser-verify profile + onboarding, fix issues, commit.
+- Cleanup phase: legacy tokens/utilities out of globals.css, typed Supabase clients (Database generics), remove poppins once unused, final full verification (lint/tsc/tests/build), memory finalize, report.
