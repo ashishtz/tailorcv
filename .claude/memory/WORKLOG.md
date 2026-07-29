@@ -5,6 +5,17 @@
 
 ---
 
+## Session 2e — 2026-07-29 (generation modal → split-screen page)
+
+User decision: modal too small for the live preview. Replaced it with `app/dashboard/documents/new/page.tsx` — left column (~30%) inputs, right (~70%) live preview:
+- Right pane renders the SELECTED template at natural page width (816px, `overflow-x-auto`): sample data (`landingSampleResume`, dimmed) until generation starts, then streamed snapshots replace it live. Template picker switches the preview instantly.
+- Cancel works mid-generation: `AbortController` on the fetch; AbortError resets quietly (no error banner). Inputs `disabled`/fieldset-disabled while generating.
+- "Start from" (profile vs existing resume) collapsed from radio cards + conditional select into ONE select (profile = empty value); page fetches existing resumes itself.
+- `components/documents/generate-resume-modal.tsx` deleted; `?new=1` deep-link handling removed from documents page (links now go to `/dashboard/documents/new`; dashboard's 3 links updated). Documents page lost its Suspense/searchParams wrapper; header/empty-state buttons became `<Link className={buttonVariants({})}>`.
+- Verified: tsc ✓ eslint ✓ jest 6/6 ✓ build ✓ (route `/dashboard/documents/new` present). Live OpenRouter E2E still pending (needs env).
+
+---
+
 ## Session 2d — 2026-07-29 (live streaming resume generation)
 
 User asked for live preview during generation (no infinite-loading feel). Shipped with zero new dependencies:

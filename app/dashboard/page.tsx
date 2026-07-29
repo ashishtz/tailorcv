@@ -67,7 +67,7 @@ export default async function DashboardPage() {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            <Link href="/dashboard/documents?new=1">
+            <Link href="/dashboard/documents/new">
               <Button>
                 <Plus aria-hidden />
                 New resume
@@ -109,7 +109,7 @@ export default async function DashboardPage() {
               <div>
                 <p className="text-sm text-accent-800">AI assistance</p>
                 <Link
-                  href="/dashboard/documents?new=1"
+                  href="/dashboard/documents/new"
                   className="mt-1 inline-flex items-center gap-1.5 font-display text-base font-semibold text-accent-900 hover:underline"
                 >
                   Generate a resume
@@ -151,7 +151,7 @@ export default async function DashboardPage() {
                     : 'Finish your profile, then generate your first tailored resume.'}
                 </p>
                 <Link
-                  href={profileReady ? '/dashboard/documents?new=1' : '/dashboard/profile'}
+                  href={profileReady ? '/dashboard/documents/new' : '/dashboard/profile'}
                   className="mt-4 inline-block"
                 >
                   <Button size="sm">

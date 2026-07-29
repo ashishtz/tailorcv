@@ -5,7 +5,7 @@
 > and MUST update all three before finishing a work chunk. Keep entries detailed enough
 > that a brand-new session can resume without any other context.
 
-**Last updated:** 2026-07-29 (session 2d)
+**Last updated:** 2026-07-29 (session 2e)
 **Working branch:** `claude/deps-ui-modernize-mkz7xm` (never push to main)
 
 ---
@@ -38,7 +38,7 @@
 
 ## 🔄 In Progress
 
-- Live-streaming generation shipped (session 2d) but NOT yet E2E-verified against a real OpenRouter call — do a live run when env is available.
+- Live-streaming generation shipped (2d) and moved to a split-screen page `/dashboard/documents/new` (2e; modal deleted). NOT yet E2E-verified against a real OpenRouter call — do a live run when env is available.
 
 ## 📋 Backlog (ordered)
 
@@ -60,7 +60,7 @@
 
 ## 🗺️ App Map (for orientation)
 
-- **Routes:** `/` (landing) · `/auth/login` · `/auth/register` · `/onboarding` (+ `/skills`, `/work-experience`, `/education`, `/projects`) · `/dashboard` · `/dashboard/documents` (+ `[id]`, `[id]/edit`) · `/dashboard/profile` (+ `import-resume`) · `/preview/[id]`
+- **Routes:** `/` (landing) · `/auth/login` · `/auth/register` · `/onboarding` (+ `/skills`, `/work-experience`, `/education`, `/projects`) · `/dashboard` · `/dashboard/documents` (+ `new`, `[id]`, `[id]/edit`) · `/dashboard/profile` (+ `import-resume`) · `/preview/[id]`
 - **API:** `/api/parse-resume`, `/api/enhance-text`, `/api/resumes/generate`
 - **Data layer:** `lib/repositories/` (user-profile, onboarding — incl. `importParsedResume`) → Supabase; `lib/services/` (ai/openrouter, resume parser/enhancer/generator); prompts in `lib/prompts/*.prompt.ts` (system msg = instructions, user msg = data; rule variants as exported constants; contract test guards variable drift); shared form pieces in `components/forms/`
 - **DB:** Supabase; migrations in `supabase/migrations/` (profiles, skills, user_skills, work_experiences, education, projects, resumes, imported_resumes, skill categories, social links)

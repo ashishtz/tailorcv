@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
-import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import { FileText, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { GenerateResumeModal } from '@/components/documents/generate-resume-modal'
 import { DocumentsTable } from '@/components/documents/documents-table'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SkeletonRows } from '@/components/ui/skeleton'
@@ -14,15 +13,10 @@ import { useToast } from '@/components/ui/toast'
 import { Resume } from '@/lib/types/database'
 import { rowToResume } from '@/lib/utils/normalize-resume'
 
-function DocumentsPageInner() {
-  const searchParams = useSearchParams()
+export default function DocumentsPage() {
   const [resumes, setResumes] = useState<Resume[]>([])
-  // Deep link: /dashboard/documents?new=1 opens the generate modal on arrival
-  const [isModalOpen, setIsModalOpen] = useState(() => searchParams.get('new') === '1')
   const [loading, setLoading] = useState(true)
   const [loadFailed, setLoadFailed] = useState(false)
-  const router = useRouter()
-  const pathname = usePathname()
   const toast = useToast()
   const supabase = createClient()
 
@@ -61,13 +55,6 @@ function DocumentsPageInner() {
     }
   }, [fetchResumes])
 
-  // Clean the ?new=1 marker out of the URL once consumed
-  useEffect(() => {
-    if (searchParams.get('new') === '1') {
-      router.replace(pathname, { scroll: false })
-    }
-  }, [searchParams, router, pathname])
-
   const reload = useCallback(async () => {
     const list = await fetchResumes()
     if (list !== null) {
@@ -97,10 +84,10 @@ function DocumentsPageInner() {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            <Button onClick={() => setIsModalOpen(true)}>
+            <Link href="/dashboard/documents/new" className={buttonVariants({})}>
               <Plus aria-hidden />
               Generate resume
-            </Button>
+            </Link>
           </div>
         </div>
 
@@ -124,10 +111,10 @@ function DocumentsPageInner() {
               title="No resumes yet"
               description="Generate your first tailored resume from a job description - it takes about a minute."
               action={
-                <Button onClick={() => setIsModalOpen(true)}>
+                <Link href="/dashboard/documents/new" className={buttonVariants({})}>
                   <Plus aria-hidden />
                   Generate resume
-                </Button>
+                </Link>
               }
             />
           </Card>
@@ -135,20 +122,7 @@ function DocumentsPageInner() {
           <DocumentsTable resumes={resumes} onResumeDeleted={handleDeleted} />
         )}
 
-        <GenerateResumeModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          existingResumes={resumes}
-        />
       </div>
     </div>
-  )
-}
-
-export default function DocumentsPage() {
-  return (
-    <Suspense>
-      <DocumentsPageInner />
-    </Suspense>
   )
 }
