@@ -1,7 +1,20 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { FileText, CheckCircle, ArrowRight, Sparkles, TrendingUp, Award } from 'lucide-react'
+import {
+  FileText,
+  ArrowRight,
+  Sparkles,
+  Plus,
+  CircleCheck,
+  Circle,
+  Layout,
+} from 'lucide-react'
+import { PageHeader } from '@/components/ui/page-header'
+import { Card, CardBody } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { formatMonthYear } from '@/lib/utils'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -9,137 +22,214 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+  // Real data for real stats - the old page hardcoded "0 resumes" and
+  // "Profile Complete" regardless of state.
+  const [profileResult, resumesResult, workCount, eduCount, skillCount] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+    supabase
+      .from('resumes')
+      .select('id, job_title, template_id, mode, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false }),
+    supabase.from('work_experiences').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+    supabase.from('education').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+    supabase.from('user_skills').select('skill_id', { count: 'exact', head: true }).eq('user_id', user.id),
+  ])
+
+  const profile = profileResult.data
+  const resumes = resumesResult.data ?? []
+  const recentResumes = resumes.slice(0, 4)
+
+  const checklist = [
+    {
+      label: 'Personal details',
+      done: Boolean(profile?.first_name && profile?.last_name),
+      href: '/dashboard/profile',
+    },
+    { label: 'Work experience', done: (workCount.count ?? 0) > 0, href: '/dashboard/profile' },
+    { label: 'Education', done: (eduCount.count ?? 0) > 0, href: '/dashboard/profile' },
+    { label: 'Skills', done: (skillCount.count ?? 0) > 0, href: '/dashboard/profile' },
+  ]
+  const completed = checklist.filter((c) => c.done).length
+  const profileReady = completed === checklist.length
+
+  const firstName = profile?.first_name ?? null
 
   return (
-    <div className="p-8 animate-fade-in">
-      <div className="mx-auto max-w-7xl">
-        {/* Welcome Header */}
-        <div className="mb-8 animate-slide-up">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Welcome back, {profile?.first_name || 'User'}!
-          </h1>
-          <p className="text-lg text-gray-600">
-            Here&apos;s what&apos;s happening with your resumes today.
-          </p>
-        </div>
+    <div className="px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl space-y-8">
+        <PageHeader
+          title={firstName ? `Welcome back, ${firstName}` : 'Welcome back'}
+          description="Generate a tailored resume for your next application."
+          actions={
+            <Link href="/dashboard/documents?new=1">
+              <Button>
+                <Plus aria-hidden />
+                New resume
+              </Button>
+            </Link>
+          }
+        />
 
-        {/* Stats Cards */}
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Total Resumes Card */}
-          <div className="bg-white overflow-hidden rounded-lg shadow-soft hover:shadow-medium transition-all duration-200 transform hover:-translate-y-1 animate-scale-in">
-            <div className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-500 mb-1">Total Resumes</p>
-                  <p className="text-3xl font-bold bg-linear-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">0</p>
-                </div>
-                <div className="bg-linear-to-br from-primary-500 to-primary-600 rounded-lg p-3">
-                  <FileText className="h-8 w-8 text-white" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Profile Status Card */}
-          <div className="bg-white overflow-hidden rounded-lg shadow-soft hover:shadow-medium transition-all duration-200 transform hover:-translate-y-1 animate-scale-in animation-delay-100">
-            <div className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-500 mb-1">Profile Status</p>
-                  <p className="text-lg font-semibold text-green-600 flex items-center">
-                    <CheckCircle className="h-5 w-5 mr-2" />
-                    Complete
-                  </p>
-                </div>
-                <div className="bg-linear-to-br from-green-500 to-green-600 rounded-lg p-3">
-                  <Award className="h-8 w-8 text-white" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions Card */}
-          <div className="bg-linear-to-br from-accent-600 to-accent-700 overflow-hidden rounded-lg shadow-soft hover:shadow-medium transition-all duration-200 transform hover:-translate-y-1 animate-scale-in animation-delay-200">
-            <div className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-accent-100 mb-3">Quick Actions</p>
-                  <Link
-                    href="/dashboard/documents"
-                    className="group inline-flex items-center text-white font-semibold hover:text-accent-100 transition-colors duration-200"
-                  >
-                    Generate Resume
-                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
-                  </Link>
-                </div>
-                <div className="bg-white/20 rounded-lg p-3">
-                  <Sparkles className="h-8 w-8 text-white" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Getting Started Section */}
-        <div className="mt-12 animate-slide-up animation-delay-300">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-            <TrendingUp className="h-7 w-7 mr-3 text-primary-600" />
-            Getting Started
-          </h2>
-          <div className="bg-white shadow-soft rounded-lg p-8 border border-gray-100">
-            <div className="flex items-start">
-              <div className="shrink-0">
-                <div className="bg-linear-to-br from-primary-500 to-primary-600 rounded-lg p-3">
-                  <Sparkles className="h-8 w-8 text-white" />
-                </div>
-              </div>
-              <div className="ml-6 flex-1">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  You&apos;re all set!
-                </h3>
-                <p className="text-gray-600 mb-6 leading-relaxed">
-                  Your profile is set up and ready to go! You can now generate AI-powered resumes
-                  tailored to specific job positions. Our intelligent system will analyze job descriptions
-                  and highlight your most relevant skills and experiences.
+        {/* Stats */}
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Card>
+            <CardBody className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-stone-500">Resumes created</p>
+                <p className="mt-1 font-display text-3xl font-bold text-stone-900">
+                  {resumes.length}
                 </p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-brand-50">
+                <FileText className="h-5 w-5 text-brand-600" aria-hidden />
+              </div>
+            </CardBody>
+          </Card>
+          <Card>
+            <CardBody className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-stone-500">Profile readiness</p>
+                <p className="mt-1 font-display text-3xl font-bold text-stone-900">
+                  {completed}/{checklist.length}
+                </p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-brand-50">
+                <CircleCheck className="h-5 w-5 text-brand-600" aria-hidden />
+              </div>
+            </CardBody>
+          </Card>
+          <Card className="border-accent-200 bg-accent-50/60">
+            <CardBody className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-accent-800">AI assistance</p>
                 <Link
-                  href="/dashboard/documents"
-                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-linear-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200 shadow-medium hover:shadow-large transform hover:-translate-y-0.5"
+                  href="/dashboard/documents?new=1"
+                  className="mt-1 inline-flex items-center gap-1.5 font-display text-base font-semibold text-accent-900 hover:underline"
                 >
-                  Create Your First Resume
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  Generate a resume
+                  <ArrowRight className="h-4 w-4" aria-hidden />
                 </Link>
               </div>
-            </div>
-          </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-accent-100">
+                <Sparkles className="h-5 w-5 text-accent-700" aria-hidden />
+              </div>
+            </CardBody>
+          </Card>
         </div>
 
-        {/* Tips Section */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 animate-slide-up animation-delay-400">
-          <div className="bg-linear-to-br from-primary-50 to-primary-100 rounded-lg p-6 border border-primary-200">
-            <h3 className="text-lg font-semibold text-primary-900 mb-3 flex items-center">
-              <Sparkles className="h-5 w-5 mr-2 text-primary-600" />
-              Pro Tip: Strict vs Free Mode
-            </h3>
-            <p className="text-primary-800 text-sm leading-relaxed">
-              Use <span className="font-semibold">Strict Mode</span> to stay within your profile data, or try <span className="font-semibold">Free Mode</span> to let AI enhance your content based on job requirements.
-            </p>
-          </div>
+        <div className="grid gap-6 lg:grid-cols-5">
+          {/* Recent resumes */}
+          <Card className="lg:col-span-3">
+            <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4 sm:px-6">
+              <h2 className="font-display text-base font-semibold text-stone-900">
+                Recent resumes
+              </h2>
+              {resumes.length > 0 && (
+                <Link
+                  href="/dashboard/documents"
+                  className="text-sm font-medium text-brand-700 hover:underline"
+                >
+                  View all
+                </Link>
+              )}
+            </div>
+            {recentResumes.length === 0 ? (
+              <CardBody className="py-10 text-center">
+                <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-brand-50">
+                  <FileText className="h-5 w-5 text-brand-600" aria-hidden />
+                </div>
+                <p className="mt-3 text-sm font-medium text-stone-900">No resumes yet</p>
+                <p className="mx-auto mt-1 max-w-xs text-sm text-stone-500">
+                  {profileReady
+                    ? 'Your profile is ready - generate your first tailored resume.'
+                    : 'Finish your profile, then generate your first tailored resume.'}
+                </p>
+                <Link
+                  href={profileReady ? '/dashboard/documents?new=1' : '/dashboard/profile'}
+                  className="mt-4 inline-block"
+                >
+                  <Button size="sm">
+                    {profileReady ? 'Generate resume' : 'Complete profile'}
+                  </Button>
+                </Link>
+              </CardBody>
+            ) : (
+              <ul className="divide-y divide-stone-100">
+                {recentResumes.map((resume) => (
+                  <li key={resume.id}>
+                    <Link
+                      href={`/dashboard/documents/${resume.id}`}
+                      className="flex items-center justify-between gap-4 px-5 py-3.5 transition-colors hover:bg-stone-50 sm:px-6"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50">
+                          <FileText className="h-4 w-4 text-brand-600" aria-hidden />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-stone-900">
+                            {resume.job_title}
+                          </p>
+                          <p className="text-xs text-stone-500">
+                            {formatMonthYear(resume.created_at)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Badge variant="brand" className="capitalize">
+                          {resume.template_id}
+                        </Badge>
+                        <ArrowRight className="h-4 w-4 text-stone-300" aria-hidden />
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
 
-          <div className="bg-linear-to-br from-secondary-50 to-secondary-100 rounded-lg p-6 border border-secondary-200">
-            <h3 className="text-lg font-semibold text-secondary-900 mb-3 flex items-center">
-              <FileText className="h-5 w-5 mr-2 text-secondary-600" />
-              Multiple Templates Available
-            </h3>
-            <p className="text-secondary-800 text-sm leading-relaxed">
-              Choose from Classic, Modern, Minimal, Professional, Creative, and Executive templates to match your industry and personal style.
-            </p>
-          </div>
+          {/* Profile checklist */}
+          <Card className="lg:col-span-2">
+            <div className="border-b border-stone-200 px-5 py-4 sm:px-6">
+              <h2 className="font-display text-base font-semibold text-stone-900">
+                Profile checklist
+              </h2>
+              <p className="mt-0.5 text-sm text-stone-500">
+                {profileReady
+                  ? 'Everything the AI needs is in place.'
+                  : 'The more complete your profile, the better the resumes.'}
+              </p>
+            </div>
+            <ul className="px-3 py-3">
+              {checklist.map((item) => (
+                <li key={item.label}>
+                  <Link
+                    href={item.href}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-stone-50"
+                  >
+                    {item.done ? (
+                      <CircleCheck className="h-5 w-5 shrink-0 text-brand-600" aria-hidden />
+                    ) : (
+                      <Circle className="h-5 w-5 shrink-0 text-stone-300" aria-hidden />
+                    )}
+                    <span className={item.done ? 'text-stone-500 line-through' : 'text-stone-800'}>
+                      {item.label}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <div className="border-t border-stone-200 px-5 py-4 sm:px-6">
+              <div className="flex items-start gap-2.5 text-sm text-stone-600">
+                <Layout className="mt-0.5 h-4 w-4 shrink-0 text-stone-400" aria-hidden />
+                <p>
+                  <span className="font-medium text-stone-800">Strict mode</span> keeps the AI
+                  inside your profile data; <span className="font-medium text-stone-800">free mode</span>{' '}
+                  lets it embellish for the role.
+                </p>
+              </div>
+            </div>
+          </Card>
         </div>
       </div>
     </div>
