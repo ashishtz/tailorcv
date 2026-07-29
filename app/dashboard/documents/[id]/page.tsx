@@ -13,7 +13,7 @@ import { ExecutiveTemplate } from '@/components/resume-templates/executive-templ
 import { JakeTemplate } from '@/components/resume-templates/jake-template'
 import { Eye, Download, ArrowLeft, Loader2, Edit } from 'lucide-react'
 import Link from 'next/link'
-import html2canvas from 'html2canvas'
+import html2canvas from 'html2canvas-pro'
 import jsPDF from 'jspdf'
 
 const templates = [

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Edit2, Trash2, Save, X } from 'lucide-react'
 
@@ -22,14 +22,10 @@ export default function EducationSection() {
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
 
-  useEffect(() => {
-    loadEducation()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const loadEducation = async () => {
+  const fetchEducation = useCallback(async (): Promise<Education[]> => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) return []
 
       const { data, error } = await supabase
         .from('education')
@@ -37,13 +33,26 @@ export default function EducationSection() {
         .eq('user_id', user.id)
         .order('start_date', { ascending: false })
 
-      if (!error && data) {
-        setEducationList(data)
-      }
+      return !error && data ? data : []
     } catch (error) {
       console.error('Error loading education:', error)
+      return []
     }
-  }
+  }, [supabase])
+
+  const loadEducation = useCallback(async () => {
+    setEducationList(await fetchEducation())
+  }, [fetchEducation])
+
+  useEffect(() => {
+    let active = true
+    fetchEducation().then((list) => {
+      if (active) setEducationList(list)
+    })
+    return () => {
+      active = false
+    }
+  }, [fetchEducation])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

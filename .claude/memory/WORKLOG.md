@@ -64,5 +64,12 @@
 3. Config migrations: middleware.ts→proxy.ts, eslint.config.mjs flat-native, jest.config.mjs, lint script → `eslint`, drop `--turbopack`, remove `ignoreBuildErrors`, gitignore tsconfig.tsbuildinfo.
 4. Fix fallout until `npm install` warning-free, `npm audit` 0, `npm outdated` empty, lint+typecheck+tests+build green. Commit per logical chunk.
 
+### Upgrade executed (same session) — ALL GREEN
+- Commit 1: Tailwind v3→v4 via `npx @tailwindcss/upgrade` (45 files; @theme in globals.css; @tailwindcss/postcss; utility renames).
+- Commit 2 (this): every remaining dep to latest; middleware.ts→proxy.ts (`proxy` export); jest.config.ts→jest.config.mjs (ts-node dropped); eslint.config.mjs lean flat config (see D-002); typescript via @typescript/typescript6 alias (D-003); overrides validated one-by-one (D-004); html2canvas-pro swap (D-005); `typecheck` script added; `ignoreBuildErrors` removed; tsbuildinfo untracked; tsconfig updated by Next 16 (jsx react-jsx).
+- React-compiler lint fixes (9 errors → 0): profile page + Skills/Education/Projects/WorkExperience sections refactored to fetch-function + `.then(setState)` effects with cancellation guards (loadX wrappers kept for post-mutation reloads); EnhanceTextarea derived state (2 effects deleted); template-preview canvas painters hoisted to module scope; justified disable for TanStack `useReactTable` compiler-skip warning.
+- Verification matrix: fresh `npm ci` 0 warns/0 deprecations · audit 0 vulns · outdated empty · eslint clean · tsc clean · jest 4/4 · next build 19 routes OK.
+- Env note: build needs Supabase env; created untracked `.env.local` with local-dev placeholders (supabase CLI defaults). `.env.docker` in repo contains a real-looking OpenRouter key — flag to user.
+
 ### Next
-- Execute plan above, then frontend audit.
+- Frontend audit with running app + local Supabase (`supabase start`), catalog into FRONTEND_AUDIT.md, then design system + rebuild.

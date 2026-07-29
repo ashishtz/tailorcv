@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Edit2, Trash2, Save, X, ExternalLink } from 'lucide-react'
 import EnhanceTextarea from '@/components/ui/EnhanceTextarea'
@@ -22,14 +22,10 @@ export default function ProjectsSection() {
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
 
-  useEffect(() => {
-    loadProjects()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const loadProjects = async () => {
+  const fetchProjects = useCallback(async (): Promise<Project[]> => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) return []
 
       const { data, error } = await supabase
         .from('projects')
@@ -37,13 +33,26 @@ export default function ProjectsSection() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
-      if (!error && data) {
-        setProjects(data)
-      }
+      return !error && data ? data : []
     } catch (error) {
       console.error('Error loading projects:', error)
+      return []
     }
-  }
+  }, [supabase])
+
+  const loadProjects = useCallback(async () => {
+    setProjects(await fetchProjects())
+  }, [fetchProjects])
+
+  useEffect(() => {
+    let active = true
+    fetchProjects().then((list) => {
+      if (active) setProjects(list)
+    })
+    return () => {
+      active = false
+    }
+  }, [fetchProjects])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

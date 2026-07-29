@@ -27,19 +27,22 @@
 ## ✅ Done
 
 - **Memory system created** (this directory) and wired into CLAUDE.md. (2026-07-29)
+- **Dependency modernization COMPLETE** (2026-07-29): every dependency at latest; verified matrix all green —
+  `npm install`/`npm ci` fresh: **0 warnings, 0 deprecations** · `npm audit`: **0 vulnerabilities** · `npm outdated`: **empty** · lint ✓ · `tsc --noEmit` ✓ · jest 4/4 ✓ · `next build` ✓ (19 routes, Turbopack).
+  Key moves: Tailwind v4 (CSS-first, official tool), Next 16.2.12 (`middleware.ts`→`proxy.ts`, `next lint`→eslint CLI, no `--turbopack` flag), React 19.2.8, LangChain 1.x, @supabase/ssr 0.12.4, jsPDF 4, html2canvas→**html2canvas-pro** (oklch support), lucide 1.27, ESLint 10 with **lean flat config** (@next/eslint-plugin-next + typescript-eslint + react-hooks v7 — replaced eslint-config-next, see D-002), TS = `npm:@typescript/typescript6@6.0.2` alias (see D-003), jest 30.4 + jsdom 30 override, jest.config.ts→.mjs (ts-node dropped), `typecheck` script added, removed `ignoreBuildErrors`, tsbuildinfo untracked. Overrides documented in D-004. React-compiler lint errors fixed properly (fetch/setState split, module-scope canvas painters, derived state).
 
 ## 🔄 In Progress
 
-- **Dependency research + upgrade** — see WORKLOG.md session 1 for the full version matrix gathered from npm registry + web research.
+- Frontend phase starting: audit broken UI/CRUD, then design system + modernization.
 
 ## 📋 Backlog (ordered)
 
-1. Upgrade all deps to latest (Next 16, Tailwind 4, TS 7?, ESLint 10, LangChain 1.x, jsPDF 4, @supabase/ssr 0.12, supabase-js latest, lucide-react 1.x, jest-dom 7, @types/node 26, React 19.2) with all required code migrations. Zero warnings.
-2. Verify build + lint + typecheck + tests green; commit/push per logical chunk.
-3. Frontend audit: run app (with local Supabase), walk every route, catalog broken UI/CRUD/UX into `FRONTEND_AUDIT.md`.
-4. Define new design system (branding, tokens, guidelines) → `DESIGN_SYSTEM.md`.
-5. Rebuild/modernize UI per design system; fix all CRUD bugs.
-6. Final report to user.
+1. Frontend audit: run app (with local Supabase via CLI), walk every route, catalog broken UI/CRUD/UX into `FRONTEND_AUDIT.md`.
+2. Define new design system (branding, tokens, guidelines) → `DESIGN_SYSTEM.md`.
+3. Rebuild/modernize UI per design system; fix all CRUD bugs.
+4. Final report to user.
+5. (Deferred) Revisit TypeScript 7 + real `typescript` package when Next 16.3 stable ships `experimental.useTypeScriptCli` AND typescript-eslint supports TS7 peers.
+6. (Flag to user) `.env.docker` contains a real-looking OpenRouter API key committed to git — recommend rotating it and moving to untracked env.
 
 ## ⛔ Known Constraints / Gotchas
 

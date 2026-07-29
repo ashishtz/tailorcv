@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Edit2, Trash2, Save, X } from 'lucide-react'
 import EnhanceTextarea from '@/components/ui/EnhanceTextarea'
@@ -26,14 +26,10 @@ export default function WorkExperienceSection() {
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
 
-  useEffect(() => {
-    loadWorkExperiences()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const loadWorkExperiences = async () => {
+  const fetchWorkExperiences = useCallback(async (): Promise<WorkExperience[]> => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) return []
 
       const { data, error } = await supabase
         .from('work_experiences')
@@ -41,13 +37,26 @@ export default function WorkExperienceSection() {
         .eq('user_id', user.id)
         .order('start_date', { ascending: false })
 
-      if (!error && data) {
-        setExperiences(data)
-      }
+      return !error && data ? data : []
     } catch (error) {
       console.error('Error loading work experiences:', error)
+      return []
     }
-  }
+  }, [supabase])
+
+  const loadWorkExperiences = useCallback(async () => {
+    setExperiences(await fetchWorkExperiences())
+  }, [fetchWorkExperiences])
+
+  useEffect(() => {
+    let active = true
+    fetchWorkExperiences().then((list) => {
+      if (active) setExperiences(list)
+    })
+    return () => {
+      active = false
+    }
+  }, [fetchWorkExperiences])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

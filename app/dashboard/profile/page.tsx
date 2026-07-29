@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Profile } from '@/lib/types/database'
 import { Save, Upload } from 'lucide-react'
@@ -18,10 +18,10 @@ export default function ProfilePage() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const supabase = createClient()
 
-  const loadProfileData = async () => {
+  const fetchProfile = useCallback(async (): Promise<Profile | null> => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) return null
 
       const { data, error } = await supabase
         .from('profiles')
@@ -29,19 +29,30 @@ export default function ProfilePage() {
         .eq('id', user.id)
         .single()
 
-      if (data && !error) {
-        setProfile(data)
-      }
+      return data && !error ? data : null
     } catch (error) {
       console.error('Error fetching profile data:', error)
-    } finally {
-      setLoading(false)
+      return null
     }
-  }
+  }, [supabase])
+
+  const loadProfileData = useCallback(async () => {
+    const data = await fetchProfile()
+    if (data) setProfile(data)
+    setLoading(false)
+  }, [fetchProfile])
 
   useEffect(() => {
-    loadProfileData()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    let active = true
+    fetchProfile().then((data) => {
+      if (!active) return
+      if (data) setProfile(data)
+      setLoading(false)
+    })
+    return () => {
+      active = false
+    }
+  }, [fetchProfile])
 
   const handleImportSuccess = () => {
     // Reload the profile data after successful import

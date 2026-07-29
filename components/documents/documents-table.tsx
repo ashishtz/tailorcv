@@ -141,6 +141,9 @@ export function DocumentsTable({ resumes, onResumeDeleted }: DocumentsTableProps
   const [sorting, setSorting] = useState<SortingState>([])
   const [filtering, setFiltering] = useState('')
 
+  // React Compiler skips memoizing useReactTable (TanStack API returns
+  // non-memoizable functions); informational only, behavior is unaffected.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: resumes,
     columns,

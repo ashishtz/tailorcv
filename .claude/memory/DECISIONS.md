@@ -10,6 +10,31 @@
 - **Decision:** Cross-session memory = three committed markdown files (`STATUS.md`, `WORKLOG.md`, `DECISIONS.md`) plus feature docs (e.g. `FRONTEND_AUDIT.md`, `DESIGN_SYSTEM.md`) in `.claude/memory/`. CLAUDE.md instructs every session to read them at start and update them before ending a chunk.
 - **Why:** CLAUDE.md is auto-loaded in every Claude Code session, so a pointer there guarantees discovery; committing to git makes memory survive ephemeral cloud containers and travel with branches/PRs.
 
+## D-002 · 2026-07-29 · Replaced eslint-config-next with lean flat config
+
+- **Decision:** eslint.config.mjs composes `typescript-eslint` recommended + `@next/eslint-plugin-next` core-web-vitals + `eslint-plugin-react-hooks` v7 flat recommended-latest directly. `eslint-config-next` and `@eslint/eslintrc` (FlatCompat) removed.
+- **Why:** eslint-config-next hard-depends on eslint-plugin-import/jsx-a11y/react, all pinned to minimatch@3 → brace-expansion ≤5.0.7, which npm audit flags HIGH (GHSA-mh99-v99m-4gvg; only 5.0.8 is patched, maintenance backports 1.1.16/2.1.3 are still inside the advisory range). With it installed, "0 vulnerabilities" is impossible today. The lean config keeps all Next-specific + hooks + TS linting; react-hooks v7 additionally brings React Compiler rules (caught 9 real bugs).
+- **Alternatives considered:** global brace-expansion@5.0.8 override — REJECTED: empirically breaks minimatch v3/v9 consumers at runtime (`expand is not a function`) because 5.x dropped the callable default CJS export; forking plugins — overkill.
+
+## D-003 · 2026-07-29 · TypeScript = npm:@typescript/typescript6@^6.0.2 alias (not 7.0.2)
+
+- **Decision:** `"typescript": "npm:@typescript/typescript6@^6.0.2"` (Microsoft's official JS-based 6.x line; 6.0.2 is its latest).
+- **Why:** typescript@7.0.2 (Go-native) removed the JS Compiler API. (a) Stable Next 16.2.x cannot load it (`experimental.useTypeScriptCli` only exists in 16.3 canary/preview); (b) typescript-eslint@8.65 peers `typescript >=4.8.4 <6.1.0` → npm install hard-fails with TS7. The alias is the pattern recommended in vercel/next.js#95633. npm outdated stays clean (alias target is at its own latest).
+- **Revisit when:** Next 16.3 stable + typescript-eslint TS7 support land.
+
+## D-004 · 2026-07-29 · npm overrides in package.json (each empirically validated)
+
+- `babel-plugin-istanbul ^8` + `test-exclude ^8` + `glob ^13`: purge deprecated glob@7/inflight and vulnerable minimatch@9 from the jest tree. Jest's `glob.glob.sync()` call style verified working against glob@13.
+- `jsdom ^30`: jest-environment-jsdom pins jsdom ^26 whose whatwg-encoding@3.1.1 is deprecated (latest-and-deprecated, unfixable otherwise); jsdom ≥27 dropped it. Tests pass on jsdom 30.
+- `@napi-rs/wasm-runtime 1.1.6`: latest 1.x whose @emnapi peers (^1.7.1) are consistent; 1.2.0 peers @emnapi ^2.0.0-alpha causing ERESOLVE warns inside unrs-resolver's wasm binding (upstream bug).
+- `@swc/helpers ^0.5.23`: next pins exact 0.5.15 while @swc/core (via @swc/jest) peers >=0.5.17 — npm produced an unsyncable lockfile (`npm ci` EUSAGE). Unified on latest; helpers are additive-compatible.
+- `next: { postcss ^8.5.24, sharp ^0.35.3 }`: next 16.2.12 bundles postcss 8.4.31 + sharp 0.34.x, both under active advisories (fixed only in 16.3 previews); scoped override clears them, minor-version compatible.
+
+## D-005 · 2026-07-29 · html2canvas → html2canvas-pro
+
+- **Decision:** Replace abandoned html2canvas@1.4.1 with maintained API-compatible fork html2canvas-pro@2.3.2 (only usage: PDF download in `app/dashboard/documents/[id]/page.tsx`). Deprecated stub @types/html2canvas removed (pro ships types).
+- **Why:** Tailwind v4 emits `oklch()` colors which html2canvas 1.4.1 cannot parse (runtime crash on PDF export); pro supports modern color functions.
+
 <!-- Template for new decisions:
 ## D-0XX · YYYY-MM-DD · Title
 - **Decision:**

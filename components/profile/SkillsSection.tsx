@@ -81,44 +81,56 @@ export default function SkillsSection() {
   const [deletingCategory, setDeletingCategory] = useState(false)
   const supabase = createClient()
 
-  const loadUserSkills = useCallback(async () => {
+  const fetchUserSkills = useCallback(async (): Promise<CategorizedSkill[] | null> => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) return null
 
       const { data, error } = await supabase
         .from('user_skills')
         .select('skill_id, category_id, skills(id, name), skill_categories(id, name)')
         .eq('user_id', user.id)
 
-      if (!error && data) {
-        const categoryMap = new Map<string, CategorizedSkill>()
+      if (error || !data) return null
 
-        data.forEach(item => {
-          const skill = item.skills as unknown as Skill | null
-          const category = item.skill_categories as unknown as SkillCategory | null
+      const categoryMap = new Map<string, CategorizedSkill>()
 
-          if (skill && category) {
-            if (!categoryMap.has(category.id)) {
-              categoryMap.set(category.id, {
-                category: { id: category.id, name: category.name },
-                skills: []
-              })
-            }
-            categoryMap.get(category.id)?.skills.push(skill)
+      data.forEach(item => {
+        const skill = item.skills as unknown as Skill | null
+        const category = item.skill_categories as unknown as SkillCategory | null
+
+        if (skill && category) {
+          if (!categoryMap.has(category.id)) {
+            categoryMap.set(category.id, {
+              category: { id: category.id, name: category.name },
+              skills: []
+            })
           }
-        })
+          categoryMap.get(category.id)?.skills.push(skill)
+        }
+      })
 
-        setCategorizedSkills(Array.from(categoryMap.values()))
-      }
+      return Array.from(categoryMap.values())
     } catch (error) {
       console.error('Error loading user skills:', error)
+      return null
     }
   }, [supabase])
 
+  const loadUserSkills = useCallback(async () => {
+    const categorized = await fetchUserSkills()
+    if (categorized) setCategorizedSkills(categorized)
+  }, [fetchUserSkills])
+
   useEffect(() => {
-    loadUserSkills()
-  }, [loadUserSkills])
+    let active = true
+    fetchUserSkills().then((categorized) => {
+      if (active && categorized) setCategorizedSkills(categorized)
+    })
+    return () => {
+      active = false
+    }
+  }, [fetchUserSkills])
 
   const loadSkillsForQuickAdd = useCallback(async (inputValue: string): Promise<OptionType[]> => {
     if (!inputValue || inputValue.length < 1) return []
