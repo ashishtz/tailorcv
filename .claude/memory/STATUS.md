@@ -5,7 +5,7 @@
 > and MUST update all three before finishing a work chunk. Keep entries detailed enough
 > that a brand-new session can resume without any other context.
 
-**Last updated:** 2026-07-29 (session 2b)
+**Last updated:** 2026-07-29 (session 2c)
 **Working branch:** `claude/deps-ui-modernize-mkz7xm` (never push to main)
 
 ---
@@ -62,6 +62,6 @@
 
 - **Routes:** `/` (landing) · `/auth/login` · `/auth/register` · `/onboarding` (+ `/skills`, `/work-experience`, `/education`, `/projects`) · `/dashboard` · `/dashboard/documents` (+ `[id]`, `[id]/edit`) · `/dashboard/profile` (+ `import-resume`) · `/preview/[id]`
 - **API:** `/api/parse-resume`, `/api/enhance-text`, `/api/resumes/generate`
-- **Data layer:** `lib/repositories/` (user-profile, onboarding — incl. `importParsedResume`) → Supabase; `lib/services/` (ai/openrouter, resume parser/enhancer/generator); prompts in `lib/prompts/*.prompt.ts`; shared form pieces in `components/forms/`
+- **Data layer:** `lib/repositories/` (user-profile, onboarding — incl. `importParsedResume`) → Supabase; `lib/services/` (ai/openrouter, resume parser/enhancer/generator); prompts in `lib/prompts/*.prompt.ts` (system msg = instructions, user msg = data; rule variants as exported constants; contract test guards variable drift); shared form pieces in `components/forms/`
 - **DB:** Supabase; migrations in `supabase/migrations/` (profiles, skills, user_skills, work_experiences, education, projects, resumes, imported_resumes, skill categories, social links)
 - **Templates:** `components/resume-templates/` — classic, modern, minimal, professional, jake (creative/executive deleted session 2: not ATS-friendly, contradicted the product pitch)

@@ -5,6 +5,20 @@
 
 ---
 
+## Session 2c — 2026-07-29 (prompt reorganization on strict LangChain patterns)
+
+User asked to reorganize scattered/duplicated prompts for reliability. Done:
+- **One template per feature**: merged the hand-spliced `resume-generation-system.prompt.ts` + `resume-generation-user.prompt.ts` (formatted separately, arrays concatenated by hand) into one `resume-generation.prompt.ts` `ChatPromptTemplate.fromMessages([system, user])`; the service now uses the same `prompt.pipe(client).invoke(vars)` LCEL pattern as parser/enhancer.
+- **Structure contract** (documented in the prompt file): system message = ALL instructions; user message = ONLY candidate data + job. The old user prompt's instruction sections (highlighting demands, summary strategy, authenticity) were deduped into the system message.
+- **Bug fixed**: the user prompt unconditionally demanded [HIGHLIGHT] markers even when `highlight_important_content` was off.
+- **Contradictions resolved**: highlight totals ("8-10" vs "15-25"), per-entry counts ("at least 1" vs "no fewer than 3"); Impact-section rule and summary/JD-keyword rule now stated once; generation prompt now composes shared `ATS_RULES` + only its resume-specific additions.
+- **88-line highlight prompt moved out of the service** into the prompt file (CLAUDE.md compliance). Rule variants live as exported constants (`MODE_RULES`, `SECTION_FORMATS` — rules+JSON-example paired so schema and instructions can't drift, `HIGHLIGHT_RULES`); the service only selects and injects them.
+- **Parsing prompt** split into system (task+schema) + user (raw text only).
+- **Prompt-contract test** added (`lib/prompts/__tests__/prompt-contract.test.ts`): formats the real template with the real `buildPromptVariables` output — fails on any variable-name drift; asserts highlight toggle and instructions-only-in-system.
+- Verified: jest 4/4 ✓ tsc ✓ eslint ✓ build ✓. Net: prompts+service −180/+47 in edited files plus new 219-line prompt file replacing 165 lines of two old files + 88 inline service lines.
+
+---
+
 ## Session 2b — 2026-07-29 (Node 22 → 24 migration check)
 
 User upgraded Node to 24 (nvm default + new `.nvmrc` v24.18.0, npm 11.16.0). Verified & adjusted:

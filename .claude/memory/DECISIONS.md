@@ -5,6 +5,12 @@
 
 ---
 
+## D-006 · 2026-07-29 · Prompt architecture: one ChatPromptTemplate per feature, system=rules / user=data
+
+- **Decision:** Each AI feature has exactly one `ChatPromptTemplate.fromMessages([system, user])` in `lib/prompts/`, consumed via `prompt.pipe(client).invoke(vars)`. The system message carries every instruction; the user message carries only data. Conditional rule text (mode, section formats, highlighting) lives as exported constants in the prompt file; services only select variants and format data — no prompt strings in services. `SECTION_FORMATS` pairs each format's rules with its JSON-schema example so they cannot drift. `lib/prompts/__tests__/prompt-contract.test.ts` formats the real template with the real variable builder — any variable rename breaks the test, not production.
+- **Why:** The previous layout hand-spliced two separately-formatted templates, kept an 88-line prompt inline in the service, repeated rules in both messages with contradictory numbers, and demanded [HIGHLIGHT] markers even with highlighting disabled.
+- **Do not:** reintroduce instructions into user messages, inline prompt text in services, or format templates separately and concatenate messages by hand.
+
 ## D-005 · 2026-07-29 · Ponytail cleanup: settled simplification decisions (session 2)
 
 - **No Docker/nginx/Make deploy stack.** Deleted as unused (no CI, README never referenced it, nginx duplicated Next's own behavior). Deploy = `next start` or a platform. Don't reintroduce without an actual deploy target.
