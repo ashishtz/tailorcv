@@ -10,6 +10,8 @@ const config = {
   testEnvironment: 'node',
   // Keep the build output out of jest's module scanner
   modulePathIgnorePatterns: ['<rootDir>/.next/'],
+  // Playwright specs live in e2e/ and are not jest tests
+  testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/e2e/'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },

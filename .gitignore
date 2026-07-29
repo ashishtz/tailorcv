@@ -11,3 +11,8 @@ node_modules
 
 # Test coverage
 coverage
+
+# playwright
+/test-results/
+/playwright-report/
+/e2e/.auth/

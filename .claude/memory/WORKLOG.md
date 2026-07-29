@@ -5,6 +5,22 @@
 
 ---
 
+## Session 2i — 2026-07-29 (Playwright E2E template)
+
+User asked for scalable E2E suite in root `e2e/`; laptop under memory pressure so NOTHING was run against a live stack — template written + statically verified only (tsc, eslint, jest still 9/9, `playwright test --list` parses 42 tests / 11 files).
+
+Structure:
+- `playwright.config.ts` (root): testDir e2e, workers:1 (specs share one demo user; shard by user if suite outgrows it), `setup` project (global.setup.ts) then `chromium` depending on it with storageState `e2e/.auth/user.json`; webServer runs `npm run dev` with reuseExistingServer; env via `process.loadEnvFile('.env.local')`.
+- `e2e/global.setup.ts`: seeds demo user + signs in via real login UI once, saves session.
+- `e2e/helpers/seed.ts`: service-role admin client; idempotent seed — demo@resume.test / demo-password-123! (env-overridable), completed profile, one work experience, TWO resumes: "Demo Seed Resume" (read-only for specs) + "Editor Playground" (editor spec mutates). Needs SUPABASE_SERVICE_ROLE_KEY in .env.local (from `supabase status`).
+- `e2e/helpers/mock-generation.ts`: route-intercepts /api/resumes/generate with canned NDJSON (partials→resumeId), an error line, or a hang (cancel test). Real OpenRouter never called.
+- Specs (9): landing (hero/anchors/thumbnails/CTAs), auth (bad creds, links, redirect+next, authed bounce), dashboard (shell/nav/signout), documents (list/search/view/delete-throwaway), generate (form/picker/validation/stream/error/cancel), document-view (toolbar/template persist/preview popup/print popup/scroll/404), editor (title save+restore, add/remove entry, back), profile (sections, reversible education CRUD, edit prefill), preview (render/param/404), onboarding (register new throwaway user + full step walk).
+- Wiring: npm scripts e2e / e2e:ui / e2e:install; jest `testPathIgnorePatterns` excludes e2e/ (would otherwise eat *.spec.ts); .gitignore adds test-results/, playwright-report/, e2e/.auth/. @playwright/test 1.62 devDep (browsers NOT installed).
+
+NEXT SESSION / USER: `npm run e2e:install`, `supabase start`, put service_role key in .env.local, `npm run e2e`. Selectors written from source reading — expect a fix-up pass on first live run (especially onboarding button labels and profile field labels, marked with regex alternatives).
+
+---
+
 ## Session 2h — 2026-07-29 (small wins + backlog batch)
 
 All applied and verified (jest 9/9, tsc, eslint, build, prod smoke):
