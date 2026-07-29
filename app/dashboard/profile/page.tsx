@@ -2,8 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Profile } from '@/lib/types/database'
-import { Save, Upload } from 'lucide-react'
+import { KeyRound, Save, Upload } from 'lucide-react'
+import { PageHeader } from '@/components/ui/page-header'
+import { Card, CardHeader, CardBody, CardFooter } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Field, Input } from '@/components/ui/field'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useToast } from '@/components/ui/toast'
 import { LinkedInIcon, GitHubIcon, StackOverflowIcon } from '@/components/icons/SocialIcons'
 import SkillsSection from '@/components/profile/SkillsSection'
 import WorkExperienceSection from '@/components/profile/WorkExperienceSection'
@@ -11,42 +16,116 @@ import EducationSection from '@/components/profile/EducationSection'
 import ProjectsSection from '@/components/profile/ProjectsSection'
 import { ImportResumeModal } from '@/components/profile/ImportResumeModal'
 
+const EDITABLE_FIELDS = [
+  'first_name',
+  'last_name',
+  'email',
+  'phone',
+  'location',
+  'birthday',
+  'linkedin_url',
+  'github_url',
+  'stackoverflow_url',
+] as const
+
+type EditableField = (typeof EDITABLE_FIELDS)[number]
+
+/** Form state: every editable column as a string ('' for null). */
+type ProfileFormState = Record<EditableField, string>
+
+const EMPTY_FORM: ProfileFormState = {
+  first_name: '',
+  last_name: '',
+  email: '',
+  phone: '',
+  location: '',
+  birthday: '',
+  linkedin_url: '',
+  github_url: '',
+  stackoverflow_url: '',
+}
+
+function toFormState(row: Partial<Record<EditableField, string | null>>): ProfileFormState {
+  const state = { ...EMPTY_FORM }
+  for (const field of EDITABLE_FIELDS) {
+    state[field] = row[field] ?? ''
+  }
+  return state
+}
+
+const SOCIAL_FIELDS: Array<{
+  key: EditableField
+  label: string
+  placeholder: string
+  icon: React.ComponentType<{ className?: string }>
+}> = [
+  {
+    key: 'linkedin_url',
+    label: 'LinkedIn',
+    placeholder: 'https://linkedin.com/in/username',
+    icon: LinkedInIcon,
+  },
+  {
+    key: 'github_url',
+    label: 'GitHub',
+    placeholder: 'https://github.com/username',
+    icon: GitHubIcon,
+  },
+  {
+    key: 'stackoverflow_url',
+    label: 'Stack Overflow',
+    placeholder: 'https://stackoverflow.com/users/id',
+    icon: StackOverflowIcon,
+  },
+]
+
+const MIN_PASSWORD_LENGTH = 8
+
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const [form, setForm] = useState<ProfileFormState>(EMPTY_FORM)
+  const [savedProfile, setSavedProfile] = useState<ProfileFormState | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
+  // Bumped after an import so each section remounts and refetches its list.
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [confirmError, setConfirmError] = useState<string | null>(null)
+  const [changingPassword, setChangingPassword] = useState(false)
+
   const supabase = createClient()
+  const toast = useToast()
 
-  const fetchProfile = useCallback(async (): Promise<Profile | null> => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return null
+  const fetchProfile = useCallback(async (): Promise<ProfileFormState | null> => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return null
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+    const { data, error } = await supabase
+      .from('profiles')
+      .select(
+        'first_name, last_name, email, phone, location, birthday, linkedin_url, github_url, stackoverflow_url'
+      )
+      .eq('id', user.id)
+      .maybeSingle()
 
-      return data && !error ? data : null
-    } catch (error) {
-      console.error('Error fetching profile data:', error)
+    if (error) {
+      toast.error('Could not load your profile', error.message)
       return null
     }
-  }, [supabase])
-
-  const loadProfileData = useCallback(async () => {
-    const data = await fetchProfile()
-    if (data) setProfile(data)
-    setLoading(false)
-  }, [fetchProfile])
+    return toFormState((data ?? {}) as Partial<Record<EditableField, string | null>>)
+  }, [supabase, toast])
 
   useEffect(() => {
     let active = true
-    fetchProfile().then((data) => {
+    fetchProfile().then((state) => {
       if (!active) return
-      if (data) setProfile(data)
+      if (state) {
+        setForm(state)
+        setSavedProfile(state)
+      }
       setLoading(false)
     })
     return () => {
@@ -54,279 +133,246 @@ export default function ProfilePage() {
     }
   }, [fetchProfile])
 
-  const handleImportSuccess = () => {
-    // Reload the profile data after successful import
-    loadProfileData()
-  }
-
-
-  const updateProfile = async (updates: Partial<Profile>) => {
-    setSaving(true)
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', user.id)
-
-      if (!error) {
-        setProfile(prev => prev ? { ...prev, ...updates } : null)
+  const handleImportSuccess = useCallback(() => {
+    setRefreshKey((key) => key + 1)
+    fetchProfile().then((state) => {
+      if (state) {
+        setForm(state)
+        setSavedProfile(state)
       }
-    } catch (error) {
-      console.error('Error updating profile:', error)
-    } finally {
+    })
+  }, [fetchProfile])
+
+  const setField = (field: EditableField, value: string) => {
+    setForm((f) => ({ ...f, [field]: value }))
+  }
+
+  const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    // PATCH only the fields that actually changed - never the whole row.
+    const updates: Partial<Record<EditableField, string | null>> = {}
+    for (const field of EDITABLE_FIELDS) {
+      const next = form[field].trim()
+      const previous = (savedProfile?.[field] ?? '').trim()
+      if (next !== previous) updates[field] = next || null
+    }
+
+    if (Object.keys(updates).length === 0) {
+      toast.info('Nothing to save', 'You have not changed any fields.')
+      return
+    }
+
+    setSaving(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       setSaving(false)
+      toast.error('You are signed out', 'Sign in again to save your changes.')
+      return
     }
-  }
 
-  const handlePasswordChange = async (currentPassword: string, newPassword: string) => {
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      })
-      
-      if (error) throw error
-      alert('Password updated successfully!')
-    } catch (error) {
-      console.error('Error updating password:', error)
-      alert('Error updating password')
+    const { error } = await supabase.from('profiles').update(updates).eq('id', user.id)
+    setSaving(false)
+
+    if (error) {
+      toast.error('Could not save your profile', error.message)
+      return
     }
-  }
 
-  if (loading) {
-    return (
-      <div className="p-8">
-        <div className="text-center">Loading profile...</div>
-      </div>
+    const normalized = toFormState(
+      Object.fromEntries(
+        EDITABLE_FIELDS.map((field) => [field, form[field].trim()])
+      ) as Record<EditableField, string>
     )
+    setForm(normalized)
+    setSavedProfile(normalized)
+    toast.success('Profile saved')
+  }
+
+  const handlePasswordSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    const lengthError =
+      newPassword.length < MIN_PASSWORD_LENGTH
+        ? `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`
+        : null
+    const matchError =
+      confirmPassword !== newPassword ? 'Passwords do not match.' : null
+    setPasswordError(lengthError)
+    setConfirmError(matchError)
+    if (lengthError || matchError) return
+
+    setChangingPassword(true)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    setChangingPassword(false)
+
+    if (error) {
+      toast.error('Could not update the password', error.message)
+      return
+    }
+
+    setNewPassword('')
+    setConfirmPassword('')
+    toast.success('Password updated')
   }
 
   return (
-    <div className="p-8">
-      <div className="mx-auto max-w-4xl">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
-          <button
-            onClick={() => setIsImportModalOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-xs text-white bg-blue-600 hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Import from Resume
-          </button>
-        </div>
+    <div className="px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-4xl space-y-6">
+        <PageHeader
+          title="Profile"
+          description="Your master career data - the source every resume is generated from."
+          actions={
+            <Button variant="secondary" onClick={() => setIsImportModalOpen(true)}>
+              <Upload aria-hidden />
+              Import from resume
+            </Button>
+          }
+        />
 
-        <div className="space-y-8">
-          {/* Personal Information */}
-          <div className="bg-white shadow-sm rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Personal Information</h2>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <div>
-                <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
-                  First Name
-                </label>
-                <input
-                  type="text"
-                  id="first_name"
-                  value={profile?.first_name || ''}
-                  onChange={(e) => setProfile(prev => prev ? { ...prev, first_name: e.target.value } : null)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
-                  Last Name
-                </label>
-                <input
-                  type="text"
-                  id="last_name"
-                  value={profile?.last_name || ''}
-                  onChange={(e) => setProfile(prev => prev ? { ...prev, last_name: e.target.value } : null)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  value={profile?.email || ''}
-                  onChange={(e) => setProfile(prev => prev ? { ...prev, email: e.target.value } : null)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                  Phone
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  value={profile?.phone || ''}
-                  onChange={(e) => setProfile(prev => prev ? { ...prev, phone: e.target.value } : null)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-                  Location
-                </label>
-                <input
-                  type="text"
-                  id="location"
-                  value={profile?.location || ''}
-                  onChange={(e) => setProfile(prev => prev ? { ...prev, location: e.target.value } : null)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="birthday" className="block text-sm font-medium text-gray-700">
-                  Birthday
-                </label>
-                <input
-                  type="date"
-                  id="birthday"
-                  value={profile?.birthday || ''}
-                  onChange={(e) => setProfile(prev => prev ? { ...prev, birthday: e.target.value } : null)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-            </div>
-
-            {/* Social Links */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Social Links</h3>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-                <div>
-                  <label htmlFor="linkedin_url" className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                    <LinkedInIcon className="w-4 h-4 text-[#0A66C2]" />
-                    LinkedIn
-                  </label>
-                  <input
-                    type="url"
-                    id="linkedin_url"
-                    placeholder="https://linkedin.com/in/username"
-                    value={profile?.linkedin_url || ''}
-                    onChange={(e) => setProfile(prev => prev ? { ...prev, linkedin_url: e.target.value } : null)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  />
+        {/* Personal information */}
+        {loading ? (
+          <Card>
+            <CardBody className="grid gap-5 sm:grid-cols-2">
+              {Array.from({ length: 6 }, (_, i) => (
+                <div key={i} className="space-y-1.5">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-10 w-full" />
                 </div>
-
-                <div>
-                  <label htmlFor="github_url" className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                    <GitHubIcon className="w-4 h-4 text-gray-900" />
-                    GitHub
-                  </label>
-                  <input
-                    type="url"
-                    id="github_url"
-                    placeholder="https://github.com/username"
-                    value={profile?.github_url || ''}
-                    onChange={(e) => setProfile(prev => prev ? { ...prev, github_url: e.target.value } : null)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              ))}
+            </CardBody>
+          </Card>
+        ) : (
+          <form onSubmit={handleSave}>
+            <Card>
+              <CardHeader
+                title="Personal information"
+                description="Contact details shown on your resumes."
+              />
+              <CardBody className="grid gap-5 sm:grid-cols-2">
+                <Field label="First name">
+                  <Input
+                    value={form.first_name}
+                    onChange={(e) => setField('first_name', e.target.value)}
+                    autoComplete="given-name"
                   />
-                </div>
-
-                <div>
-                  <label htmlFor="stackoverflow_url" className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                    <StackOverflowIcon className="w-4 h-4 text-[#F48024]" />
-                    StackOverflow
-                  </label>
-                  <input
-                    type="url"
-                    id="stackoverflow_url"
-                    placeholder="https://stackoverflow.com/users/id"
-                    value={profile?.stackoverflow_url || ''}
-                    onChange={(e) => setProfile(prev => prev ? { ...prev, stackoverflow_url: e.target.value } : null)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                </Field>
+                <Field label="Last name">
+                  <Input
+                    value={form.last_name}
+                    onChange={(e) => setField('last_name', e.target.value)}
+                    autoComplete="family-name"
                   />
-                </div>
-              </div>
-            </div>
+                </Field>
+                <Field label="Email" hint="Shown on resumes; does not change your login email.">
+                  <Input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setField('email', e.target.value)}
+                    autoComplete="email"
+                  />
+                </Field>
+                <Field label="Phone">
+                  <Input
+                    type="tel"
+                    value={form.phone}
+                    onChange={(e) => setField('phone', e.target.value)}
+                    autoComplete="tel"
+                  />
+                </Field>
+                <Field label="Location">
+                  <Input
+                    value={form.location}
+                    onChange={(e) => setField('location', e.target.value)}
+                    placeholder="e.g. Toronto, Canada"
+                  />
+                </Field>
+                <Field label="Birthday" hint="Optional - only shown if a template uses it.">
+                  <Input
+                    type="date"
+                    value={form.birthday}
+                    onChange={(e) => setField('birthday', e.target.value)}
+                  />
+                </Field>
 
-            <div className="mt-6">
-              <button
-                onClick={() => updateProfile(profile!)}
-                disabled={saving}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-xs text-white bg-blue-600 hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                <div className="grid gap-5 border-t border-stone-200 pt-5 sm:col-span-2 sm:grid-cols-3">
+                  {SOCIAL_FIELDS.map(({ key, label, placeholder, icon: Icon }) => (
+                    <Field key={key} label={label}>
+                      <div className="relative">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <Input
+                          type="url"
+                          className="pl-9"
+                          value={form[key]}
+                          onChange={(e) => setField(key, e.target.value)}
+                          placeholder={placeholder}
+                        />
+                      </div>
+                    </Field>
+                  ))}
+                </div>
+              </CardBody>
+              <CardFooter>
+                <Button type="submit" loading={saving}>
+                  <Save aria-hidden />
+                  Save changes
+                </Button>
+              </CardFooter>
+            </Card>
+          </form>
+        )}
+
+        {/* Career sections - keyed so an import remounts and refetches them */}
+        <WorkExperienceSection key={`work-${refreshKey}`} />
+        <EducationSection key={`education-${refreshKey}`} />
+        <ProjectsSection key={`projects-${refreshKey}`} />
+        <SkillsSection key={`skills-${refreshKey}`} />
+
+        {/* Password */}
+        <form onSubmit={handlePasswordSubmit}>
+          <Card>
+            <CardHeader title="Password" description="Set a new password for your account." />
+            <CardBody className="grid gap-5 sm:grid-cols-2">
+              <Field
+                label="New password"
+                required
+                error={passwordError ?? undefined}
+                hint={`At least ${MIN_PASSWORD_LENGTH} characters.`}
               >
-                <Save className="w-4 h-4 mr-2" />
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-
-          {/* Skills Section */}
-          <SkillsSection />
-
-          {/* Work Experience Section */}
-          <WorkExperienceSection />
-
-          {/* Education Section */}
-          <EducationSection />
-
-          {/* Projects Section */}
-          <ProjectsSection />
-
-          {/* Password Change */}
-          <div className="bg-white shadow-sm rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Change Password</h2>
-            <form onSubmit={(e) => {
-              e.preventDefault()
-              const formData = new FormData(e.currentTarget)
-              const newPassword = formData.get('newPassword') as string
-              const confirmPassword = formData.get('confirmPassword') as string
-              
-              if (newPassword !== confirmPassword) {
-                alert('Passwords do not match')
-                return
-              }
-              
-              handlePasswordChange('', newPassword)
-            }} className="space-y-4">
-              <div>
-                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
-                  New Password
-                </label>
-                <input
+                <Input
                   type="password"
-                  name="newPassword"
-                  id="newPassword"
                   required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  value={newPassword}
+                  onChange={(e) => {
+                    setPasswordError(null)
+                    setNewPassword(e.target.value)
+                  }}
+                  autoComplete="new-password"
                 />
-              </div>
-
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                  Confirm New Password
-                </label>
-                <input
+              </Field>
+              <Field label="Confirm new password" required error={confirmError ?? undefined}>
+                <Input
                   type="password"
-                  name="confirmPassword"
-                  id="confirmPassword"
                   required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmError(null)
+                    setConfirmPassword(e.target.value)
+                  }}
+                  autoComplete="new-password"
                 />
-              </div>
-
-              <button
-                type="submit"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-xs text-white bg-red-600 hover:bg-red-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              >
-                Update Password
-              </button>
-            </form>
-          </div>
-        </div>
+              </Field>
+            </CardBody>
+            <CardFooter>
+              <Button type="submit" loading={changingPassword}>
+                <KeyRound aria-hidden />
+                Update password
+              </Button>
+            </CardFooter>
+          </Card>
+        </form>
 
         <ImportResumeModal
           isOpen={isImportModalOpen}

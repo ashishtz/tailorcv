@@ -2,341 +2,422 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Edit2, Trash2, Save, X } from 'lucide-react'
+import { Briefcase, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Card, CardHeader, CardBody } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Field, Input, Select } from '@/components/ui/field'
+import { Badge } from '@/components/ui/badge'
+import { EmptyState } from '@/components/ui/empty-state'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { SkeletonRows } from '@/components/ui/skeleton'
+import { useToast } from '@/components/ui/toast'
 import EnhanceTextarea from '@/components/ui/EnhanceTextarea'
+import { formatMonthYear, monthInputToDate, dateToMonthInput } from '@/lib/utils'
+
+type JobType = 'Part-Time' | 'Full-Time' | 'Contract'
 
 interface WorkExperience {
   id: string
-  user_id: string
   company_name: string
   position_title: string
   location: string | null
-  job_type: 'Part-Time' | 'Full-Time' | 'Contract' | null
+  job_type: JobType | null
   start_date: string
   end_date: string | null
   is_current: boolean
   description: string | null
 }
 
+/** Form state keeps dates as <input type="month"> values ("YYYY-MM"). */
+interface WorkFormState {
+  company_name: string
+  position_title: string
+  location: string
+  job_type: JobType
+  start_date: string
+  end_date: string
+  is_current: boolean
+  description: string
+}
+
+const EMPTY_FORM: WorkFormState = {
+  company_name: '',
+  position_title: '',
+  location: '',
+  job_type: 'Full-Time',
+  start_date: '',
+  end_date: '',
+  is_current: false,
+  description: '',
+}
+
+const JOB_TYPES: JobType[] = ['Full-Time', 'Part-Time', 'Contract']
+
 export default function WorkExperienceSection() {
   const [experiences, setExperiences] = useState<WorkExperience[]>([])
+  const [loading, setLoading] = useState(true)
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState<Partial<WorkExperience>>({})
-  const [loading, setLoading] = useState(false)
+  const [form, setForm] = useState<WorkFormState>(EMPTY_FORM)
+  const [dateError, setDateError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<WorkExperience | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const supabase = createClient()
+  const toast = useToast()
 
-  const fetchWorkExperiences = useCallback(async (): Promise<WorkExperience[]> => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return []
+  const fetchExperiences = useCallback(async (): Promise<WorkExperience[]> => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
 
-      const { data, error } = await supabase
-        .from('work_experiences')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('start_date', { ascending: false })
+    const { data, error } = await supabase
+      .from('work_experiences')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('start_date', { ascending: false })
 
-      return !error && data ? data : []
-    } catch (error) {
-      console.error('Error loading work experiences:', error)
+    if (error) {
+      toast.error('Could not load work experience', error.message)
       return []
     }
-  }, [supabase])
+    return (data as WorkExperience[] | null) ?? []
+  }, [supabase, toast])
 
-  const loadWorkExperiences = useCallback(async () => {
-    setExperiences(await fetchWorkExperiences())
-  }, [fetchWorkExperiences])
+  const loadExperiences = useCallback(async () => {
+    setExperiences(await fetchExperiences())
+  }, [fetchExperiences])
 
   useEffect(() => {
     let active = true
-    fetchWorkExperiences().then((list) => {
-      if (active) setExperiences(list)
+    fetchExperiences().then((list) => {
+      if (!active) return
+      setExperiences(list)
+      setLoading(false)
     })
     return () => {
       active = false
     }
-  }, [fetchWorkExperiences])
+  }, [fetchExperiences])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      if (editingId) {
-        const { error } = await supabase
-          .from('work_experiences')
-          .update({
-            ...formData,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', editingId)
-          .eq('user_id', user.id)
-
-        if (!error) {
-          await loadWorkExperiences()
-          setEditingId(null)
-        }
-      } else {
-        const { error } = await supabase
-          .from('work_experiences')
-          .insert({
-            ...formData,
-            user_id: user.id
-          })
-
-        if (!error) {
-          await loadWorkExperiences()
-          setIsAdding(false)
-        }
-      }
-
-      setFormData({})
-    } catch (error) {
-      console.error('Error saving work experience:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this work experience?')) return
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { error } = await supabase
-        .from('work_experiences')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id)
-
-      if (!error) {
-        setExperiences(experiences.filter(exp => exp.id !== id))
-      }
-    } catch (error) {
-      console.error('Error deleting work experience:', error)
-    }
-  }
-
-  const startEdit = (exp: WorkExperience) => {
-    setFormData(exp)
-    setEditingId(exp.id)
-    setIsAdding(false)
-  }
+  const formVisible = isAdding || editingId !== null
 
   const startAdd = () => {
-    setFormData({
-      company_name: '',
-      position_title: '',
-      location: '',
-      job_type: 'Full-Time',
-      start_date: '',
-      end_date: '',
-      is_current: false,
-      description: ''
-    })
+    setForm(EMPTY_FORM)
+    setDateError(null)
     setIsAdding(true)
     setEditingId(null)
   }
 
-  const cancel = () => {
-    setFormData({})
+  const startEdit = (exp: WorkExperience) => {
+    setForm({
+      company_name: exp.company_name,
+      position_title: exp.position_title,
+      location: exp.location ?? '',
+      job_type: exp.job_type ?? 'Full-Time',
+      start_date: dateToMonthInput(exp.start_date),
+      end_date: dateToMonthInput(exp.end_date),
+      is_current: exp.is_current,
+      description: exp.description ?? '',
+    })
+    setDateError(null)
+    setEditingId(exp.id)
+    setIsAdding(false)
+  }
+
+  const closeForm = () => {
+    setForm(EMPTY_FORM)
+    setDateError(null)
     setIsAdding(false)
     setEditingId(null)
   }
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    // "YYYY-MM" strings compare correctly as plain strings.
+    if (!form.is_current && form.start_date && form.end_date && form.end_date < form.start_date) {
+      setDateError('End date must be on or after the start date.')
+      return
+    }
+    setDateError(null)
+    setSaving(true)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setSaving(false)
+      toast.error('You are signed out', 'Sign in again to save your changes.')
+      return
+    }
+
+    // Explicit payload: month values converted to DATE-safe strings, empty
+    // strings to null - never spread raw form state into the table.
+    const payload = {
+      company_name: form.company_name.trim(),
+      position_title: form.position_title.trim(),
+      location: form.location.trim() || null,
+      job_type: form.job_type,
+      start_date: monthInputToDate(form.start_date),
+      end_date: form.is_current ? null : monthInputToDate(form.end_date),
+      is_current: form.is_current,
+      description: form.description.trim() || null,
+    }
+
+    const { error } = editingId
+      ? await supabase
+          .from('work_experiences')
+          .update({ ...payload, updated_at: new Date().toISOString() })
+          .eq('id', editingId)
+          .eq('user_id', user.id)
+      : await supabase.from('work_experiences').insert({ ...payload, user_id: user.id })
+
+    setSaving(false)
+    if (error) {
+      toast.error(
+        editingId ? 'Could not update the experience' : 'Could not add the experience',
+        error.message
+      )
+      return
+    }
+
+    toast.success(editingId ? 'Experience updated' : 'Experience added')
+    closeForm()
+    await loadExperiences()
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setDeleting(false)
+      toast.error('You are signed out', 'Sign in again to delete this entry.')
+      return
+    }
+
+    const { error } = await supabase
+      .from('work_experiences')
+      .delete()
+      .eq('id', deleteTarget.id)
+      .eq('user_id', user.id)
+
+    setDeleting(false)
+    if (error) {
+      toast.error('Could not delete the experience', error.message)
+      return
+    }
+
+    toast.success('Experience deleted')
+    setDeleteTarget(null)
+    await loadExperiences()
+  }
+
   return (
-    <div className="bg-white shadow-sm rounded-lg p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-gray-900">Work Experience</h2>
-        {!isAdding && !editingId && (
-          <button
-            onClick={startAdd}
-            className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-100 hover:bg-blue-200"
+    <Card>
+      <CardHeader
+        title="Work experience"
+        description="Roles you have held, most recent first."
+        actions={
+          !formVisible && (
+            <Button variant="secondary" size="sm" onClick={startAdd}>
+              <Plus aria-hidden />
+              Add experience
+            </Button>
+          )
+        }
+      />
+
+      {formVisible && (
+        <CardBody className="border-b border-stone-200">
+          <form
+            onSubmit={handleSubmit}
+            className="rounded-lg border border-stone-200 bg-stone-50 p-4 sm:p-5"
           >
-            <Plus className="w-4 h-4 mr-1" />
-            Add Experience
-          </button>
-        )}
-      </div>
-
-      {(isAdding || editingId) && (
-        <form onSubmit={handleSubmit} className="mb-6 p-4 border border-gray-200 rounded-lg">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Company Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.company_name || ''}
-                onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Position Title *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.position_title || ''}
-                onChange={(e) => setFormData({ ...formData, position_title: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Location
-              </label>
-              <input
-                type="text"
-                value={formData.location || ''}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Job Type
-              </label>
-              <select
-                value={formData.job_type || 'Full-Time'}
-                onChange={(e) => setFormData({ ...formData, job_type: e.target.value as 'Part-Time' | 'Full-Time' | 'Contract' | null })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
-              >
-                <option value="Full-Time">Full-Time</option>
-                <option value="Part-Time">Part-Time</option>
-                <option value="Contract">Contract</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Start Date *
-              </label>
-              <input
-                type="date"
-                required
-                value={formData.start_date || ''}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                End Date
-              </label>
-              <input
-                type="date"
-                value={formData.end_date || ''}
-                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                disabled={formData.is_current}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-slate-400 focus:ring-slate-300 sm:text-sm disabled:bg-gray-100"
-              />
-              <label className="mt-2 flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.is_current || false}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    is_current: e.target.checked,
-                    end_date: e.target.checked ? null : formData.end_date
-                  })}
-                  className="rounded-sm border-gray-300 text-blue-600 shadow-xs focus:border-slate-400 focus:ring-slate-300"
+            <h3 className="font-display text-sm font-semibold text-stone-900">
+              {editingId ? 'Edit experience' : 'New experience'}
+            </h3>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <Field label="Company" required>
+                <Input
+                  required
+                  value={form.company_name}
+                  onChange={(e) => setForm((f) => ({ ...f, company_name: e.target.value }))}
+                  placeholder="e.g. Acme Corp"
                 />
-                <span className="ml-2 text-sm text-gray-700">Currently working here</span>
-              </label>
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Description
-              </label>
-              <EnhanceTextarea
-                value={formData.description || ''}
-                onChange={(value) => setFormData({ ...formData, description: value })}
-                rows={3}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
-                placeholder="Describe your responsibilities and achievements..."
-                enhanceType="work_experience"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4 flex gap-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-xs text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-            >
-              <Save className="w-4 h-4 mr-1" />
-              {loading ? 'Saving...' : 'Save'}
-            </button>
-            <button
-              type="button"
-              onClick={cancel}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-            >
-              <X className="w-4 h-4 mr-1" />
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
-
-      <div className="space-y-4">
-        {experiences.length === 0 ? (
-          <p className="text-gray-500 text-sm">No work experience added yet</p>
-        ) : (
-          experiences.map(exp => (
-            <div key={exp.id} className="border-l-4 border-blue-500 pl-4 py-2">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{exp.position_title}</h3>
-                  <p className="text-gray-700">{exp.company_name}</p>
-                  {exp.location && (
-                    <p className="text-sm text-gray-600">{exp.location}</p>
-                  )}
-                  <p className="text-sm text-gray-500">
-                    {exp.job_type} • {new Date(exp.start_date).toLocaleDateString()} - {
-                      exp.is_current ? 'Present' : exp.end_date ? new Date(exp.end_date).toLocaleDateString() : 'Present'
-                    }
-                  </p>
-                  {exp.description && (
-                    <p className="mt-2 text-sm text-gray-600 whitespace-pre-wrap">{exp.description}</p>
-                  )}
-                </div>
-                <div className="flex gap-2 ml-4">
-                  <button
-                    onClick={() => startEdit(exp)}
-                    className="text-gray-400 hover:text-blue-600"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(exp.id)}
-                    className="text-gray-400 hover:text-red-600"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+              </Field>
+              <Field label="Position" required>
+                <Input
+                  required
+                  value={form.position_title}
+                  onChange={(e) => setForm((f) => ({ ...f, position_title: e.target.value }))}
+                  placeholder="e.g. Senior Software Engineer"
+                />
+              </Field>
+              <Field label="Location">
+                <Input
+                  value={form.location}
+                  onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                  placeholder="e.g. Toronto, Canada"
+                />
+              </Field>
+              <Field label="Job type">
+                <Select
+                  value={form.job_type}
+                  onChange={(e) => setForm((f) => ({ ...f, job_type: e.target.value as JobType }))}
+                >
+                  {JOB_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Start date" required>
+                <Input
+                  type="month"
+                  required
+                  value={form.start_date}
+                  onChange={(e) => {
+                    setDateError(null)
+                    setForm((f) => ({ ...f, start_date: e.target.value }))
+                  }}
+                />
+              </Field>
+              <div className="space-y-2.5">
+                <Field label="End date" error={dateError ?? undefined}>
+                  <Input
+                    type="month"
+                    value={form.end_date}
+                    disabled={form.is_current}
+                    onChange={(e) => {
+                      setDateError(null)
+                      setForm((f) => ({ ...f, end_date: e.target.value }))
+                    }}
+                  />
+                </Field>
+                <label className="flex items-center gap-2 text-sm text-stone-700">
+                  <input
+                    type="checkbox"
+                    checked={form.is_current}
+                    onChange={(e) => {
+                      setDateError(null)
+                      setForm((f) => ({
+                        ...f,
+                        is_current: e.target.checked,
+                        end_date: e.target.checked ? '' : f.end_date,
+                      }))
+                    }}
+                    className="h-4 w-4 accent-brand-600 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
+                  />
+                  I currently work here
+                </label>
+              </div>
+              <div className="sm:col-span-2">
+                <Field label="Description">
+                  <EnhanceTextarea
+                    value={form.description}
+                    onChange={(value) => setForm((f) => ({ ...f, description: value }))}
+                    rows={4}
+                    placeholder="Describe your responsibilities and achievements…"
+                    enhanceType="work_experience"
+                  />
+                </Field>
               </div>
             </div>
-          ))
-        )}
-      </div>
-    </div>
+            <div className="mt-5 flex justify-end gap-3">
+              <Button variant="secondary" onClick={closeForm} disabled={saving}>
+                Cancel
+              </Button>
+              <Button type="submit" loading={saving}>
+                {editingId ? 'Save changes' : 'Add experience'}
+              </Button>
+            </div>
+          </form>
+        </CardBody>
+      )}
+
+      {loading ? (
+        <CardBody>
+          <SkeletonRows rows={2} />
+        </CardBody>
+      ) : experiences.length === 0 ? (
+        !formVisible && (
+          <EmptyState
+            icon={Briefcase}
+            title="No work experience yet"
+            description="Add the roles you have held so the AI can build accurate resumes."
+            action={
+              <Button size="sm" onClick={startAdd}>
+                <Plus aria-hidden />
+                Add experience
+              </Button>
+            }
+          />
+        )
+      ) : (
+        <ul className="divide-y divide-stone-100">
+          {experiences.map((exp) => (
+            <li
+              key={exp.id}
+              className="flex items-start justify-between gap-4 px-5 py-4 sm:px-6"
+            >
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-medium text-stone-900">{exp.position_title}</p>
+                  {exp.job_type && <Badge variant="stone">{exp.job_type}</Badge>}
+                  {exp.is_current && <Badge variant="brand">Current</Badge>}
+                </div>
+                <p className="mt-0.5 text-sm text-stone-600">
+                  {exp.company_name}
+                  {exp.location ? ` · ${exp.location}` : ''}
+                </p>
+                <p className="mt-0.5 text-xs text-stone-500">
+                  {formatMonthYear(exp.start_date)} –{' '}
+                  {exp.is_current || !exp.end_date ? 'Present' : formatMonthYear(exp.end_date)}
+                </p>
+                {exp.description && (
+                  <p className="mt-2 whitespace-pre-wrap text-sm text-stone-600">
+                    {exp.description}
+                  </p>
+                )}
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={`Edit ${exp.position_title} at ${exp.company_name}`}
+                  onClick={() => startEdit(exp)}
+                >
+                  <Pencil aria-hidden />
+                </Button>
+                <Button
+                  variant="danger-ghost"
+                  size="icon-sm"
+                  aria-label={`Delete ${exp.position_title} at ${exp.company_name}`}
+                  onClick={() => setDeleteTarget(exp)}
+                >
+                  <Trash2 aria-hidden />
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete work experience"
+        message={
+          deleteTarget
+            ? `"${deleteTarget.position_title}" at ${deleteTarget.company_name} will be removed from your profile.`
+            : ''
+        }
+        confirmText="Delete"
+        type="danger"
+        loading={deleting}
+      />
+    </Card>
   )
 }

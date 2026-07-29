@@ -1,7 +1,10 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { Sparkles } from 'lucide-react'
+import { Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/toast'
 
 interface EnhanceTextareaProps {
   value: string
@@ -12,20 +15,22 @@ interface EnhanceTextareaProps {
   enhanceType: 'work_experience' | 'project'
 }
 
+const MIN_WORDS = 10
+
 export default function EnhanceTextarea({
   value,
   onChange,
   placeholder,
   rows = 3,
   className,
-  enhanceType
+  enhanceType,
 }: EnhanceTextareaProps) {
   const [isEnhancing, setIsEnhancing] = useState(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const toast = useToast()
 
   // Derived directly from the current value - no effect/state needed
-  const wordCount = value.trim().split(/\s+/).filter(word => word.length > 0).length
-  const showEnhanceButton = wordCount >= 10
+  const wordCount = value.trim().split(/\s+/).filter((word) => word.length > 0).length
+  const canEnhance = wordCount >= MIN_WORDS
 
   const handleEnhance = async () => {
     if (isEnhancing || !value.trim()) return
@@ -34,34 +39,33 @@ export default function EnhanceTextarea({
     try {
       const response = await fetch('/api/enhance-text', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: value,
-          type: enhanceType
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: value, type: enhanceType }),
       })
 
-      if (!response.ok) {
-        throw new Error('Failed to enhance text')
+      const data = (await response.json().catch(() => ({}))) as {
+        enhancedText?: string
+        error?: string
       }
 
-      const data = await response.json()
-      if (data.enhancedText) {
-        onChange(data.enhancedText)
+      if (!response.ok || !data.enhancedText) {
+        throw new Error(data.error || 'The AI service did not return a result. Please try again.')
       }
+
+      onChange(data.enhancedText)
     } catch (error) {
-      console.error('Error enhancing text:', error)
+      toast.error(
+        'Could not enhance the text',
+        error instanceof Error ? error.message : 'Please try again.'
+      )
     } finally {
       setIsEnhancing(false)
     }
   }
 
   return (
-    <div className="relative">
-      <textarea
-        ref={textareaRef}
+    <div>
+      <Textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={rows}
@@ -69,24 +73,29 @@ export default function EnhanceTextarea({
         className={className}
         disabled={isEnhancing}
       />
-
-      {showEnhanceButton && (
-        <button
-          type="button"
-          onClick={handleEnhance}
-          disabled={isEnhancing}
-          className="absolute top-2 right-2 z-10 inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
-        >
-          <Sparkles className={`w-3 h-3 mr-1 ${isEnhancing ? 'animate-spin' : ''}`} />
-          {isEnhancing ? 'Enhancing...' : 'Enhance'}
-        </button>
-      )}
-
-      {showEnhanceButton && (
-        <div className="mt-1 text-xs text-gray-500">
-          Click &ldquo;Enhance&rdquo; to improve this description for your resume
-        </div>
-      )}
+      <div className="mt-2 flex min-h-8 flex-wrap items-center justify-between gap-2">
+        {canEnhance ? (
+          <>
+            <p className="text-xs text-stone-500">
+              AI rewrites this into concise, resume-ready language.
+            </p>
+            <Button
+              variant="accent"
+              size="sm"
+              onClick={handleEnhance}
+              loading={isEnhancing}
+              className="ml-auto"
+            >
+              {!isEnhancing && <Sparkles aria-hidden />}
+              {isEnhancing ? 'Enhancing…' : 'Enhance with AI'}
+            </Button>
+          </>
+        ) : (
+          <p className="text-xs text-stone-500">
+            Write at least {MIN_WORDS} words to unlock AI enhancement.
+          </p>
+        )}
+      </div>
     </div>
   )
 }

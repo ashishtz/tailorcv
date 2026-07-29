@@ -2,43 +2,73 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Edit2, Trash2, Save, X, ExternalLink } from 'lucide-react'
+import { ExternalLink, FolderGit2, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Card, CardHeader, CardBody } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Field, Input } from '@/components/ui/field'
+import { EmptyState } from '@/components/ui/empty-state'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { SkeletonRows } from '@/components/ui/skeleton'
+import { useToast } from '@/components/ui/toast'
 import EnhanceTextarea from '@/components/ui/EnhanceTextarea'
 
 interface Project {
   id: string
-  user_id: string
   project_name: string
   role_title: string | null
   description: string | null
   link: string | null
 }
 
+interface ProjectFormState {
+  project_name: string
+  role_title: string
+  description: string
+  link: string
+}
+
+const EMPTY_FORM: ProjectFormState = {
+  project_name: '',
+  role_title: '',
+  description: '',
+  link: '',
+}
+
+/** Prefixes https:// when the scheme is missing; empty input becomes null. */
+function normalizeLink(raw: string): string | null {
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+}
+
 export default function ProjectsSection() {
   const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(true)
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState<Partial<Project>>({})
-  const [loading, setLoading] = useState(false)
+  const [form, setForm] = useState<ProjectFormState>(EMPTY_FORM)
+  const [saving, setSaving] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const supabase = createClient()
+  const toast = useToast()
 
   const fetchProjects = useCallback(async (): Promise<Project[]> => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return []
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
 
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
 
-      return !error && data ? data : []
-    } catch (error) {
-      console.error('Error loading projects:', error)
+    if (error) {
+      toast.error('Could not load projects', error.message)
       return []
     }
-  }, [supabase])
+    return (data as Project[] | null) ?? []
+  }, [supabase, toast])
 
   const loadProjects = useCallback(async () => {
     setProjects(await fetchProjects())
@@ -47,242 +77,269 @@ export default function ProjectsSection() {
   useEffect(() => {
     let active = true
     fetchProjects().then((list) => {
-      if (active) setProjects(list)
+      if (!active) return
+      setProjects(list)
+      setLoading(false)
     })
     return () => {
       active = false
     }
   }, [fetchProjects])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      if (editingId) {
-        const { error } = await supabase
-          .from('projects')
-          .update({
-            ...formData,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', editingId)
-          .eq('user_id', user.id)
-
-        if (!error) {
-          await loadProjects()
-          setEditingId(null)
-        }
-      } else {
-        const { error } = await supabase
-          .from('projects')
-          .insert({
-            ...formData,
-            user_id: user.id
-          })
-
-        if (!error) {
-          await loadProjects()
-          setIsAdding(false)
-        }
-      }
-
-      setFormData({})
-    } catch (error) {
-      console.error('Error saving project:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this project?')) return
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id)
-
-      if (!error) {
-        setProjects(projects.filter(proj => proj.id !== id))
-      }
-    } catch (error) {
-      console.error('Error deleting project:', error)
-    }
-  }
-
-  const startEdit = (proj: Project) => {
-    setFormData(proj)
-    setEditingId(proj.id)
-    setIsAdding(false)
-  }
+  const formVisible = isAdding || editingId !== null
 
   const startAdd = () => {
-    setFormData({
-      project_name: '',
-      role_title: '',
-      description: '',
-      link: ''
-    })
+    setForm(EMPTY_FORM)
     setIsAdding(true)
     setEditingId(null)
   }
 
-  const cancel = () => {
-    setFormData({})
+  const startEdit = (project: Project) => {
+    setForm({
+      project_name: project.project_name,
+      role_title: project.role_title ?? '',
+      description: project.description ?? '',
+      link: project.link ?? '',
+    })
+    setEditingId(project.id)
+    setIsAdding(false)
+  }
+
+  const closeForm = () => {
+    setForm(EMPTY_FORM)
     setIsAdding(false)
     setEditingId(null)
   }
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setSaving(true)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setSaving(false)
+      toast.error('You are signed out', 'Sign in again to save your changes.')
+      return
+    }
+
+    const payload = {
+      project_name: form.project_name.trim(),
+      role_title: form.role_title.trim() || null,
+      description: form.description.trim() || null,
+      link: normalizeLink(form.link),
+    }
+
+    const { error } = editingId
+      ? await supabase
+          .from('projects')
+          .update({ ...payload, updated_at: new Date().toISOString() })
+          .eq('id', editingId)
+          .eq('user_id', user.id)
+      : await supabase.from('projects').insert({ ...payload, user_id: user.id })
+
+    setSaving(false)
+    if (error) {
+      toast.error(
+        editingId ? 'Could not update the project' : 'Could not add the project',
+        error.message
+      )
+      return
+    }
+
+    toast.success(editingId ? 'Project updated' : 'Project added')
+    closeForm()
+    await loadProjects()
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setDeleting(false)
+      toast.error('You are signed out', 'Sign in again to delete this entry.')
+      return
+    }
+
+    const { error } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', deleteTarget.id)
+      .eq('user_id', user.id)
+
+    setDeleting(false)
+    if (error) {
+      toast.error('Could not delete the project', error.message)
+      return
+    }
+
+    toast.success('Project deleted')
+    setDeleteTarget(null)
+    await loadProjects()
+  }
+
   return (
-    <div className="bg-white shadow-sm rounded-lg p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-gray-900">Projects</h2>
-        {!isAdding && !editingId && (
-          <button
-            onClick={startAdd}
-            className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-purple-600 bg-purple-100 hover:bg-purple-200"
+    <Card>
+      <CardHeader
+        title="Projects"
+        description="Side projects, open source and notable work."
+        actions={
+          !formVisible && (
+            <Button variant="secondary" size="sm" onClick={startAdd}>
+              <Plus aria-hidden />
+              Add project
+            </Button>
+          )
+        }
+      />
+
+      {formVisible && (
+        <CardBody className="border-b border-stone-200">
+          <form
+            onSubmit={handleSubmit}
+            className="rounded-lg border border-stone-200 bg-stone-50 p-4 sm:p-5"
           >
-            <Plus className="w-4 h-4 mr-1" />
-            Add Project
-          </button>
-        )}
-      </div>
-
-      {(isAdding || editingId) && (
-        <form onSubmit={handleSubmit} className="mb-6 p-4 border border-gray-200 rounded-lg">
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Project Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.project_name || ''}
-                onChange={(e) => setFormData({ ...formData, project_name: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                placeholder="e.g., E-commerce Platform"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Your Role
-              </label>
-              <input
-                type="text"
-                value={formData.role_title || ''}
-                onChange={(e) => setFormData({ ...formData, role_title: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                placeholder="e.g., Lead Developer, Designer, Project Manager"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Project Link
-              </label>
-              <input
-                type="url"
-                value={formData.link || ''}
-                onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                placeholder="https://github.com/username/project"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Description
-              </label>
-              <EnhanceTextarea
-                value={formData.description || ''}
-                onChange={(value) => setFormData({ ...formData, description: value })}
-                rows={4}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                placeholder="Describe the project, technologies used, and your contributions..."
-                enhanceType="project"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4 flex gap-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-xs text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
-            >
-              <Save className="w-4 h-4 mr-1" />
-              {loading ? 'Saving...' : 'Save'}
-            </button>
-            <button
-              type="button"
-              onClick={cancel}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-            >
-              <X className="w-4 h-4 mr-1" />
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
-
-      <div className="space-y-4">
-        {projects.length === 0 ? (
-          <p className="text-gray-500 text-sm">No projects added yet</p>
-        ) : (
-          projects.map(proj => (
-            <div key={proj.id} className="border-l-4 border-purple-500 pl-4 py-2">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-medium text-gray-900">{proj.project_name}</h3>
-                    {proj.link && (
-                      <a
-                        href={proj.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-purple-600 hover:text-purple-800"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    )}
-                  </div>
-                  {proj.role_title && (
-                    <p className="text-gray-700 text-sm">{proj.role_title}</p>
-                  )}
-                  {proj.description && (
-                    <p className="mt-1 text-sm text-gray-600 whitespace-pre-wrap">{proj.description}</p>
-                  )}
-                </div>
-                <div className="flex gap-2 ml-4">
-                  <button
-                    onClick={() => startEdit(proj)}
-                    className="text-gray-400 hover:text-purple-600"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(proj.id)}
-                    className="text-gray-400 hover:text-red-600"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+            <h3 className="font-display text-sm font-semibold text-stone-900">
+              {editingId ? 'Edit project' : 'New project'}
+            </h3>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <Field label="Project name" required>
+                <Input
+                  required
+                  value={form.project_name}
+                  onChange={(e) => setForm((f) => ({ ...f, project_name: e.target.value }))}
+                  placeholder="e.g. E-commerce platform"
+                />
+              </Field>
+              <Field label="Your role">
+                <Input
+                  value={form.role_title}
+                  onChange={(e) => setForm((f) => ({ ...f, role_title: e.target.value }))}
+                  placeholder="e.g. Lead developer"
+                />
+              </Field>
+              <div className="sm:col-span-2">
+                <Field label="Link" hint="The https:// prefix is added for you if missing.">
+                  <Input
+                    type="url"
+                    value={form.link}
+                    onChange={(e) => setForm((f) => ({ ...f, link: e.target.value }))}
+                    onBlur={() => setForm((f) => ({ ...f, link: normalizeLink(f.link) ?? '' }))}
+                    placeholder="e.g. github.com/username/project"
+                  />
+                </Field>
+              </div>
+              <div className="sm:col-span-2">
+                <Field label="Description">
+                  <EnhanceTextarea
+                    value={form.description}
+                    onChange={(value) => setForm((f) => ({ ...f, description: value }))}
+                    rows={4}
+                    placeholder="Describe the project, the technologies used and your contribution…"
+                    enhanceType="project"
+                  />
+                </Field>
               </div>
             </div>
-          ))
-        )}
-      </div>
-    </div>
+            <div className="mt-5 flex justify-end gap-3">
+              <Button variant="secondary" onClick={closeForm} disabled={saving}>
+                Cancel
+              </Button>
+              <Button type="submit" loading={saving}>
+                {editingId ? 'Save changes' : 'Add project'}
+              </Button>
+            </div>
+          </form>
+        </CardBody>
+      )}
+
+      {loading ? (
+        <CardBody>
+          <SkeletonRows rows={2} />
+        </CardBody>
+      ) : projects.length === 0 ? (
+        !formVisible && (
+          <EmptyState
+            icon={FolderGit2}
+            title="No projects yet"
+            description="Showcase side projects, open source or client work."
+            action={
+              <Button size="sm" onClick={startAdd}>
+                <Plus aria-hidden />
+                Add project
+              </Button>
+            }
+          />
+        )
+      ) : (
+        <ul className="divide-y divide-stone-100">
+          {projects.map((project) => (
+            <li
+              key={project.id}
+              className="flex items-start justify-between gap-4 px-5 py-4 sm:px-6"
+            >
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-medium text-stone-900">{project.project_name}</p>
+                  {project.link && (
+                    <a
+                      href={project.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Open link for ${project.project_name}`}
+                      className="rounded text-stone-400 transition-colors hover:text-brand-600 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                    </a>
+                  )}
+                </div>
+                {project.role_title && (
+                  <p className="mt-0.5 text-sm text-stone-600">{project.role_title}</p>
+                )}
+                {project.description && (
+                  <p className="mt-2 whitespace-pre-wrap text-sm text-stone-600">
+                    {project.description}
+                  </p>
+                )}
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={`Edit project ${project.project_name}`}
+                  onClick={() => startEdit(project)}
+                >
+                  <Pencil aria-hidden />
+                </Button>
+                <Button
+                  variant="danger-ghost"
+                  size="icon-sm"
+                  aria-label={`Delete project ${project.project_name}`}
+                  onClick={() => setDeleteTarget(project)}
+                >
+                  <Trash2 aria-hidden />
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete project"
+        message={
+          deleteTarget
+            ? `"${deleteTarget.project_name}" will be removed from your profile.`
+            : ''
+        }
+        confirmText="Delete"
+        type="danger"
+        loading={deleting}
+      />
+    </Card>
   )
 }

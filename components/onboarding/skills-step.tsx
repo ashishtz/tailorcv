@@ -1,207 +1,238 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useOnboarding } from '@/lib/contexts/onboarding-context'
+import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Lightbulb, Plus, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { X } from 'lucide-react'
-import { Skill } from '@/lib/types/database'
+import { useOnboarding, type SkillDraft } from '@/lib/contexts/onboarding-context'
+import { StepShell, StepSkeleton } from '@/components/onboarding/step-shell'
+import { Card, CardBody } from '@/components/ui/card'
+import { Field, Input } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
+
+interface SkillErrors {
+  category?: string
+  skill?: string
+}
 
 export function SkillsStep() {
-  const { data, updateSkills, setCurrentStep } = useOnboarding()
+  const { hydrated } = useOnboarding()
+  if (!hydrated) return <StepSkeleton />
+  return <SkillsForm />
+}
+
+/** Rendered only after the draft has hydrated, so initial state is safe. */
+function SkillsForm() {
+  const { data, updateData } = useOnboarding()
   const router = useRouter()
   const supabase = createClient()
-  
-  const [allSkills, setAllSkills] = useState<Skill[]>([])
-  const [selectedSkills, setSelectedSkills] = useState<Skill[]>(data.skills || [])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [isAddingNew, setIsAddingNew] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const categoryListId = useId()
 
-  useEffect(() => {
-    const loadSkills = async () => {
-      const { data: skills, error } = await supabase
-        .from('skills')
-        .select('*')
-        .order('name')
-      
-      if (!error && skills) {
-        setAllSkills(skills)
-      }
-    }
-    
-    loadSkills()
+  const skills = data.skills
+  const [category, setCategory] = useState('')
+  const [skillName, setSkillName] = useState('')
+  const [errors, setErrors] = useState<SkillErrors>({})
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([])
+  const [suggestions, setSuggestions] = useState<string[]>([])
+
+  const fetchCategories = useCallback(async (): Promise<string[]> => {
+    const { data: rows, error } = await supabase
+      .from('skill_categories')
+      .select('name')
+      .order('name')
+    if (error || !rows) return []
+    return (rows as Array<{ name: string | null }>).map((row) => row.name ?? '').filter(Boolean)
   }, [supabase])
 
+  useEffect(() => {
+    let active = true
+    fetchCategories().then((names) => {
+      if (active) setCategoryOptions(names)
+    })
+    return () => {
+      active = false
+    }
+  }, [fetchCategories])
 
-  const addNewSkill = async (skillName: string) => {
-    setLoading(true)
-    try {
-      const { data: newSkill, error } = await supabase
+  const searchSkills = useCallback(
+    async (query: string): Promise<string[]> => {
+      if (query.length < 2) return []
+      const { data: rows, error } = await supabase
         .from('skills')
-        .insert({ name: skillName })
-        .select()
-        .single()
-      
-      if (!error && newSkill) {
-        setAllSkills([...allSkills, newSkill])
-        setSelectedSkills([...selectedSkills, newSkill])
-        setSearchTerm('')
-        setIsAddingNew(false)
-      }
-    } catch (error) {
-      console.error('Error adding skill:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const toggleSkill = (skill: Skill) => {
-    const isSelected = selectedSkills.some(s => s.id === skill.id)
-    if (isSelected) {
-      setSelectedSkills(selectedSkills.filter(s => s.id !== skill.id))
-    } else {
-      setSelectedSkills([...selectedSkills, skill])
-    }
-  }
-
-  const removeSkill = (skillId: string) => {
-    setSelectedSkills(selectedSkills.filter(s => s.id !== skillId))
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    updateSkills(selectedSkills)
-    setCurrentStep(3)
-    router.push('/onboarding/work-experience')
-  }
-
-  const handleBack = () => {
-    setCurrentStep(1)
-    router.push('/onboarding')
-  }
-
-  const filteredSkills = allSkills.filter(skill =>
-    skill.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    !selectedSkills.some(s => s.id === skill.id)
+        .select('name')
+        .ilike('name', `%${query}%`)
+        .order('name')
+        .limit(6)
+      if (error || !rows) return []
+      return (rows as Array<{ name: string | null }>).map((row) => row.name ?? '').filter(Boolean)
+    },
+    [supabase]
   )
 
-  const shouldShowAddNew = searchTerm && 
-    !allSkills.some(skill => skill.name.toLowerCase() === searchTerm.toLowerCase())
+  // Debounced (300ms) suggestion search against the shared skills table.
+  useEffect(() => {
+    let active = true
+    const query = skillName.trim()
+    const timer = window.setTimeout(() => {
+      searchSkills(query).then((names) => {
+        if (active) setSuggestions(names)
+      })
+    }, 300)
+    return () => {
+      active = false
+      window.clearTimeout(timer)
+    }
+  }, [skillName, searchSkills])
+
+  const addedNames = useMemo(
+    () => new Set(skills.map((skill) => skill.skillName.toLowerCase())),
+    [skills]
+  )
+  const visibleSuggestions = suggestions.filter((name) => !addedNames.has(name.toLowerCase()))
+
+  const groups = useMemo(() => {
+    const map = new Map<string, SkillDraft[]>()
+    for (const skill of skills) {
+      const list = map.get(skill.categoryName)
+      if (list) list.push(skill)
+      else map.set(skill.categoryName, [skill])
+    }
+    return Array.from(map.entries())
+  }, [skills])
+
+  const addSkill = (rawName: string) => {
+    const name = rawName.trim()
+    const categoryName = category.trim()
+    const nextErrors: SkillErrors = {}
+    if (!categoryName) {
+      nextErrors.category = 'Add a category so the skill is grouped on your profile.'
+    }
+    if (!name) {
+      nextErrors.skill = 'Type a skill to add.'
+    } else if (addedNames.has(name.toLowerCase())) {
+      nextErrors.skill = `"${name}" is already in your list.`
+    }
+    setErrors(nextErrors)
+    if (nextErrors.category || nextErrors.skill) return
+
+    updateData({ skills: [...skills, { skillName: name, categoryName }] })
+    setSkillName('')
+  }
+
+  const removeSkill = (target: SkillDraft) => {
+    updateData({
+      skills: skills.filter(
+        (skill) =>
+          !(skill.skillName === target.skillName && skill.categoryName === target.categoryName)
+      ),
+    })
+  }
+
+  const handleAdd = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    addSkill(skillName)
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Selected Skills</h3>
-        <div className="flex flex-wrap gap-2 mb-6">
-          {selectedSkills.length === 0 ? (
-            <p className="text-gray-500">No skills selected yet</p>
-          ) : (
-            selectedSkills.map(skill => (
-              <span
-                key={skill.id}
-                className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+    <StepShell
+      title="Add your skills"
+      description="Group skills the way you want them to read on a resume — languages, frameworks, tools."
+      backHref="/onboarding"
+      onContinue={() => router.push('/onboarding/work-experience')}
+    >
+      <div className="space-y-4">
+        <Card>
+          <CardBody>
+            <form onSubmit={handleAdd} className="grid gap-4 sm:grid-cols-[1fr_1fr_auto]">
+              <Field
+                label="Category"
+                error={errors.category}
+                hint="Pick an existing one or create your own."
               >
-                {skill.name}
-                <button
-                  type="button"
-                  onClick={() => removeSkill(skill.id)}
-                  className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-blue-200"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))
-          )}
-        </div>
-      </div>
-
-      <div>
-        <label htmlFor="skill-search" className="block text-sm font-medium text-gray-700 mb-2">
-          Search or Add Skills
-        </label>
-        <input
-          type="text"
-          id="skill-search"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Search for skills..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-      </div>
-
-      <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-md p-2">
-        {filteredSkills.length > 0 ? (
-          <div className="space-y-1">
-            {filteredSkills.map(skill => (
-              <button
-                key={skill.id}
-                type="button"
-                onClick={() => toggleSkill(skill)}
-                className="w-full text-left px-3 py-2 rounded-sm hover:bg-gray-100 transition-colors"
-              >
-                {skill.name}
-              </button>
-            ))}
-          </div>
-        ) : searchTerm ? (
-          <p className="text-gray-500 text-center py-4">No skills found</p>
-        ) : (
-          <p className="text-gray-500 text-center py-4">Type to search skills</p>
-        )}
-        
-        {shouldShowAddNew && (
-          <div className="mt-2 pt-2 border-t">
-            {isAddingNew ? (
-              <div className="text-center py-2">
-                <p className="text-sm text-gray-600 mb-2">Add &quot;{searchTerm}&quot; as a new skill?</p>
-                <div className="flex gap-2 justify-center">
-                  <button
-                    type="button"
-                    onClick={() => addNewSkill(searchTerm)}
-                    disabled={loading}
-                    className="px-3 py-1 bg-blue-600 text-white rounded-sm text-sm hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {loading ? 'Adding...' : 'Add'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingNew(false)}
-                    className="px-3 py-1 bg-gray-200 text-gray-700 rounded-sm text-sm hover:bg-gray-300"
-                  >
-                    Cancel
-                  </button>
-                </div>
+                <Input
+                  list={categoryListId}
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value)}
+                  placeholder="e.g. Programming languages"
+                />
+              </Field>
+              <Field label="Skill" error={errors.skill}>
+                <Input
+                  value={skillName}
+                  onChange={(event) => setSkillName(event.target.value)}
+                  placeholder="e.g. TypeScript"
+                />
+              </Field>
+              <div className="sm:pt-[26px]">
+                <Button type="submit" variant="secondary" className="w-full sm:w-auto">
+                  <Plus aria-hidden />
+                  Add
+                </Button>
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setIsAddingNew(true)}
-                className="w-full text-left px-3 py-2 rounded-sm hover:bg-blue-50 text-blue-600"
-              >
-                + Add &quot;{searchTerm}&quot; as new skill
-              </button>
+            </form>
+            <datalist id={categoryListId}>
+              {categoryOptions.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
+
+            {visibleSuggestions.length > 0 && (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span className="text-xs text-stone-500">Suggestions:</span>
+                {visibleSuggestions.map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => addSkill(name)}
+                    className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors duration-150 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
             )}
+          </CardBody>
+        </Card>
+
+        {skills.length === 0 ? (
+          <div className="flex items-start gap-3 rounded-xl border border-dashed border-stone-300 bg-white px-4 py-4">
+            <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-stone-400" aria-hidden />
+            <p className="text-sm text-stone-500">
+              No skills yet — you can continue and add them later from your profile, but a few
+              strong ones help the AI write better resumes.
+            </p>
           </div>
+        ) : (
+          <Card>
+            <CardBody className="space-y-5">
+              {groups.map(([categoryName, groupSkills]) => (
+                <div key={categoryName}>
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-stone-500">
+                    {categoryName}
+                  </h2>
+                  <ul className="mt-2 flex flex-wrap gap-2">
+                    {groupSkills.map((skill) => (
+                      <li key={skill.skillName}>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 py-1 pl-3 pr-1.5 text-sm font-medium text-brand-700">
+                          {skill.skillName}
+                          <button
+                            type="button"
+                            onClick={() => removeSkill(skill)}
+                            aria-label={`Remove ${skill.skillName}`}
+                            className="rounded-full p-0.5 text-brand-500 transition-colors duration-150 hover:bg-brand-100 hover:text-brand-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
+                          >
+                            <X className="h-3.5 w-3.5" aria-hidden />
+                          </button>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </CardBody>
+          </Card>
         )}
       </div>
-
-      <div className="flex justify-between">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-xs hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
-          Back
-        </button>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-xs hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
-          Next Step
-        </button>
-      </div>
-    </div>
+    </StepShell>
   )
 }

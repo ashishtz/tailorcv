@@ -1,198 +1,174 @@
 'use client'
 
-import { useState } from 'react'
-import { useOnboarding } from '@/lib/contexts/onboarding-context'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { useOnboarding, type PersonalInfoDraft } from '@/lib/contexts/onboarding-context'
+import { StepShell, StepSkeleton } from '@/components/onboarding/step-shell'
+import { Card, CardBody } from '@/components/ui/card'
+import { Field, Input } from '@/components/ui/field'
+
+type PersonalErrors = Partial<Record<'first_name' | 'last_name' | 'email', string>>
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+async function fetchAuthEmail(supabase: ReturnType<typeof createClient>): Promise<string> {
+  const { data } = await supabase.auth.getUser()
+  return data.user?.email ?? ''
+}
 
 export function PersonalInfoStep() {
-  const { data, updatePersonalInfo, setCurrentStep } = useOnboarding()
-  const router = useRouter()
-  const [formData, setFormData] = useState({
-    first_name: data.personalInfo.first_name || '',
-    last_name: data.personalInfo.last_name || '',
-    email: data.personalInfo.email || '',
-    phone: data.personalInfo.phone || '',
-    birthday: data.personalInfo.birthday || '',
-    location: data.personalInfo.location || '',
-    address_1: data.personalInfo.address_1 || '',
-    address_2: data.personalInfo.address_2 || '',
-    address_3: data.personalInfo.address_3 || '',
-    postal_code: data.personalInfo.postal_code || '',
-  })
+  const { hydrated } = useOnboarding()
+  if (!hydrated) return <StepSkeleton />
+  return <PersonalInfoForm />
+}
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    updatePersonalInfo(formData)
-    setCurrentStep(2)
+/** Rendered only after the draft has hydrated, so initial state is safe. */
+function PersonalInfoForm() {
+  const { data, updateData } = useOnboarding()
+  const router = useRouter()
+  const supabase = createClient()
+  const [form, setForm] = useState<PersonalInfoDraft>(data.personalInfo)
+  const [errors, setErrors] = useState<PersonalErrors>({})
+
+  // Prefill the email from the signed-in account when the draft has none.
+  useEffect(() => {
+    let active = true
+    fetchAuthEmail(supabase).then((email) => {
+      if (active && email) {
+        setForm((current) => (current.email ? current : { ...current, email }))
+      }
+    })
+    return () => {
+      active = false
+    }
+  }, [supabase])
+
+  const setField =
+    (key: keyof PersonalInfoDraft) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value
+      setForm((current) => ({ ...current, [key]: value }))
+    }
+
+  const handleContinue = () => {
+    const nextErrors: PersonalErrors = {}
+    if (!form.first_name.trim()) nextErrors.first_name = 'First name is required.'
+    if (!form.last_name.trim()) nextErrors.last_name = 'Last name is required.'
+    const email = form.email.trim()
+    if (email && !EMAIL_PATTERN.test(email)) nextErrors.email = 'Enter a valid email address.'
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length > 0) return
+
+    updateData({
+      personalInfo: {
+        first_name: form.first_name.trim(),
+        last_name: form.last_name.trim(),
+        email,
+        phone: form.phone.trim(),
+        location: form.location.trim(),
+        linkedin_url: form.linkedin_url.trim(),
+        github_url: form.github_url.trim(),
+        stackoverflow_url: form.stackoverflow_url.trim(),
+      },
+    })
     router.push('/onboarding/skills')
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }))
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <div>
-          <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
-            First Name *
-          </label>
-          <input
-            type="text"
-            name="first_name"
-            id="first_name"
-            required
-            value={formData.first_name}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          />
-        </div>
+    <StepShell
+      title="Tell us about yourself"
+      description="The essentials that sit at the top of every resume. Only your name is required."
+      onContinue={handleContinue}
+    >
+      <Card>
+        <CardBody className="space-y-5">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field label="First name" required error={errors.first_name}>
+              <Input
+                value={form.first_name}
+                onChange={setField('first_name')}
+                autoComplete="given-name"
+                placeholder="Ada"
+              />
+            </Field>
+            <Field label="Last name" required error={errors.last_name}>
+              <Input
+                value={form.last_name}
+                onChange={setField('last_name')}
+                autoComplete="family-name"
+                placeholder="Lovelace"
+              />
+            </Field>
+          </div>
 
-        <div>
-          <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
-            Last Name *
-          </label>
-          <input
-            type="text"
-            name="last_name"
-            id="last_name"
-            required
-            value={formData.last_name}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          />
-        </div>
+          <Field
+            label="Email"
+            error={errors.email}
+            hint="Prefilled from your account — shown in your resume header."
+          >
+            <Input
+              type="email"
+              value={form.email}
+              onChange={setField('email')}
+              autoComplete="email"
+              placeholder="you@example.com"
+            />
+          </Field>
 
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Email Address *
-          </label>
-          <input
-            type="email"
-            name="email"
-            id="email"
-            required
-            value={formData.email}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          />
-        </div>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field label="Phone">
+              <Input
+                type="tel"
+                value={form.phone}
+                onChange={setField('phone')}
+                autoComplete="tel"
+                placeholder="+1 555 000 1234"
+              />
+            </Field>
+            <Field label="Location" hint="City and country are plenty.">
+              <Input
+                value={form.location}
+                onChange={setField('location')}
+                autoComplete="address-level2"
+                placeholder="Berlin, Germany"
+              />
+            </Field>
+          </div>
 
-        <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-            Phone Number *
-          </label>
-          <input
-            type="tel"
-            name="phone"
-            id="phone"
-            required
-            value={formData.phone}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="birthday" className="block text-sm font-medium text-gray-700">
-            Birthday *
-          </label>
-          <input
-            type="date"
-            name="birthday"
-            id="birthday"
-            required
-            value={formData.birthday}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-            Location *
-          </label>
-          <input
-            type="text"
-            name="location"
-            id="location"
-            required
-            placeholder="City, State/Country"
-            value={formData.location}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          />
-        </div>
-
-        <div className="sm:col-span-2">
-          <label htmlFor="address_1" className="block text-sm font-medium text-gray-700">
-            Address Line 1 (Optional)
-          </label>
-          <input
-            type="text"
-            name="address_1"
-            id="address_1"
-            value={formData.address_1}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          />
-        </div>
-
-        <div className="sm:col-span-2">
-          <label htmlFor="address_2" className="block text-sm font-medium text-gray-700">
-            Address Line 2 (Optional)
-          </label>
-          <input
-            type="text"
-            name="address_2"
-            id="address_2"
-            value={formData.address_2}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          />
-        </div>
-
-        <div className="sm:col-span-2">
-          <label htmlFor="address_3" className="block text-sm font-medium text-gray-700">
-            Address Line 3 (Optional)
-          </label>
-          <input
-            type="text"
-            name="address_3"
-            id="address_3"
-            value={formData.address_3}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="postal_code" className="block text-sm font-medium text-gray-700">
-            Postal Code (Optional)
-          </label>
-          <input
-            type="text"
-            name="postal_code"
-            id="postal_code"
-            value={formData.postal_code}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          />
-        </div>
-      </div>
-
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          className="ml-3 inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-xs hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
-          Next Step
-        </button>
-      </div>
-    </form>
+          <div className="border-t border-stone-200 pt-5">
+            <h2 className="text-sm font-semibold text-stone-900">Social profiles</h2>
+            <p className="mt-0.5 text-xs text-stone-500">
+              Optional — included on templates that show links.
+            </p>
+            <div className="mt-4 space-y-5">
+              <Field label="LinkedIn URL">
+                <Input
+                  inputMode="url"
+                  value={form.linkedin_url}
+                  onChange={setField('linkedin_url')}
+                  placeholder="https://linkedin.com/in/ada"
+                />
+              </Field>
+              <Field label="GitHub URL">
+                <Input
+                  inputMode="url"
+                  value={form.github_url}
+                  onChange={setField('github_url')}
+                  placeholder="https://github.com/ada"
+                />
+              </Field>
+              <Field label="Stack Overflow URL">
+                <Input
+                  inputMode="url"
+                  value={form.stackoverflow_url}
+                  onChange={setField('stackoverflow_url')}
+                  placeholder="https://stackoverflow.com/users/1234"
+                />
+              </Field>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+    </StepShell>
   )
 }

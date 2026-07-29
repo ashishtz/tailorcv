@@ -2,43 +2,84 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Edit2, Trash2, Save, X } from 'lucide-react'
+import { GraduationCap, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Card, CardHeader, CardBody } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Field, Input, Select } from '@/components/ui/field'
+import { EmptyState } from '@/components/ui/empty-state'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { SkeletonRows } from '@/components/ui/skeleton'
+import { useToast } from '@/components/ui/toast'
+import { formatMonthYear, monthInputToDate, dateToMonthInput } from '@/lib/utils'
+
+const DEGREES = [
+  'High School',
+  'Associate',
+  "Bachelor's",
+  "Master's",
+  'PhD',
+  'Diploma',
+  'Certificate',
+  'Other',
+] as const
+
+type Degree = (typeof DEGREES)[number]
 
 interface Education {
   id: string
-  user_id: string
   institution_name: string
   start_date: string
   end_date: string | null
-  degree: "Bachelor's" | "Master's" | null
+  degree: Degree | null
   field_of_study: string | null
+}
+
+/** Form state keeps dates as <input type="month"> values ("YYYY-MM"). */
+interface EducationFormState {
+  institution_name: string
+  degree: Degree
+  field_of_study: string
+  start_date: string
+  end_date: string
+}
+
+const EMPTY_FORM: EducationFormState = {
+  institution_name: '',
+  degree: "Bachelor's",
+  field_of_study: '',
+  start_date: '',
+  end_date: '',
 }
 
 export default function EducationSection() {
   const [educationList, setEducationList] = useState<Education[]>([])
+  const [loading, setLoading] = useState(true)
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState<Partial<Education>>({})
-  const [loading, setLoading] = useState(false)
+  const [form, setForm] = useState<EducationFormState>(EMPTY_FORM)
+  const [dateError, setDateError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<Education | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const supabase = createClient()
+  const toast = useToast()
 
   const fetchEducation = useCallback(async (): Promise<Education[]> => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return []
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
 
-      const { data, error } = await supabase
-        .from('education')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('start_date', { ascending: false })
+    const { data, error } = await supabase
+      .from('education')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('start_date', { ascending: false })
 
-      return !error && data ? data : []
-    } catch (error) {
-      console.error('Error loading education:', error)
+    if (error) {
+      toast.error('Could not load education', error.message)
       return []
     }
-  }, [supabase])
+    return (data as Education[] | null) ?? []
+  }, [supabase, toast])
 
   const loadEducation = useCallback(async () => {
     setEducationList(await fetchEducation())
@@ -47,252 +88,291 @@ export default function EducationSection() {
   useEffect(() => {
     let active = true
     fetchEducation().then((list) => {
-      if (active) setEducationList(list)
+      if (!active) return
+      setEducationList(list)
+      setLoading(false)
     })
     return () => {
       active = false
     }
   }, [fetchEducation])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      if (editingId) {
-        const { error } = await supabase
-          .from('education')
-          .update({
-            ...formData,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', editingId)
-          .eq('user_id', user.id)
-
-        if (!error) {
-          await loadEducation()
-          setEditingId(null)
-        }
-      } else {
-        const { error } = await supabase
-          .from('education')
-          .insert({
-            ...formData,
-            user_id: user.id
-          })
-
-        if (!error) {
-          await loadEducation()
-          setIsAdding(false)
-        }
-      }
-
-      setFormData({})
-    } catch (error) {
-      console.error('Error saving education:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this education entry?')) return
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { error } = await supabase
-        .from('education')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id)
-
-      if (!error) {
-        setEducationList(educationList.filter(edu => edu.id !== id))
-      }
-    } catch (error) {
-      console.error('Error deleting education:', error)
-    }
-  }
-
-  const startEdit = (edu: Education) => {
-    setFormData(edu)
-    setEditingId(edu.id)
-    setIsAdding(false)
-  }
+  const formVisible = isAdding || editingId !== null
 
   const startAdd = () => {
-    setFormData({
-      institution_name: '',
-      start_date: '',
-      end_date: '',
-      degree: "Bachelor's",
-      field_of_study: ''
-    })
+    setForm(EMPTY_FORM)
+    setDateError(null)
     setIsAdding(true)
     setEditingId(null)
   }
 
-  const cancel = () => {
-    setFormData({})
+  const startEdit = (edu: Education) => {
+    setForm({
+      institution_name: edu.institution_name,
+      degree: edu.degree ?? "Bachelor's",
+      field_of_study: edu.field_of_study ?? '',
+      start_date: dateToMonthInput(edu.start_date),
+      end_date: dateToMonthInput(edu.end_date),
+    })
+    setDateError(null)
+    setEditingId(edu.id)
+    setIsAdding(false)
+  }
+
+  const closeForm = () => {
+    setForm(EMPTY_FORM)
+    setDateError(null)
     setIsAdding(false)
     setEditingId(null)
   }
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    // "YYYY-MM" strings compare correctly as plain strings.
+    if (form.start_date && form.end_date && form.end_date < form.start_date) {
+      setDateError('End date must be on or after the start date.')
+      return
+    }
+    setDateError(null)
+    setSaving(true)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setSaving(false)
+      toast.error('You are signed out', 'Sign in again to save your changes.')
+      return
+    }
+
+    // Explicit payload: month values converted to DATE-safe strings, empty
+    // strings to null - never spread raw form state into the table.
+    const payload = {
+      institution_name: form.institution_name.trim(),
+      degree: form.degree,
+      field_of_study: form.field_of_study.trim() || null,
+      start_date: monthInputToDate(form.start_date),
+      end_date: monthInputToDate(form.end_date),
+    }
+
+    const { error } = editingId
+      ? await supabase
+          .from('education')
+          .update({ ...payload, updated_at: new Date().toISOString() })
+          .eq('id', editingId)
+          .eq('user_id', user.id)
+      : await supabase.from('education').insert({ ...payload, user_id: user.id })
+
+    setSaving(false)
+    if (error) {
+      toast.error(
+        editingId ? 'Could not update the education entry' : 'Could not add the education entry',
+        error.message
+      )
+      return
+    }
+
+    toast.success(editingId ? 'Education updated' : 'Education added')
+    closeForm()
+    await loadEducation()
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setDeleting(false)
+      toast.error('You are signed out', 'Sign in again to delete this entry.')
+      return
+    }
+
+    const { error } = await supabase
+      .from('education')
+      .delete()
+      .eq('id', deleteTarget.id)
+      .eq('user_id', user.id)
+
+    setDeleting(false)
+    if (error) {
+      toast.error('Could not delete the education entry', error.message)
+      return
+    }
+
+    toast.success('Education deleted')
+    setDeleteTarget(null)
+    await loadEducation()
+  }
+
+  const subtitle = (edu: Education) =>
+    [edu.degree, edu.field_of_study].filter(Boolean).join(' · ')
+
   return (
-    <div className="bg-white shadow-sm rounded-lg p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-gray-900">Education</h2>
-        {!isAdding && !editingId && (
-          <button
-            onClick={startAdd}
-            className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-green-600 bg-green-100 hover:bg-green-200"
+    <Card>
+      <CardHeader
+        title="Education"
+        description="Degrees, diplomas and certificates."
+        actions={
+          !formVisible && (
+            <Button variant="secondary" size="sm" onClick={startAdd}>
+              <Plus aria-hidden />
+              Add education
+            </Button>
+          )
+        }
+      />
+
+      {formVisible && (
+        <CardBody className="border-b border-stone-200">
+          <form
+            onSubmit={handleSubmit}
+            className="rounded-lg border border-stone-200 bg-stone-50 p-4 sm:p-5"
           >
-            <Plus className="w-4 h-4 mr-1" />
-            Add Education
-          </button>
-        )}
-      </div>
-
-      {(isAdding || editingId) && (
-        <form onSubmit={handleSubmit} className="mb-6 p-4 border border-gray-200 rounded-lg">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Institution Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.institution_name || ''}
-                onChange={(e) => setFormData({ ...formData, institution_name: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                placeholder="e.g., Harvard University"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Degree
-              </label>
-              <select
-                value={formData.degree || "Bachelor's"}
-                onChange={(e) => setFormData({ ...formData, degree: e.target.value as "Bachelor's" | "Master's" | null })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            <h3 className="font-display text-sm font-semibold text-stone-900">
+              {editingId ? 'Edit education' : 'New education'}
+            </h3>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <Field label="Institution" required>
+                  <Input
+                    required
+                    value={form.institution_name}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, institution_name: e.target.value }))
+                    }
+                    placeholder="e.g. University of Toronto"
+                  />
+                </Field>
+              </div>
+              <Field label="Degree">
+                <Select
+                  value={form.degree}
+                  onChange={(e) => setForm((f) => ({ ...f, degree: e.target.value as Degree }))}
+                >
+                  {DEGREES.map((degree) => (
+                    <option key={degree} value={degree}>
+                      {degree}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Field of study">
+                <Input
+                  value={form.field_of_study}
+                  onChange={(e) => setForm((f) => ({ ...f, field_of_study: e.target.value }))}
+                  placeholder="e.g. Computer Science"
+                />
+              </Field>
+              <Field label="Start date" required>
+                <Input
+                  type="month"
+                  required
+                  value={form.start_date}
+                  onChange={(e) => {
+                    setDateError(null)
+                    setForm((f) => ({ ...f, start_date: e.target.value }))
+                  }}
+                />
+              </Field>
+              <Field
+                label="End date"
+                error={dateError ?? undefined}
+                hint="Leave empty if you are currently studying."
               >
-                <option value="Bachelor's">Bachelor&apos;s</option>
-                <option value="Master's">Master&apos;s</option>
-              </select>
+                <Input
+                  type="month"
+                  value={form.end_date}
+                  onChange={(e) => {
+                    setDateError(null)
+                    setForm((f) => ({ ...f, end_date: e.target.value }))
+                  }}
+                />
+              </Field>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Field of Study
-              </label>
-              <input
-                type="text"
-                value={formData.field_of_study || ''}
-                onChange={(e) => setFormData({ ...formData, field_of_study: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                placeholder="e.g., Computer Science"
-              />
+            <div className="mt-5 flex justify-end gap-3">
+              <Button variant="secondary" onClick={closeForm} disabled={saving}>
+                Cancel
+              </Button>
+              <Button type="submit" loading={saving}>
+                {editingId ? 'Save changes' : 'Add education'}
+              </Button>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Start Date *
-              </label>
-              <input
-                type="date"
-                required
-                value={formData.start_date || ''}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                End Date (or Expected)
-              </label>
-              <input
-                type="date"
-                value={formData.end_date || ''}
-                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              />
-              <p className="mt-1 text-xs text-gray-500">Leave empty if still enrolled</p>
-            </div>
-          </div>
-
-          <div className="mt-4 flex gap-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-xs text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
-            >
-              <Save className="w-4 h-4 mr-1" />
-              {loading ? 'Saving...' : 'Save'}
-            </button>
-            <button
-              type="button"
-              onClick={cancel}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-            >
-              <X className="w-4 h-4 mr-1" />
-              Cancel
-            </button>
-          </div>
-        </form>
+          </form>
+        </CardBody>
       )}
 
-      <div className="space-y-4">
-        {educationList.length === 0 ? (
-          <p className="text-gray-500 text-sm">No education added yet</p>
-        ) : (
-          educationList.map(edu => (
-            <div key={edu.id} className="border-l-4 border-green-500 pl-4 py-2">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{edu.institution_name}</h3>
-                  {edu.degree && edu.field_of_study && (
-                    <p className="text-gray-700">{edu.degree} in {edu.field_of_study}</p>
-                  )}
-                  {edu.degree && !edu.field_of_study && (
-                    <p className="text-gray-700">{edu.degree}</p>
-                  )}
-                  {!edu.degree && edu.field_of_study && (
-                    <p className="text-gray-700">{edu.field_of_study}</p>
-                  )}
-                  <p className="text-sm text-gray-500">
-                    {new Date(edu.start_date).toLocaleDateString()} - {
-                      edu.end_date ? new Date(edu.end_date).toLocaleDateString() : 'Present'
-                    }
-                  </p>
-                </div>
-                <div className="flex gap-2 ml-4">
-                  <button
-                    onClick={() => startEdit(edu)}
-                    className="text-gray-400 hover:text-green-600"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(edu.id)}
-                    className="text-gray-400 hover:text-red-600"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+      {loading ? (
+        <CardBody>
+          <SkeletonRows rows={2} />
+        </CardBody>
+      ) : educationList.length === 0 ? (
+        !formVisible && (
+          <EmptyState
+            icon={GraduationCap}
+            title="No education yet"
+            description="Add your studies - degrees, diplomas or certificates."
+            action={
+              <Button size="sm" onClick={startAdd}>
+                <Plus aria-hidden />
+                Add education
+              </Button>
+            }
+          />
+        )
+      ) : (
+        <ul className="divide-y divide-stone-100">
+          {educationList.map((edu) => (
+            <li
+              key={edu.id}
+              className="flex items-start justify-between gap-4 px-5 py-4 sm:px-6"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-stone-900">{edu.institution_name}</p>
+                {subtitle(edu) && (
+                  <p className="mt-0.5 text-sm text-stone-600">{subtitle(edu)}</p>
+                )}
+                <p className="mt-0.5 text-xs text-stone-500">
+                  {formatMonthYear(edu.start_date)} –{' '}
+                  {edu.end_date ? formatMonthYear(edu.end_date) : 'Present'}
+                </p>
               </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={`Edit education at ${edu.institution_name}`}
+                  onClick={() => startEdit(edu)}
+                >
+                  <Pencil aria-hidden />
+                </Button>
+                <Button
+                  variant="danger-ghost"
+                  size="icon-sm"
+                  aria-label={`Delete education at ${edu.institution_name}`}
+                  onClick={() => setDeleteTarget(edu)}
+                >
+                  <Trash2 aria-hidden />
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete education"
+        message={
+          deleteTarget
+            ? `Your entry for ${deleteTarget.institution_name} will be removed from your profile.`
+            : ''
+        }
+        confirmText="Delete"
+        type="danger"
+        loading={deleting}
+      />
+    </Card>
   )
 }

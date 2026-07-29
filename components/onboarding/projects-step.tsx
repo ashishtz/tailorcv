@@ -1,274 +1,291 @@
 'use client'
 
 import { useState } from 'react'
-import { useOnboarding } from '@/lib/contexts/onboarding-context'
 import { useRouter } from 'next/navigation'
+import { Edit2, ExternalLink, Plus, Rocket, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { Trash2, Plus, Edit2, ExternalLink } from 'lucide-react'
+import { useOnboarding, type ProjectDraft } from '@/lib/contexts/onboarding-context'
+import { saveOnboardingData } from '@/lib/repositories/onboarding.repository'
+import { StepShell, StepSkeleton } from '@/components/onboarding/step-shell'
+import { EnhanceField } from '@/components/onboarding/enhance-field'
+import { Card, CardBody } from '@/components/ui/card'
+import { Field, Input } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { useToast } from '@/components/ui/toast'
+
+const EMPTY_FORM: ProjectDraft = {
+  project_name: '',
+  role_title: '',
+  description: '',
+  link: '',
+}
+
+type ProjectErrors = Partial<Record<'project_name', string>>
+
+/** Prepends https:// when the link has no scheme, so stored links always open. */
+function normalizeLink(raw: string): string {
+  const value = raw.trim()
+  if (!value) return ''
+  if (/^https?:\/\//i.test(value)) return value
+  return `https://${value}`
+}
+
+function formatList(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? ''
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`
+}
 
 export function ProjectsStep() {
-  const { data, addProject, updateProject, removeProject, setCurrentStep } = useOnboarding()
+  const { hydrated } = useOnboarding()
+  if (!hydrated) return <StepSkeleton />
+  return <ProjectsList />
+}
+
+/** Rendered only after the draft has hydrated, so initial state is safe. */
+function ProjectsList() {
+  const { data, updateData, reset } = useOnboarding()
   const router = useRouter()
+  const toast = useToast()
   const supabase = createClient()
-  const [isAdding, setIsAdding] = useState(false)
-  const [editingIndex, setEditingIndex] = useState<number | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    project_name: '',
-    role_title: '',
-    description: '',
-    link: '',
-  })
+  const entries = data.projects
 
-  const resetForm = () => {
-    setFormData({
-      project_name: '',
-      role_title: '',
-      description: '',
-      link: '',
-    })
-    setIsAdding(false)
-    setEditingIndex(null)
+  const [form, setForm] = useState<ProjectDraft | null>(null)
+  const [editIndex, setEditIndex] = useState<number | null>(null)
+  const [errors, setErrors] = useState<ProjectErrors>({})
+  const [footerNote, setFooterNote] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const formOpen = form !== null
+
+  const setFormField = <K extends keyof ProjectDraft>(key: K, value: ProjectDraft[K]) => {
+    setForm((current) => (current ? { ...current, [key]: value } : current))
   }
 
-  const handleSubmitProject = (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (editingIndex !== null) {
-      updateProject(editingIndex, formData)
-    } else {
-      addProject(formData)
+  const openAdd = () => {
+    setForm({ ...EMPTY_FORM })
+    setEditIndex(null)
+    setErrors({})
+    setFooterNote('')
+  }
+
+  const openEdit = (index: number) => {
+    setForm({ ...entries[index] })
+    setEditIndex(index)
+    setErrors({})
+    setFooterNote('')
+  }
+
+  const closeForm = () => {
+    setForm(null)
+    setEditIndex(null)
+    setErrors({})
+    setFooterNote('')
+  }
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!form) return
+
+    const nextErrors: ProjectErrors = {}
+    if (!form.project_name.trim()) nextErrors.project_name = 'Project name is required.'
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length > 0) return
+
+    const entry: ProjectDraft = {
+      project_name: form.project_name.trim(),
+      role_title: form.role_title.trim(),
+      description: form.description.trim(),
+      link: normalizeLink(form.link),
     }
-    
-    resetForm()
+    updateData({
+      projects:
+        editIndex === null
+          ? [...entries, entry]
+          : entries.map((existing, index) => (index === editIndex ? entry : existing)),
+    })
+    closeForm()
   }
 
-  const handleEdit = (index: number) => {
-    const project = data.projects[index]
-    setFormData({
-      project_name: project.project_name,
-      role_title: project.role_title || '',
-      description: project.description || '',
-      link: project.link || '',
-    })
-    setEditingIndex(index)
-    setIsAdding(true)
+  const removeEntry = (index: number) => {
+    updateData({ projects: entries.filter((_, i) => i !== index) })
   }
 
   const handleFinish = async () => {
-    setLoading(true)
+    if (formOpen) {
+      setFooterNote('Add or cancel the project you are working on before finishing.')
+      return
+    }
+    setSaving(true)
     try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('User not found')
-
-      // Save all onboarding data to database
-      // Update profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update(data.personalInfo)
-        .eq('id', user.id)
-
-      if (profileError) throw profileError
-
-      // Save skills
-      for (const skill of data.skills) {
-        await supabase
-          .from('user_skills')
-          .insert({ user_id: user.id, skill_id: skill.id })
+      const { data: auth, error: authError } = await supabase.auth.getUser()
+      const user = auth.user
+      if (authError || !user) {
+        toast.error('You are signed out', 'Sign in again to finish setting up your profile.')
+        return
       }
 
-      // Save work experiences
-      for (const experience of data.workExperiences) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { id, created_at, updated_at, ...exp } = experience
-        await supabase
-          .from('work_experiences')
-          .insert({ ...exp, user_id: user.id })
+      const result = await saveOnboardingData(supabase, user.id, data)
+      if (!result.ok) {
+        toast.error(
+          `Couldn't save your ${result.step}`,
+          `${result.message} Your draft is still here — please try again.`
+        )
+        return
       }
 
-      // Save education
-      for (const edu of data.education) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { id, created_at, updated_at, ...education } = edu
-        await supabase
-          .from('education')
-          .insert({ ...education, user_id: user.id })
-      }
-
-      // Save projects
-      for (const proj of data.projects) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { id, created_at, updated_at, ...project } = proj
-        await supabase
-          .from('projects')
-          .insert({ ...project, user_id: user.id })
-      }
-
+      reset()
+      toast.success(
+        'Your profile is ready',
+        result.kept.length > 0
+          ? `We kept your existing ${formatList(result.kept)} instead of adding duplicates.`
+          : 'Time to generate your first resume.'
+      )
       router.push('/dashboard')
-    } catch (error) {
-      console.error('Error saving onboarding data:', error)
+      router.refresh()
     } finally {
-      setLoading(false)
+      setSaving(false)
     }
   }
 
-  const handleBack = () => {
-    setCurrentStep(4)
-    router.push('/onboarding/education')
-  }
-
   return (
-    <div className="space-y-6">
+    <StepShell
+      title="Projects"
+      description="Side projects and open source show initiative. This is the last step — Finish saves everything to your profile."
+      backHref="/onboarding/education"
+      onContinue={handleFinish}
+      continueLabel="Finish setup"
+      continueLoading={saving}
+      footerNote={footerNote || undefined}
+    >
       <div className="space-y-4">
-        {data.projects.map((project, index) => (
-          <div key={project.id} className="border border-gray-200 rounded-lg p-4">
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <h4 className="font-semibold text-gray-900">{project.project_name}</h4>
-                {project.role_title && (
-                  <p className="text-gray-600">{project.role_title}</p>
-                )}
-                {project.description && (
-                  <p className="mt-2 text-gray-700">{project.description}</p>
-                )}
-                {project.link && (
-                  <a
-                    href={project.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
-                  >
-                    View Project
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
-              </div>
-              <div className="flex gap-2 ml-4">
-                <button
-                  type="button"
-                  onClick={() => handleEdit(index)}
-                  className="p-1 text-gray-400 hover:text-gray-600"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removeProject(index)}
-                  className="p-1 text-red-400 hover:text-red-600"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+        {entries.length > 0 && (
+          <ul className="space-y-3">
+            {entries.map((entry, index) => (
+              <li key={`${entry.project_name}-${index}`}>
+                <Card>
+                  <CardBody className="flex items-start justify-between gap-4 py-4">
+                    <div className="min-w-0">
+                      <p className="font-medium text-stone-900">{entry.project_name}</p>
+                      {entry.role_title && (
+                        <p className="text-sm text-stone-600">{entry.role_title}</p>
+                      )}
+                      {entry.link && (
+                        <p className="mt-1 flex items-center gap-1 text-xs text-stone-500">
+                          <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
+                          <span className="truncate">{entry.link}</span>
+                        </p>
+                      )}
+                      {entry.description && (
+                        <p className="mt-2 line-clamp-2 text-sm text-stone-600">
+                          {entry.description}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => openEdit(index)}
+                        disabled={formOpen || saving}
+                        aria-label={`Edit project ${entry.project_name}`}
+                      >
+                        <Edit2 aria-hidden />
+                      </Button>
+                      <Button
+                        variant="danger-ghost"
+                        size="icon-sm"
+                        onClick={() => removeEntry(index)}
+                        disabled={formOpen || saving}
+                        aria-label={`Remove project ${entry.project_name}`}
+                      >
+                        <Trash2 aria-hidden />
+                      </Button>
+                    </div>
+                  </CardBody>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {form ? (
+          <Card>
+            <CardBody>
+              <h2 className="text-sm font-semibold text-stone-900">
+                {editIndex === null ? 'Add project' : 'Edit project'}
+              </h2>
+              <form onSubmit={handleSubmit} className="mt-4 space-y-5">
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Field label="Project name" required error={errors.project_name}>
+                    <Input
+                      value={form.project_name}
+                      onChange={(event) => setFormField('project_name', event.target.value)}
+                      placeholder="Open source dashboard"
+                    />
+                  </Field>
+                  <Field label="Your role">
+                    <Input
+                      value={form.role_title}
+                      onChange={(event) => setFormField('role_title', event.target.value)}
+                      placeholder="Maintainer"
+                    />
+                  </Field>
+                </div>
+                <Field label="Link" hint="We add https:// for you if it is missing.">
+                  <Input
+                    inputMode="url"
+                    value={form.link}
+                    onChange={(event) => setFormField('link', event.target.value)}
+                    placeholder="github.com/you/project"
+                  />
+                </Field>
+                <EnhanceField
+                  label="Description"
+                  value={form.description}
+                  onChange={(description) => setFormField('description', description)}
+                  rows={4}
+                  enhanceType="project"
+                  placeholder="What does it do, and what did you build it with?"
+                  hint="Write about 10 words and an AI enhance button appears."
+                />
+                <div className="flex items-center justify-end gap-3">
+                  <Button variant="ghost" onClick={closeForm}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" variant="secondary">
+                    {editIndex === null ? 'Add project' : 'Save changes'}
+                  </Button>
+                </div>
+              </form>
+            </CardBody>
+          </Card>
+        ) : entries.length === 0 ? (
+          <Card>
+            <EmptyState
+              icon={Rocket}
+              title="No projects yet"
+              description="Optional — but a strong side project often carries a resume. You can finish without one."
+              action={
+                <Button variant="secondary" onClick={openAdd}>
+                  <Plus aria-hidden />
+                  Add project
+                </Button>
+              }
+              className="py-10"
+            />
+          </Card>
+        ) : (
+          <button
+            type="button"
+            onClick={openAdd}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 bg-white px-4 py-3.5 text-sm font-medium text-stone-600 transition-colors duration-150 hover:border-brand-400 hover:text-brand-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+            Add another project
+          </button>
+        )}
       </div>
-
-      {isAdding ? (
-        <form onSubmit={handleSubmitProject} className="space-y-4 border border-gray-200 rounded-lg p-4">
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label htmlFor="project_name" className="block text-sm font-medium text-gray-700">
-                Project Name *
-              </label>
-              <input
-                type="text"
-                id="project_name"
-                required
-                value={formData.project_name}
-                onChange={(e) => setFormData({ ...formData, project_name: e.target.value })}
-                className="mt-1 block w-full"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="role_title" className="block text-sm font-medium text-gray-700">
-                Role/Title
-              </label>
-              <input
-                type="text"
-                id="role_title"
-                value={formData.role_title}
-                onChange={(e) => setFormData({ ...formData, role_title: e.target.value })}
-                className="mt-1 block w-full"
-                placeholder="e.g., Lead Developer, Contributor"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description
-              </label>
-              <textarea
-                id="description"
-                rows={4}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300"
-                placeholder="Describe the project and your contributions..."
-              />
-            </div>
-
-            <div>
-              <label htmlFor="link" className="block text-sm font-medium text-gray-700">
-                Project Link (Optional)
-              </label>
-              <input
-                type="url"
-                id="link"
-                value={formData.link}
-                onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-                className="mt-1 block w-full"
-                placeholder="https://..."
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={resetForm}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700"
-            >
-              {editingIndex !== null ? 'Update' : 'Add'} Project
-            </button>
-          </div>
-        </form>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setIsAdding(true)}
-          className="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 flex items-center justify-center gap-2"
-        >
-          <Plus className="w-5 h-5" />
-          Add Project
-        </button>
-      )}
-
-      <div className="flex justify-between">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-xs hover:bg-gray-50"
-        >
-          Back
-        </button>
-        <button
-          type="button"
-          onClick={handleFinish}
-          disabled={loading}
-          className="inline-flex justify-center rounded-md border border-transparent bg-green-600 py-2 px-4 text-sm font-medium text-white shadow-xs hover:bg-green-700 disabled:opacity-50"
-        >
-          {loading ? 'Saving...' : 'Complete Onboarding'}
-        </button>
-      </div>
-    </div>
+    </StepShell>
   )
 }
