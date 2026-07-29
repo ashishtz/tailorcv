@@ -43,16 +43,3 @@ export function parseHighlights(text: string): React.ReactNode {
 
   return <>{parts}</>
 }
-
-/**
- * Parses an array of strings containing highlight markers
- * @param items Array of strings
- * @returns Array of React nodes with parsed highlights
- */
-export function parseHighlightsArray(items: string[]): React.ReactNode[] {
-  return items.map((item, index) => (
-    <React.Fragment key={index}>
-      {parseHighlights(item)}
-    </React.Fragment>
-  ))
-}

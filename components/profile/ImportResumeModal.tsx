@@ -30,8 +30,8 @@ interface ImportResumeModalProps {
  * Every field is treated as optional - the parser output is AI-generated.
  * ------------------------------------------------------------------ */
 
-interface ParsedPersonalInfo {
-  fullName?: string
+interface ParsedContact {
+  name?: string
   email?: string
   phone?: string
   location?: string
@@ -62,7 +62,7 @@ interface ParsedProject {
 }
 
 interface ParsedResumeData {
-  personalInfo?: ParsedPersonalInfo
+  contact?: ParsedContact
   workExperience?: ParsedWorkExperience[]
   education?: ParsedEducation[]
   skills?: string[]
@@ -143,7 +143,7 @@ type ProfileContactField = 'first_name' | 'last_name' | 'email' | 'phone' | 'loc
 async function mergeProfileFields(
   supabase: SupabaseBrowserClient,
   userId: string,
-  info: ParsedPersonalInfo | undefined
+  info: ParsedContact | undefined
 ): Promise<number> {
   if (!info) return 0
 
@@ -155,7 +155,7 @@ async function mergeProfileFields(
   if (error) throw new Error(error.message)
   const current = (data ?? {}) as Partial<Record<ProfileContactField, string | null>>
 
-  const [firstName, ...restName] = (info.fullName ?? '').trim().split(/\s+/).filter(Boolean)
+  const [firstName, ...restName] = (info.name ?? '').trim().split(/\s+/).filter(Boolean)
   const lastName = restName.join(' ')
 
   const candidates: Record<ProfileContactField, string> = {
@@ -422,7 +422,7 @@ export function ImportResumeModal({ isOpen, onClose, onSuccess }: ImportResumeMo
     let skippedTotal = 0
 
     try {
-      const filled = await mergeProfileFields(supabase, user.id, parsed.personalInfo)
+      const filled = await mergeProfileFields(supabase, user.id, parsed.contact)
       if (filled > 0) parts.push(`${filled} contact field${filled === 1 ? '' : 's'} filled`)
     } catch {
       problems.push('contact details')
@@ -488,7 +488,7 @@ export function ImportResumeModal({ isOpen, onClose, onSuccess }: ImportResumeMo
 
   const summary = {
     personal:
-      [parsed?.personalInfo?.fullName, parsed?.personalInfo?.email]
+      [parsed?.contact?.name, parsed?.contact?.email]
         .map((value) => value?.trim())
         .filter(Boolean)
         .join(' · ') || 'Not found',
