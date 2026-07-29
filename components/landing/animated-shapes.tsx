@@ -39,8 +39,8 @@ export function AnimatedShapes() {
       </svg>
 
       {/* Glowing orbs */}
-      <div className="absolute top-1/4 right-1/4 w-32 h-32 bg-gradient-to-r from-primary-400 to-secondary-400 rounded-full blur-3xl opacity-20 animate-pulse-slow" />
-      <div className="absolute bottom-1/4 left-1/3 w-40 h-40 bg-gradient-to-r from-accent-400 to-primary-400 rounded-full blur-3xl opacity-20 animate-float" />
+      <div className="absolute top-1/4 right-1/4 w-32 h-32 bg-linear-to-r from-primary-400 to-secondary-400 rounded-full blur-3xl opacity-20 animate-pulse-slow" />
+      <div className="absolute bottom-1/4 left-1/3 w-40 h-40 bg-linear-to-r from-accent-400 to-primary-400 rounded-full blur-3xl opacity-20 animate-float" />
     </div>
   )
 }

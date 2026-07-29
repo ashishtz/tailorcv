@@ -138,7 +138,7 @@ export function ResumeUploadSection({ onDataParsed }: ResumeUploadSectionProps) 
   }
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className="bg-white shadow-sm rounded-lg p-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">Import from Resume</h2>
       <p className="text-sm text-gray-600 mb-6">
         Upload your existing resume to automatically fill your profile information. We&apos;ll extract your work experience, education, skills, and projects.
@@ -177,7 +177,7 @@ export function ResumeUploadSection({ onDataParsed }: ResumeUploadSectionProps) 
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-xs text-white bg-blue-600 hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             Select File
           </button>
@@ -198,7 +198,7 @@ export function ResumeUploadSection({ onDataParsed }: ResumeUploadSectionProps) 
               <button
                 onClick={handleUpload}
                 disabled={isUploading}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-xs text-white bg-green-600 hover:bg-green-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isUploading ? (
                   <>

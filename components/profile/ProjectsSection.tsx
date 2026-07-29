@@ -134,7 +134,7 @@ export default function ProjectsSection() {
   }
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className="bg-white shadow-sm rounded-lg p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-gray-900">Projects</h2>
         {!isAdding && !editingId && (
@@ -160,7 +160,7 @@ export default function ProjectsSection() {
                 required
                 value={formData.project_name || ''}
                 onChange={(e) => setFormData({ ...formData, project_name: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 placeholder="e.g., E-commerce Platform"
               />
             </div>
@@ -173,7 +173,7 @@ export default function ProjectsSection() {
                 type="text"
                 value={formData.role_title || ''}
                 onChange={(e) => setFormData({ ...formData, role_title: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 placeholder="e.g., Lead Developer, Designer, Project Manager"
               />
             </div>
@@ -186,7 +186,7 @@ export default function ProjectsSection() {
                 type="url"
                 value={formData.link || ''}
                 onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 placeholder="https://github.com/username/project"
               />
             </div>
@@ -199,7 +199,7 @@ export default function ProjectsSection() {
                 value={formData.description || ''}
                 onChange={(value) => setFormData({ ...formData, description: value })}
                 rows={4}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 placeholder="Describe the project, technologies used, and your contributions..."
                 enhanceType="project"
               />
@@ -210,7 +210,7 @@ export default function ProjectsSection() {
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-xs text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
             >
               <Save className="w-4 h-4 mr-1" />
               {loading ? 'Saving...' : 'Save'}

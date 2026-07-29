@@ -36,9 +36,9 @@ export default async function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-500 mb-1">Total Resumes</p>
-                  <p className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">0</p>
+                  <p className="text-3xl font-bold bg-linear-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">0</p>
                 </div>
-                <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg p-3">
+                <div className="bg-linear-to-br from-primary-500 to-primary-600 rounded-lg p-3">
                   <FileText className="h-8 w-8 text-white" />
                 </div>
               </div>
@@ -56,7 +56,7 @@ export default async function DashboardPage() {
                     Complete
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-3">
+                <div className="bg-linear-to-br from-green-500 to-green-600 rounded-lg p-3">
                   <Award className="h-8 w-8 text-white" />
                 </div>
               </div>
@@ -64,7 +64,7 @@ export default async function DashboardPage() {
           </div>
 
           {/* Quick Actions Card */}
-          <div className="bg-gradient-to-br from-accent-600 to-accent-700 overflow-hidden rounded-lg shadow-soft hover:shadow-medium transition-all duration-200 transform hover:-translate-y-1 animate-scale-in animation-delay-200">
+          <div className="bg-linear-to-br from-accent-600 to-accent-700 overflow-hidden rounded-lg shadow-soft hover:shadow-medium transition-all duration-200 transform hover:-translate-y-1 animate-scale-in animation-delay-200">
             <div className="p-6">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
@@ -93,8 +93,8 @@ export default async function DashboardPage() {
           </h2>
           <div className="bg-white shadow-soft rounded-lg p-8 border border-gray-100">
             <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg p-3">
+              <div className="shrink-0">
+                <div className="bg-linear-to-br from-primary-500 to-primary-600 rounded-lg p-3">
                   <Sparkles className="h-8 w-8 text-white" />
                 </div>
               </div>
@@ -109,7 +109,7 @@ export default async function DashboardPage() {
                 </p>
                 <Link
                   href="/dashboard/documents"
-                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200 shadow-medium hover:shadow-large transform hover:-translate-y-0.5"
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-linear-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200 shadow-medium hover:shadow-large transform hover:-translate-y-0.5"
                 >
                   Create Your First Resume
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -121,7 +121,7 @@ export default async function DashboardPage() {
 
         {/* Tips Section */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 animate-slide-up animation-delay-400">
-          <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg p-6 border border-primary-200">
+          <div className="bg-linear-to-br from-primary-50 to-primary-100 rounded-lg p-6 border border-primary-200">
             <h3 className="text-lg font-semibold text-primary-900 mb-3 flex items-center">
               <Sparkles className="h-5 w-5 mr-2 text-primary-600" />
               Pro Tip: Strict vs Free Mode
@@ -131,7 +131,7 @@ export default async function DashboardPage() {
             </p>
           </div>
 
-          <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-lg p-6 border border-secondary-200">
+          <div className="bg-linear-to-br from-secondary-50 to-secondary-100 rounded-lg p-6 border border-secondary-200">
             <h3 className="text-lg font-semibold text-secondary-900 mb-3 flex items-center">
               <FileText className="h-5 w-5 mr-2 text-secondary-600" />
               Multiple Templates Available

@@ -142,7 +142,7 @@ export default function WorkExperienceSection() {
   }
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className="bg-white shadow-sm rounded-lg p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-gray-900">Work Experience</h2>
         {!isAdding && !editingId && (
@@ -168,7 +168,7 @@ export default function WorkExperienceSection() {
                 required
                 value={formData.company_name || ''}
                 onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
               />
             </div>
 
@@ -181,7 +181,7 @@ export default function WorkExperienceSection() {
                 required
                 value={formData.position_title || ''}
                 onChange={(e) => setFormData({ ...formData, position_title: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
               />
             </div>
 
@@ -193,7 +193,7 @@ export default function WorkExperienceSection() {
                 type="text"
                 value={formData.location || ''}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
               />
             </div>
 
@@ -204,7 +204,7 @@ export default function WorkExperienceSection() {
               <select
                 value={formData.job_type || 'Full-Time'}
                 onChange={(e) => setFormData({ ...formData, job_type: e.target.value as 'Part-Time' | 'Full-Time' | 'Contract' | null })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
               >
                 <option value="Full-Time">Full-Time</option>
                 <option value="Part-Time">Part-Time</option>
@@ -221,7 +221,7 @@ export default function WorkExperienceSection() {
                 required
                 value={formData.start_date || ''}
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
               />
             </div>
 
@@ -234,7 +234,7 @@ export default function WorkExperienceSection() {
                 value={formData.end_date || ''}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                 disabled={formData.is_current}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-slate-400 focus:ring-slate-300 sm:text-sm disabled:bg-gray-100"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-slate-400 focus:ring-slate-300 sm:text-sm disabled:bg-gray-100"
               />
               <label className="mt-2 flex items-center">
                 <input
@@ -245,7 +245,7 @@ export default function WorkExperienceSection() {
                     is_current: e.target.checked,
                     end_date: e.target.checked ? null : formData.end_date
                   })}
-                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-slate-400 focus:ring-slate-300"
+                  className="rounded-sm border-gray-300 text-blue-600 shadow-xs focus:border-slate-400 focus:ring-slate-300"
                 />
                 <span className="ml-2 text-sm text-gray-700">Currently working here</span>
               </label>
@@ -259,7 +259,7 @@ export default function WorkExperienceSection() {
                 value={formData.description || ''}
                 onChange={(value) => setFormData({ ...formData, description: value })}
                 rows={3}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
                 placeholder="Describe your responsibilities and achievements..."
                 enhanceType="work_experience"
               />
@@ -270,7 +270,7 @@ export default function WorkExperienceSection() {
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-xs text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
             >
               <Save className="w-4 h-4 mr-1" />
               {loading ? 'Saving...' : 'Save'}

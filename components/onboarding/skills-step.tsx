@@ -126,7 +126,7 @@ export function SkillsStep() {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Search for skills..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
 
@@ -138,7 +138,7 @@ export function SkillsStep() {
                 key={skill.id}
                 type="button"
                 onClick={() => toggleSkill(skill)}
-                className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 transition-colors"
+                className="w-full text-left px-3 py-2 rounded-sm hover:bg-gray-100 transition-colors"
               >
                 {skill.name}
               </button>
@@ -160,14 +160,14 @@ export function SkillsStep() {
                     type="button"
                     onClick={() => addNewSkill(searchTerm)}
                     disabled={loading}
-                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+                    className="px-3 py-1 bg-blue-600 text-white rounded-sm text-sm hover:bg-blue-700 disabled:opacity-50"
                   >
                     {loading ? 'Adding...' : 'Add'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsAddingNew(false)}
-                    className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300"
+                    className="px-3 py-1 bg-gray-200 text-gray-700 rounded-sm text-sm hover:bg-gray-300"
                   >
                     Cancel
                   </button>
@@ -177,7 +177,7 @@ export function SkillsStep() {
               <button
                 type="button"
                 onClick={() => setIsAddingNew(true)}
-                className="w-full text-left px-3 py-2 rounded hover:bg-blue-50 text-blue-600"
+                className="w-full text-left px-3 py-2 rounded-sm hover:bg-blue-50 text-blue-600"
               >
                 + Add &quot;{searchTerm}&quot; as new skill
               </button>
@@ -190,14 +190,14 @@ export function SkillsStep() {
         <button
           type="button"
           onClick={handleBack}
-          className="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-xs hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
           Back
         </button>
         <button
           type="button"
           onClick={handleSubmit}
-          className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-xs hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
           Next Step
         </button>

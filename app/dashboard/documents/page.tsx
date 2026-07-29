@@ -45,7 +45,7 @@ export default function DocumentsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Documents</h1>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-xs text-white bg-blue-600 hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <Plus className="h-5 w-5 mr-2" />
             Generate New Resume
@@ -57,14 +57,14 @@ export default function DocumentsPage() {
             <p className="text-gray-500">Loading resumes...</p>
           </div>
         ) : resumes.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg shadow">
+          <div className="text-center py-12 bg-white rounded-lg shadow-sm">
             <FileText className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No resumes</h3>
             <p className="mt-1 text-sm text-gray-500">Get started by generating your first resume.</p>
             <div className="mt-6">
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-xs text-white bg-blue-600 hover:bg-blue-700"
               >
                 <Plus className="h-5 w-5 mr-2" />
                 Generate Resume

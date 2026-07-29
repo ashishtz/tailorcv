@@ -72,7 +72,7 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto animate-fade-in">
       <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity" onClick={onClose} />
+        <div className="fixed inset-0 bg-gray-900/75 backdrop-blur-xs transition-opacity" onClick={onClose} />
 
         <div className="relative bg-white rounded-lg max-w-4xl w-full p-8 shadow-large animate-scale-in">
           <div className="absolute top-6 right-6">
@@ -96,7 +96,7 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
                 Generate From *
               </label>
               <div className="space-y-3">
-                <label className="flex items-start p-4 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
+                <label className="flex items-start p-4 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-checked:border-primary-500 has-checked:bg-primary-50">
                   <input
                     type="radio"
                     name="context_source"
@@ -116,7 +116,7 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
                   </div>
                 </label>
 
-                <label className="flex items-start p-4 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
+                <label className="flex items-start p-4 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-checked:border-primary-500 has-checked:bg-primary-50">
                   <input
                     type="radio"
                     name="context_source"
@@ -146,7 +146,7 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
                   required
                   value={selectedResumeId}
                   onChange={(e) => setSelectedResumeId(e.target.value)}
-                  className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500 py-3 px-4 transition-all duration-200"
+                  className="mt-1 block w-full rounded-lg border-gray-300 shadow-xs text-gray-900 focus:border-primary-500 focus:ring-primary-500 py-3 px-4 transition-all duration-200"
                 >
                   <option value="">Select a resume...</option>
                   {existingResumes.map((resume) => (
@@ -168,7 +168,7 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
                 required
                 value={formData.job_title}
                 onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
-                className="block w-full rounded-lg border-gray-300 shadow-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500 py-3 px-4 transition-all duration-200"
+                className="block w-full rounded-lg border-gray-300 shadow-xs text-gray-900 focus:border-primary-500 focus:ring-primary-500 py-3 px-4 transition-all duration-200"
                 placeholder="e.g., Senior Software Engineer"
               />
             </div>
@@ -183,7 +183,7 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
                 required
                 value={formData.job_description}
                 onChange={(e) => setFormData({ ...formData, job_description: e.target.value })}
-                className="block w-full rounded-lg border-gray-300 shadow-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500 py-3 px-4 transition-all duration-200"
+                className="block w-full rounded-lg border-gray-300 shadow-xs text-gray-900 focus:border-primary-500 focus:ring-primary-500 py-3 px-4 transition-all duration-200"
                 placeholder="Paste the job description here..."
               />
             </div>
@@ -210,7 +210,7 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
                 Resume Mode *
               </label>
               <div className="space-y-3">
-                <label className="flex items-start p-4 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
+                <label className="flex items-start p-4 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-checked:border-primary-500 has-checked:bg-primary-50">
                   <input
                     type="radio"
                     name="mode"
@@ -227,7 +227,7 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
                   </div>
                 </label>
 
-                <label className="flex items-start p-4 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
+                <label className="flex items-start p-4 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-checked:border-primary-500 has-checked:bg-primary-50">
                   <input
                     type="radio"
                     name="mode"
@@ -247,7 +247,7 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
             </div>
 
             {/* Content Formatting Options */}
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6 border border-gray-200">
+            <div className="bg-linear-to-br from-gray-50 to-gray-100 rounded-lg p-6 border border-gray-200">
               <h3 className="text-lg font-bold text-gray-900 mb-6">Content Formatting</h3>
 
               <div className="space-y-6">
@@ -257,7 +257,7 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
                     Summary Format
                   </label>
                   <div className="flex gap-4">
-                    <label className="flex-1 flex items-center justify-center p-3 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
+                    <label className="flex-1 flex items-center justify-center p-3 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-checked:border-primary-500 has-checked:bg-primary-50">
                       <input
                         type="radio"
                         name="summary_format"
@@ -274,7 +274,7 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
                       />
                       <span className="ml-2 text-sm font-medium text-gray-900">Paragraph</span>
                     </label>
-                    <label className="flex-1 flex items-center justify-center p-3 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
+                    <label className="flex-1 flex items-center justify-center p-3 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-checked:border-primary-500 has-checked:bg-primary-50">
                       <input
                         type="radio"
                         name="summary_format"
@@ -300,7 +300,7 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
                     Work Experience Format
                   </label>
                   <div className="flex gap-4">
-                    <label className="flex-1 flex items-center justify-center p-3 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
+                    <label className="flex-1 flex items-center justify-center p-3 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-checked:border-primary-500 has-checked:bg-primary-50">
                       <input
                         type="radio"
                         name="work_experience_format"
@@ -317,7 +317,7 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
                       />
                       <span className="ml-2 text-sm font-medium text-gray-900">Paragraph</span>
                     </label>
-                    <label className="flex-1 flex items-center justify-center p-3 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
+                    <label className="flex-1 flex items-center justify-center p-3 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-checked:border-primary-500 has-checked:bg-primary-50">
                       <input
                         type="radio"
                         name="work_experience_format"
@@ -343,7 +343,7 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
                     Projects Format
                   </label>
                   <div className="flex gap-4">
-                    <label className="flex-1 flex items-center justify-center p-3 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
+                    <label className="flex-1 flex items-center justify-center p-3 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-checked:border-primary-500 has-checked:bg-primary-50">
                       <input
                         type="radio"
                         name="projects_format"
@@ -360,7 +360,7 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
                       />
                       <span className="ml-2 text-sm font-medium text-gray-900">Paragraph</span>
                     </label>
-                    <label className="flex-1 flex items-center justify-center p-3 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
+                    <label className="flex-1 flex items-center justify-center p-3 rounded-lg border-2 border-gray-200 hover:border-primary-300 transition-all duration-200 cursor-pointer has-checked:border-primary-500 has-checked:bg-primary-50">
                       <input
                         type="radio"
                         name="projects_format"
@@ -393,7 +393,7 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
                           highlight_important_content: e.target.checked
                         }
                       })}
-                      className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      className="h-4 w-4 text-primary-600 border-gray-300 rounded-sm focus:ring-primary-500"
                     />
                     <div className="ml-3">
                       <span className="text-sm font-medium text-gray-900">Highlight important content</span>
@@ -410,14 +410,14 @@ export function GenerateResumeModal({ isOpen, onClose, existingResumes }: Genera
               <button
                 type="button"
                 onClick={onClose}
-                className="px-6 py-3 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200 shadow-soft hover:shadow-medium"
+                className="px-6 py-3 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200 shadow-soft hover:shadow-medium"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="group px-6 py-3 border border-transparent rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-medium hover:shadow-large transform hover:-translate-y-0.5 flex items-center"
+                className="group px-6 py-3 border border-transparent rounded-lg text-sm font-semibold text-white bg-linear-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-medium hover:shadow-large transform hover:-translate-y-0.5 flex items-center"
               >
                 {loading ? (
                   <>

@@ -29,7 +29,7 @@ export default async function Home() {
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
         {/* Animated Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-50 via-secondary-50/30 to-accent-50/20"></div>
+        <div className="absolute inset-0 bg-linear-to-br from-primary-50 via-secondary-50/30 to-accent-50/20"></div>
         <FloatingParticles />
         <AnimatedShapes />
         <div className="absolute top-20 right-0 w-96 h-96 bg-primary-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
@@ -47,7 +47,7 @@ export default async function Home() {
 
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 animate-slide-up animation-delay-100 font-poppins">
               Create Your{' '}
-              <span className="bg-gradient-to-r from-primary-600 via-secondary-600 to-accent-600 bg-clip-text text-transparent">
+              <span className="bg-linear-to-r from-primary-600 via-secondary-600 to-accent-600 bg-clip-text text-transparent">
                 Perfect Resume
               </span>
               <br />
@@ -62,7 +62,7 @@ export default async function Home() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-slide-up animation-delay-300">
               <Link
                 href={user ? '/dashboard' : '/auth/register'}
-                className="group px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold text-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-large hover:shadow-xl transform hover:-translate-y-1 flex items-center"
+                className="group px-8 py-4 bg-linear-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold text-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-large hover:shadow-xl transform hover:-translate-y-1 flex items-center"
               >
                 {user ? 'Go to Dashboard' : 'Start Building Free'}
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
@@ -104,7 +104,7 @@ export default async function Home() {
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4 font-poppins">
               Everything You Need to{' '}
-              <span className="bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+              <span className="bg-linear-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
                 Land Your Dream Job
               </span>
             </h2>
@@ -164,11 +164,11 @@ export default async function Home() {
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 {/* Animated gradient overlay on hover */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-50 via-secondary-50 to-accent-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-linear-to-br from-primary-50 via-secondary-50 to-accent-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                 <div className="relative z-10">
                   <div
-                    className={`inline-flex p-3 rounded-lg bg-gradient-to-br ${feature.gradient} mb-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-medium group-hover:shadow-large`}
+                    className={`inline-flex p-3 rounded-lg bg-linear-to-br ${feature.gradient} mb-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-medium group-hover:shadow-large`}
                   >
                     <feature.icon className="h-6 w-6 text-white group-hover:animate-pulse-slow" />
                   </div>
@@ -192,7 +192,7 @@ export default async function Home() {
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4 font-poppins">
               Create Your Resume in{' '}
-              <span className="bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+              <span className="bg-linear-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
                 3 Simple Steps
               </span>
             </h2>
@@ -227,20 +227,20 @@ export default async function Home() {
             ].map((step, index) => (
               <div key={index} className="relative group">
                 {index < 2 && (
-                  <div className="hidden md:block absolute top-12 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-primary-600 to-secondary-600 overflow-hidden">
+                  <div className="hidden md:block absolute top-12 left-[60%] w-[80%] h-0.5 bg-linear-to-r from-primary-600 to-secondary-600 overflow-hidden">
                     {/* Animated progress line */}
-                    <div className="h-full w-1/3 bg-gradient-to-r from-primary-400 to-secondary-400 animate-pulse-slow" />
+                    <div className="h-full w-1/3 bg-linear-to-r from-primary-400 to-secondary-400 animate-pulse-slow" />
                   </div>
                 )}
                 <div className="relative bg-white p-8 rounded-xl shadow-medium hover:shadow-xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 overflow-hidden">
                   {/* Gradient overlay on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary-50/50 to-secondary-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="absolute inset-0 bg-linear-to-br from-primary-50/50 to-secondary-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                   <div className="relative z-10">
                     <div className="text-6xl font-bold text-primary-100 mb-4 group-hover:text-primary-200 transition-colors duration-300">
                       {step.step}
                     </div>
-                    <div className="inline-flex p-3 rounded-lg bg-gradient-to-br from-primary-600 to-secondary-600 mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-medium group-hover:shadow-large">
+                    <div className="inline-flex p-3 rounded-lg bg-linear-to-br from-primary-600 to-secondary-600 mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-medium group-hover:shadow-large">
                       <step.icon className="h-6 w-6 text-white group-hover:animate-bounce-slow" />
                     </div>
                     <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-primary-700 transition-colors duration-300 font-poppins">
@@ -250,7 +250,7 @@ export default async function Home() {
                   </div>
 
                   {/* Animated corner accent */}
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-accent-400 to-primary-400 opacity-0 group-hover:opacity-20 blur-2xl transition-all duration-500 transform group-hover:scale-150" />
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-linear-to-br from-accent-400 to-primary-400 opacity-0 group-hover:opacity-20 blur-2xl transition-all duration-500 transform group-hover:scale-150" />
                 </div>
               </div>
             ))}
@@ -259,14 +259,14 @@ export default async function Home() {
       </section>
 
       {/* Templates Section */}
-      <section id="templates" className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary-50 via-secondary-50/30 to-accent-50/20 overflow-hidden">
+      <section id="templates" className="relative py-20 px-4 sm:px-6 lg:px-8 bg-linear-to-br from-primary-50 via-secondary-50/30 to-accent-50/20 overflow-hidden">
         {/* Animated decorative elements */}
         <AnimatedShapes />
         <div className="mx-auto max-w-7xl">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4 font-poppins">
               Beautiful{' '}
-              <span className="bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+              <span className="bg-linear-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
                 Professional Templates
               </span>
             </h2>
@@ -283,13 +283,13 @@ export default async function Home() {
                   className="group relative bg-white p-6 rounded-xl shadow-medium hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:scale-105 overflow-hidden"
                 >
                   {/* Animated background overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary-600/10 via-secondary-600/10 to-accent-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="absolute inset-0 bg-linear-to-br from-primary-600/10 via-secondary-600/10 to-accent-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                   <div className="relative z-10">
-                    <div className="aspect-[3/4] bg-white rounded-lg mb-4 overflow-hidden border border-gray-200 group-hover:border-primary-300 transition-all duration-500 relative">
+                    <div className="aspect-3/4 bg-white rounded-lg mb-4 overflow-hidden border border-gray-200 group-hover:border-primary-300 transition-all duration-500 relative">
                       <TemplatePreview templateName={template} />
                       {/* Animated shine effect */}
-                      <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
+                      <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-linear-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 group-hover:text-primary-700 transition-colors duration-300 font-poppins">{template}</h3>
                     <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors duration-300 font-inter">
@@ -309,7 +309,7 @@ export default async function Home() {
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center">
-          <div className="relative bg-gradient-to-br from-primary-600 via-secondary-600 to-accent-600 rounded-3xl p-12 shadow-xl overflow-hidden group hover:shadow-2xl transition-all duration-500">
+          <div className="relative bg-linear-to-br from-primary-600 via-secondary-600 to-accent-600 rounded-3xl p-12 shadow-xl overflow-hidden group hover:shadow-2xl transition-all duration-500">
             {/* Animated background elements */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse-slow" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse-slow animation-delay-2000" />
@@ -343,7 +343,7 @@ export default async function Home() {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <div className="p-2 bg-gradient-to-br from-primary-600 to-accent-500 rounded-lg">
+                <div className="p-2 bg-linear-to-br from-primary-600 to-accent-500 rounded-lg">
                   <FileText className="h-5 w-5 text-white" />
                 </div>
                 <span className="text-lg font-bold text-white">Resume Builder</span>

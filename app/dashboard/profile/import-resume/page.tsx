@@ -364,7 +364,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
 
         <div className="space-y-8">
           {/* Contact Information */}
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-white shadow-sm rounded-lg p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Contact Information</h2>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
@@ -373,7 +373,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                   type="text"
                   value={formData.contact.name}
                   onChange={(e) => handleContactChange('name', e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
               <div>
@@ -382,7 +382,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                   type="email"
                   value={formData.contact.email}
                   onChange={(e) => handleContactChange('email', e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
               <div>
@@ -391,7 +391,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                   type="tel"
                   value={formData.contact.phone}
                   onChange={(e) => handleContactChange('phone', e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
               <div>
@@ -400,7 +400,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                   type="text"
                   value={formData.contact.location}
                   onChange={(e) => handleContactChange('location', e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
               <div className="sm:col-span-2">
@@ -409,14 +409,14 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                   type="text"
                   value={formData.contact.address || ''}
                   onChange={(e) => handleContactChange('address', e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
             </div>
           </div>
 
           {/* Skills */}
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-white shadow-sm rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-900">Skills</h2>
               <button
@@ -433,7 +433,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                     type="text"
                     value={skill}
                     onChange={(e) => handleSkillChange(index, e.target.value)}
-                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    className="flex-1 rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   />
                   <button
                     onClick={() => removeSkill(index)}
@@ -447,7 +447,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
           </div>
 
           {/* Work Experience */}
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-white shadow-sm rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-900">Work Experience</h2>
               <button
@@ -476,7 +476,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                         type="text"
                         value={exp.company}
                         onChange={(e) => handleWorkExperienceChange(index, 'company', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
                     <div>
@@ -485,7 +485,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                         type="text"
                         value={exp.position}
                         onChange={(e) => handleWorkExperienceChange(index, 'position', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
                     <div>
@@ -494,7 +494,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                         type="text"
                         value={exp.location}
                         onChange={(e) => handleWorkExperienceChange(index, 'location', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
                     <div>
@@ -502,7 +502,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                       <select
                         value={exp.type}
                         onChange={(e) => handleWorkExperienceChange(index, 'type', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       >
                         <option value="Full-Time">Full-Time</option>
                         <option value="Part-Time">Part-Time</option>
@@ -515,7 +515,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                         type="month"
                         value={exp.startDate}
                         onChange={(e) => handleWorkExperienceChange(index, 'startDate', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
                     <div>
@@ -524,7 +524,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                         type="month"
                         value={exp.endDate}
                         onChange={(e) => handleWorkExperienceChange(index, 'endDate', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
                     <div className="sm:col-span-2">
@@ -533,7 +533,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                         rows={3}
                         value={exp.description}
                         onChange={(e) => handleWorkExperienceChange(index, 'description', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
                   </div>
@@ -543,7 +543,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
           </div>
 
           {/* Education */}
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-white shadow-sm rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-900">Education</h2>
               <button
@@ -572,7 +572,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                         type="text"
                         value={edu.institution}
                         onChange={(e) => handleEducationChange(index, 'institution', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
                     <div>
@@ -580,7 +580,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                       <select
                         value={edu.degree}
                         onChange={(e) => handleEducationChange(index, 'degree', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       >
                         <option value="">Select Degree</option>
                         <option value="Bachelor's">Bachelor&apos;s</option>
@@ -594,7 +594,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                         type="text"
                         value={edu.field}
                         onChange={(e) => handleEducationChange(index, 'field', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
                     <div>
@@ -603,7 +603,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                         type="month"
                         value={edu.startDate}
                         onChange={(e) => handleEducationChange(index, 'startDate', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
                     <div>
@@ -612,7 +612,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                         type="month"
                         value={edu.endDate}
                         onChange={(e) => handleEducationChange(index, 'endDate', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
                   </div>
@@ -622,7 +622,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
           </div>
 
           {/* Projects */}
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-white shadow-sm rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-900">Projects</h2>
               <button
@@ -651,7 +651,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                         type="text"
                         value={project.name}
                         onChange={(e) => handleProjectChange(index, 'name', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
                     <div>
@@ -660,7 +660,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                         type="text"
                         value={project.role}
                         onChange={(e) => handleProjectChange(index, 'role', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
                     <div className="sm:col-span-2">
@@ -669,7 +669,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                         type="url"
                         value={project.link}
                         onChange={(e) => handleProjectChange(index, 'link', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
                     <div className="sm:col-span-2">
@@ -678,7 +678,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
                         rows={3}
                         value={project.description}
                         onChange={(e) => handleProjectChange(index, 'description', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
                   </div>
@@ -692,7 +692,7 @@ export default function ImportResumePage({ searchParams }: ImportResumePageProps
             <button
               onClick={handleSave}
               disabled={isLoading}
-              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-xs text-white bg-blue-600 hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 'Saving...'

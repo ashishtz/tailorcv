@@ -170,7 +170,7 @@ export default function EditResumePage() {
     <div className="min-h-screen bg-gray-50">
       <form onSubmit={handleSubmit(onSubmit)}>
         {/* Header */}
-        <div className="bg-white shadow-sm border-b sticky top-0 z-10">
+        <div className="bg-white shadow-xs border-b sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-4">
               <div className="flex items-center gap-4">
@@ -216,7 +216,7 @@ export default function EditResumePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="space-y-8">
             {/* Contact Information */}
-            <div className="bg-white shadow rounded-lg p-6">
+            <div className="bg-white shadow-sm rounded-lg p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -225,7 +225,7 @@ export default function EditResumePage() {
                   </label>
                   <input
                     {...register('contact.name', { required: 'Name is required' })}
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                   />
                   {errors.contact?.name && (
                     <p className="mt-1 text-sm text-red-600">{errors.contact.name.message}</p>
@@ -239,7 +239,7 @@ export default function EditResumePage() {
                   <input
                     type="email"
                     {...register('contact.email', { required: 'Email is required' })}
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                   />
                   {errors.contact?.email && (
                     <p className="mt-1 text-sm text-red-600">{errors.contact.email.message}</p>
@@ -252,7 +252,7 @@ export default function EditResumePage() {
                   </label>
                   <input
                     {...register('contact.phone', { required: 'Phone is required' })}
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                   />
                   {errors.contact?.phone && (
                     <p className="mt-1 text-sm text-red-600">{errors.contact.phone.message}</p>
@@ -265,7 +265,7 @@ export default function EditResumePage() {
                   </label>
                   <input
                     {...register('contact.location', { required: 'Location is required' })}
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                   />
                   {errors.contact?.location && (
                     <p className="mt-1 text-sm text-red-600">{errors.contact.location.message}</p>
@@ -278,7 +278,7 @@ export default function EditResumePage() {
                   </label>
                   <input
                     {...register('contact.address')}
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                   />
                 </div>
 
@@ -291,7 +291,7 @@ export default function EditResumePage() {
                     type="url"
                     {...register('contact.socialLinks.linkedin')}
                     placeholder="https://linkedin.com/in/username"
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                   />
                 </div>
 
@@ -304,7 +304,7 @@ export default function EditResumePage() {
                     type="url"
                     {...register('contact.socialLinks.github')}
                     placeholder="https://github.com/username"
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                   />
                 </div>
 
@@ -317,14 +317,14 @@ export default function EditResumePage() {
                     type="url"
                     {...register('contact.socialLinks.stackoverflow')}
                     placeholder="https://stackoverflow.com/users/id"
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                   />
                 </div>
               </div>
             </div>
 
             {/* Skills */}
-            <div className="bg-white shadow rounded-lg p-6">
+            <div className="bg-white shadow-sm rounded-lg p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Skills</h2>
                 <button
@@ -348,7 +348,7 @@ export default function EditResumePage() {
                         setSkillsArray(newSkills)
                       }}
                       placeholder="Enter skill"
-                      className="flex-1 px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                      className="flex-1 px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                     />
                     <button
                       type="button"
@@ -363,7 +363,7 @@ export default function EditResumePage() {
             </div>
 
             {/* Work Experience */}
-            <div className="bg-white shadow rounded-lg p-6">
+            <div className="bg-white shadow-sm rounded-lg p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Work Experience</h2>
                 <button
@@ -404,7 +404,7 @@ export default function EditResumePage() {
                         </label>
                         <input
                           {...register(`workExperience.${index}.company` as const)}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                         />
                       </div>
 
@@ -414,7 +414,7 @@ export default function EditResumePage() {
                         </label>
                         <input
                           {...register(`workExperience.${index}.position` as const)}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                         />
                       </div>
 
@@ -424,7 +424,7 @@ export default function EditResumePage() {
                         </label>
                         <input
                           {...register(`workExperience.${index}.location` as const)}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                         />
                       </div>
 
@@ -434,7 +434,7 @@ export default function EditResumePage() {
                         </label>
                         <select
                           {...register(`workExperience.${index}.type` as const)}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                         >
                           <option value="Full-Time">Full-Time</option>
                           <option value="Part-Time">Part-Time</option>
@@ -450,7 +450,7 @@ export default function EditResumePage() {
                         <input
                           {...register(`workExperience.${index}.duration` as const)}
                           placeholder="e.g., Jan 2020 - Present"
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                         />
                       </div>
 
@@ -461,7 +461,7 @@ export default function EditResumePage() {
                         <textarea
                           {...register(`workExperience.${index}.description` as const)}
                           rows={3}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                         />
                       </div>
                     </div>
@@ -471,7 +471,7 @@ export default function EditResumePage() {
             </div>
 
             {/* Education */}
-            <div className="bg-white shadow rounded-lg p-6">
+            <div className="bg-white shadow-sm rounded-lg p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Education</h2>
                 <button
@@ -510,7 +510,7 @@ export default function EditResumePage() {
                         </label>
                         <input
                           {...register(`education.${index}.institution` as const)}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                         />
                       </div>
 
@@ -521,7 +521,7 @@ export default function EditResumePage() {
                         <input
                           {...register(`education.${index}.degree` as const)}
                           placeholder="e.g., Bachelor&apos;s, Master&apos;s"
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                         />
                       </div>
 
@@ -531,7 +531,7 @@ export default function EditResumePage() {
                         </label>
                         <input
                           {...register(`education.${index}.field` as const)}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                         />
                       </div>
 
@@ -542,7 +542,7 @@ export default function EditResumePage() {
                         <input
                           {...register(`education.${index}.duration` as const)}
                           placeholder="e.g., 2016 - 2020"
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                         />
                       </div>
                     </div>
@@ -552,7 +552,7 @@ export default function EditResumePage() {
             </div>
 
             {/* Projects */}
-            <div className="bg-white shadow rounded-lg p-6">
+            <div className="bg-white shadow-sm rounded-lg p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Projects</h2>
                 <button
@@ -591,7 +591,7 @@ export default function EditResumePage() {
                         </label>
                         <input
                           {...register(`projects.${index}.name` as const)}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                         />
                       </div>
 
@@ -601,7 +601,7 @@ export default function EditResumePage() {
                         </label>
                         <input
                           {...register(`projects.${index}.role` as const)}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                         />
                       </div>
 
@@ -613,7 +613,7 @@ export default function EditResumePage() {
                           {...register(`projects.${index}.link` as const)}
                           type="url"
                           placeholder="https://..."
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                         />
                       </div>
 
@@ -624,7 +624,7 @@ export default function EditResumePage() {
                         <textarea
                           {...register(`projects.${index}.description` as const)}
                           rows={3}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
                         />
                       </div>
                     </div>

@@ -25,7 +25,7 @@ export function OnboardingStepper() {
                 <div
                   className={`absolute top-6 left-[calc(50%+24px)] right-[calc(-50%+24px)] h-0.5 transition-all duration-500 ${
                     step.id < currentStep
-                      ? 'bg-gradient-to-r from-primary-600 to-primary-500'
+                      ? 'bg-linear-to-r from-primary-600 to-primary-500'
                       : 'bg-gray-200'
                   }`}
                   style={{ zIndex: 0 }}
@@ -37,7 +37,7 @@ export function OnboardingStepper() {
                 <div
                   className={`flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300 ${
                     step.id < currentStep
-                      ? 'bg-gradient-to-br from-primary-600 to-primary-700 shadow-medium'
+                      ? 'bg-linear-to-br from-primary-600 to-primary-700 shadow-medium'
                       : step.id === currentStep
                       ? 'border-2 border-primary-600 bg-primary-50 shadow-soft'
                       : 'border-2 border-gray-300 bg-white'

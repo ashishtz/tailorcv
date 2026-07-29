@@ -99,7 +99,7 @@ export default function ProfilePage() {
           <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
           <button
             onClick={() => setIsImportModalOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-xs text-white bg-blue-600 hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <Upload className="w-4 h-4 mr-2" />
             Import from Resume
@@ -108,7 +108,7 @@ export default function ProfilePage() {
 
         <div className="space-y-8">
           {/* Personal Information */}
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-white shadow-sm rounded-lg p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Personal Information</h2>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
@@ -120,7 +120,7 @@ export default function ProfilePage() {
                   id="first_name"
                   value={profile?.first_name || ''}
                   onChange={(e) => setProfile(prev => prev ? { ...prev, first_name: e.target.value } : null)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
 
@@ -133,7 +133,7 @@ export default function ProfilePage() {
                   id="last_name"
                   value={profile?.last_name || ''}
                   onChange={(e) => setProfile(prev => prev ? { ...prev, last_name: e.target.value } : null)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
 
@@ -146,7 +146,7 @@ export default function ProfilePage() {
                   id="email"
                   value={profile?.email || ''}
                   onChange={(e) => setProfile(prev => prev ? { ...prev, email: e.target.value } : null)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
 
@@ -159,7 +159,7 @@ export default function ProfilePage() {
                   id="phone"
                   value={profile?.phone || ''}
                   onChange={(e) => setProfile(prev => prev ? { ...prev, phone: e.target.value } : null)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
 
@@ -172,7 +172,7 @@ export default function ProfilePage() {
                   id="location"
                   value={profile?.location || ''}
                   onChange={(e) => setProfile(prev => prev ? { ...prev, location: e.target.value } : null)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
 
@@ -185,7 +185,7 @@ export default function ProfilePage() {
                   id="birthday"
                   value={profile?.birthday || ''}
                   onChange={(e) => setProfile(prev => prev ? { ...prev, birthday: e.target.value } : null)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
             </div>
@@ -205,7 +205,7 @@ export default function ProfilePage() {
                     placeholder="https://linkedin.com/in/username"
                     value={profile?.linkedin_url || ''}
                     onChange={(e) => setProfile(prev => prev ? { ...prev, linkedin_url: e.target.value } : null)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   />
                 </div>
 
@@ -220,7 +220,7 @@ export default function ProfilePage() {
                     placeholder="https://github.com/username"
                     value={profile?.github_url || ''}
                     onChange={(e) => setProfile(prev => prev ? { ...prev, github_url: e.target.value } : null)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   />
                 </div>
 
@@ -235,7 +235,7 @@ export default function ProfilePage() {
                     placeholder="https://stackoverflow.com/users/id"
                     value={profile?.stackoverflow_url || ''}
                     onChange={(e) => setProfile(prev => prev ? { ...prev, stackoverflow_url: e.target.value } : null)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   />
                 </div>
               </div>
@@ -245,7 +245,7 @@ export default function ProfilePage() {
               <button
                 onClick={() => updateProfile(profile!)}
                 disabled={saving}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-xs text-white bg-blue-600 hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
               >
                 <Save className="w-4 h-4 mr-2" />
                 {saving ? 'Saving...' : 'Save Changes'}
@@ -266,7 +266,7 @@ export default function ProfilePage() {
           <ProjectsSection />
 
           {/* Password Change */}
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-white shadow-sm rounded-lg p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Change Password</h2>
             <form onSubmit={(e) => {
               e.preventDefault()
@@ -290,7 +290,7 @@ export default function ProfilePage() {
                   name="newPassword"
                   id="newPassword"
                   required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
 
@@ -303,13 +303,13 @@ export default function ProfilePage() {
                   name="confirmPassword"
                   id="confirmPassword"
                   required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
 
               <button
                 type="submit"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-xs text-white bg-red-600 hover:bg-red-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
               >
                 Update Password
               </button>

@@ -25,20 +25,20 @@ export function ProfessionalTemplate({ data, settings }: ProfessionalTemplatePro
             <h2 className="text-sm font-semibold uppercase tracking-wider text-blue-300 mb-4">Contact</h2>
             <div className="space-y-3">
               <div className="flex items-start">
-                <Mail className="w-4 h-4 mr-3 mt-0.5 text-blue-300 flex-shrink-0" />
+                <Mail className="w-4 h-4 mr-3 mt-0.5 text-blue-300 shrink-0" />
                 <span className="text-sm break-all">{data.contact.email}</span>
               </div>
               <div className="flex items-start">
-                <Phone className="w-4 h-4 mr-3 mt-0.5 text-blue-300 flex-shrink-0" />
+                <Phone className="w-4 h-4 mr-3 mt-0.5 text-blue-300 shrink-0" />
                 <span className="text-sm">{data.contact.phone}</span>
               </div>
               <div className="flex items-start">
-                <MapPin className="w-4 h-4 mr-3 mt-0.5 text-blue-300 flex-shrink-0" />
+                <MapPin className="w-4 h-4 mr-3 mt-0.5 text-blue-300 shrink-0" />
                 <span className="text-sm">{data.contact.location}</span>
               </div>
               {data.contact.address && (
                 <div className="flex items-start">
-                  <Globe className="w-4 h-4 mr-3 mt-0.5 text-blue-300 flex-shrink-0" />
+                  <Globe className="w-4 h-4 mr-3 mt-0.5 text-blue-300 shrink-0" />
                   <span className="text-sm">{data.contact.address}</span>
                 </div>
               )}
@@ -71,8 +71,8 @@ export function ProfessionalTemplate({ data, settings }: ProfessionalTemplatePro
                       <div className="flex justify-between items-center mb-1">
                         <span>{skill}</span>
                       </div>
-                      <div className="w-full bg-slate-700 h-1 rounded">
-                        <div className="bg-blue-400 h-1 rounded w-4/5"></div>
+                      <div className="w-full bg-slate-700 h-1 rounded-sm">
+                        <div className="bg-blue-400 h-1 rounded-sm w-4/5"></div>
                       </div>
                     </div>
                   ))}
@@ -84,7 +84,7 @@ export function ProfessionalTemplate({ data, settings }: ProfessionalTemplatePro
                       <h3 className="text-xs font-semibold text-blue-200 mb-2 uppercase tracking-wide">{category.category}</h3>
                       <div className="flex flex-wrap gap-1">
                         {category.skills.map((skill, skillIndex) => (
-                          <span key={skillIndex} className="text-xs bg-slate-700 px-2 py-1 rounded">
+                          <span key={skillIndex} className="text-xs bg-slate-700 px-2 py-1 rounded-sm">
                             {skill}
                           </span>
                         ))}
@@ -143,7 +143,7 @@ export function ProfessionalTemplate({ data, settings }: ProfessionalTemplatePro
                         <p className="text-blue-600 font-semibold">{exp.company}</p>
                         <p className="text-gray-600 text-sm">{exp.location}</p>
                       </div>
-                      <span className="text-sm text-gray-500 bg-slate-100 px-3 py-1 rounded">{exp.duration}</span>
+                      <span className="text-sm text-gray-500 bg-slate-100 px-3 py-1 rounded-sm">{exp.duration}</span>
                     </div>
                     <div className="text-sm mt-2">
                       {renderFormattedContent(exp.description, settings?.work_experience_format)}

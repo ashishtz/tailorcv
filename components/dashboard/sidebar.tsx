@@ -23,7 +23,7 @@ export function Sidebar() {
   }
 
   return (
-    <div className="flex h-full w-64 flex-col bg-gradient-to-b from-primary-900 to-primary-950 shadow-large no-print">
+    <div className="flex h-full w-64 flex-col bg-linear-to-b from-primary-900 to-primary-950 shadow-large no-print">
       {/* Header */}
       <div className="flex h-16 items-center px-6 border-b border-primary-800/50">
         <div className="flex items-center">
@@ -42,12 +42,12 @@ export function Sidebar() {
               href={item.href}
               className={`group flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 ${
                 isActive
-                  ? 'bg-gradient-to-r from-accent-600 to-accent-500 text-white shadow-medium'
+                  ? 'bg-linear-to-r from-accent-600 to-accent-500 text-white shadow-medium'
                   : 'text-primary-100 hover:bg-primary-800/50 hover:text-white'
               }`}
             >
               <item.icon
-                className={`mr-3 h-5 w-5 flex-shrink-0 transition-transform duration-200 ${
+                className={`mr-3 h-5 w-5 shrink-0 transition-transform duration-200 ${
                   isActive
                     ? 'text-white'
                     : 'text-primary-300 group-hover:text-white group-hover:scale-110'
@@ -67,7 +67,7 @@ export function Sidebar() {
           onClick={handleSignOut}
           className="group flex w-full items-center rounded-lg px-4 py-3 text-sm font-medium text-primary-100 hover:bg-primary-800/50 hover:text-white transition-all duration-200"
         >
-          <LogOut className="mr-3 h-5 w-5 flex-shrink-0 text-primary-300 group-hover:text-white transition-transform duration-200 group-hover:-translate-x-1" />
+          <LogOut className="mr-3 h-5 w-5 shrink-0 text-primary-300 group-hover:text-white transition-transform duration-200 group-hover:-translate-x-1" />
           Sign out
         </button>
       </div>

@@ -332,7 +332,7 @@ export function TemplatePreview({ templateId, templateName, isSelected, onClick 
       <div className="flex justify-center">
         <canvas 
           ref={canvasRef} 
-          className="border border-gray-200 rounded shadow-sm"
+          className="border border-gray-200 rounded-sm shadow-xs"
           style={{ width: '150px', height: '200px' }}
         />
       </div>

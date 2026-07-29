@@ -12,7 +12,7 @@ export function ExecutiveTemplate({ data, settings }: ExecutiveTemplateProps) {
   return (
     <div className="bg-white w-full shadow-lg font-serif" style={{ minHeight: '11in' }}>
       {/* Header Section */}
-      <header className="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-10 relative overflow-hidden">
+      <header className="bg-linear-to-r from-slate-900 to-slate-800 text-white p-10 relative overflow-hidden">
         <div className="absolute inset-0 bg-black opacity-20"></div>
         <div className="absolute top-0 right-0 w-64 h-64 border border-white/10 rounded-full -mr-32 -mt-32"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 border border-white/10 rounded-full -ml-24 -mb-24"></div>

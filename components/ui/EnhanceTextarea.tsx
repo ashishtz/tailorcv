@@ -88,7 +88,7 @@ export default function EnhanceTextarea({
           type="button"
           onClick={handleEnhance}
           disabled={isEnhancing}
-          className="absolute z-10 inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
+          className="absolute z-10 inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
           style={{
             top: `${buttonPosition.top}px`,
             right: `${buttonPosition.right}px`,

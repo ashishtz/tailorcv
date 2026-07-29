@@ -17,10 +17,10 @@ export function LandingHeader({ isAuthenticated }: HeaderProps) {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 group">
-            <div className="p-2 bg-gradient-to-br from-primary-600 to-accent-500 rounded-lg shadow-medium group-hover:shadow-large transition-all duration-200">
+            <div className="p-2 bg-linear-to-br from-primary-600 to-accent-500 rounded-lg shadow-medium group-hover:shadow-large transition-all duration-200">
               <FileText className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent font-poppins">
+            <span className="text-xl font-bold bg-linear-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent font-poppins">
               Resume Builder
             </span>
           </Link>
@@ -40,7 +40,7 @@ export function LandingHeader({ isAuthenticated }: HeaderProps) {
             {isAuthenticated ? (
               <Link
                 href="/dashboard"
-                className="px-6 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-medium hover:shadow-large transform hover:-translate-y-0.5"
+                className="px-6 py-2 bg-linear-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-medium hover:shadow-large transform hover:-translate-y-0.5"
               >
                 Dashboard
               </Link>
@@ -54,7 +54,7 @@ export function LandingHeader({ isAuthenticated }: HeaderProps) {
                 </Link>
                 <Link
                   href="/auth/register"
-                  className="px-6 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-medium hover:shadow-large transform hover:-translate-y-0.5"
+                  className="px-6 py-2 bg-linear-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-medium hover:shadow-large transform hover:-translate-y-0.5"
                 >
                   Get Started
                 </Link>
@@ -99,7 +99,7 @@ export function LandingHeader({ isAuthenticated }: HeaderProps) {
             {isAuthenticated ? (
               <Link
                 href="/dashboard"
-                className="block w-full px-6 py-3 text-center bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold"
+                className="block w-full px-6 py-3 text-center bg-linear-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Dashboard
@@ -115,7 +115,7 @@ export function LandingHeader({ isAuthenticated }: HeaderProps) {
                 </Link>
                 <Link
                   href="/auth/register"
-                  className="block w-full px-6 py-3 text-center bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold"
+                  className="block w-full px-6 py-3 text-center bg-linear-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Get Started
