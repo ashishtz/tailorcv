@@ -21,7 +21,7 @@ export async function fetchUserProfileData(
 ): Promise<UserProfileData> {
   const [profileResult, skillsResult, experiencesResult, educationResult, projectsResult] =
     await Promise.all([
-      supabase.from('profiles').select('*').eq('id', userId).single(),
+      supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
       supabase
         .from('user_skills')
         .select('*, skills(*), skill_categories(*)')
@@ -36,8 +36,26 @@ export async function fetchUserProfileData(
         .select('*')
         .eq('user_id', userId)
         .order('start_date', { ascending: false }),
-      supabase.from('projects').select('*').eq('user_id', userId)
+      supabase
+        .from('projects')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
     ])
+
+  // Surface query failures instead of silently generating an empty resume -
+  // an empty section and a failed fetch are very different outcomes.
+  const failures = [
+    ['profile', profileResult.error],
+    ['skills', skillsResult.error],
+    ['work experience', experiencesResult.error],
+    ['education', educationResult.error],
+    ['projects', projectsResult.error],
+  ].filter(([, error]) => error)
+  if (failures.length > 0) {
+    const failedSections = failures.map(([name]) => name).join(', ')
+    throw new Error(`Failed to load profile data (${failedSections})`)
+  }
 
   // Group skills by category
   const categorizedSkills: CategorizedSkill[] = []

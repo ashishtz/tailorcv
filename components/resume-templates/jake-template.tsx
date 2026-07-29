@@ -63,12 +63,7 @@ export function JakeTemplate({ data, settings }: JakeTemplateProps) {
             {data.education.map((edu, index) => (
               <div key={index}>
                 <div className="flex justify-between items-start">
-                  <div>
-                    <span className="font-bold text-gray-900">{edu.institution}</span>
-                    {data.contact.location && (
-                      <span className="text-gray-800">, {data.contact.location}</span>
-                    )}
-                  </div>
+                  <span className="font-bold text-gray-900">{edu.institution}</span>
                   <span className="text-sm text-gray-800 text-right">{edu.duration}</span>
                 </div>
                 <div className="flex justify-between items-start">

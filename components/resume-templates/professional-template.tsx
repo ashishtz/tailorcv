@@ -65,16 +65,11 @@ export function ProfessionalTemplate({ data, settings }: ProfessionalTemplatePro
             <section className="mb-8">
               <h2 className="text-sm font-semibold uppercase tracking-wider text-blue-300 mb-4">Skills</h2>
               {typeof data.skills[0] === 'string' ? (
-                <div className="space-y-2">
+                <div className="flex flex-wrap gap-1">
                   {(data.skills as string[]).map((skill, index) => (
-                    <div key={index} className="text-sm">
-                      <div className="flex justify-between items-center mb-1">
-                        <span>{skill}</span>
-                      </div>
-                      <div className="w-full bg-slate-700 h-1 rounded-sm">
-                        <div className="bg-blue-400 h-1 rounded-sm w-4/5"></div>
-                      </div>
-                    </div>
+                    <span key={index} className="text-xs bg-slate-700 px-2 py-1 rounded-sm">
+                      {skill}
+                    </span>
                   ))}
                 </div>
               ) : (

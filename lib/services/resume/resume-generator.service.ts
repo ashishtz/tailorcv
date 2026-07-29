@@ -1,4 +1,8 @@
-import { createOpenRouterClient } from "../ai/openrouter.service";
+import {
+  createOpenRouterClient,
+  messageContentToText,
+  extractJsonObject,
+} from "../ai/openrouter.service";
 import {
   resumeGenerationSystemPrompt,
   resumeGenerationUserPrompt,
@@ -134,27 +138,22 @@ export interface ResumeGenerationParams {
  * @returns Generated resume data in structured format
  */
 export async function generateResume(params: ResumeGenerationParams) {
-  console.log('params', params)
   const systemVars = buildSystemPromptVariables(params);
   const userVars = buildUserPromptVariables(params);
 
   const client = createOpenRouterClient({
     temperature: 0.7,
-    maxTokens: 2000,
+    maxTokens: 8000,
   });
 
-  // Format prompts with variables
-  const systemMessage = await resumeGenerationSystemPrompt.format(systemVars);
-  const userMessage = await resumeGenerationUserPrompt.format(userVars);
+  // formatMessages keeps proper message objects - .format() would flatten to a
+  // buffer string with "System:"/"Human:" prefixes baked into the content.
+  const systemMessages = await resumeGenerationSystemPrompt.formatMessages(systemVars);
+  const userMessages = await resumeGenerationUserPrompt.formatMessages(userVars);
 
-  // Invoke AI with formatted messages
-  const response = await client.invoke([
-    { role: "system", content: systemMessage },
-    { role: "user", content: userMessage },
-  ]);
+  const response = await client.invoke([...systemMessages, ...userMessages]);
 
-  // Parse JSON response
-  return parseResumeResponse(response.content as string);
+  return parseResumeResponse(messageContentToText(response.content));
 }
 
 const resumeHighlightPrompt = `
@@ -489,16 +488,6 @@ function buildUserPromptVariables(params: ResumeGenerationParams) {
   };
 }
 
-function parseResumeResponse(content: string) {
-  console.log("content", content);
-  try {
-    return JSON.parse(content);
-  } catch {
-    // If parsing fails, try to extract JSON from the response
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-    throw new Error("Failed to parse AI response");
-  }
+function parseResumeResponse(content: string): unknown {
+  return extractJsonObject(content);
 }

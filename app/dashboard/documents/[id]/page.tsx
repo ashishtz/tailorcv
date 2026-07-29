@@ -1,61 +1,88 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { Resume } from '@/lib/types/database'
-import { ClassicTemplate } from '@/components/resume-templates/classic-template'
-import { ModernTemplate } from '@/components/resume-templates/modern-template'
-import { MinimalTemplate } from '@/components/resume-templates/minimal-template'
-import { ProfessionalTemplate } from '@/components/resume-templates/professional-template'
-import { CreativeTemplate } from '@/components/resume-templates/creative-template'
-import { ExecutiveTemplate } from '@/components/resume-templates/executive-template'
-import { JakeTemplate } from '@/components/resume-templates/jake-template'
-import { Eye, Download, ArrowLeft, Loader2, Edit } from 'lucide-react'
 import Link from 'next/link'
 import html2canvas from 'html2canvas-pro'
 import jsPDF from 'jspdf'
-
-const templates = [
-  { id: 'classic', name: 'Classic', component: ClassicTemplate },
-  { id: 'modern', name: 'Modern', component: ModernTemplate },
-  { id: 'minimal', name: 'Minimal', component: MinimalTemplate },
-  { id: 'professional', name: 'Professional', component: ProfessionalTemplate },
-  { id: 'creative', name: 'Creative', component: CreativeTemplate },
-  { id: 'executive', name: 'Executive', component: ExecutiveTemplate },
-  { id: 'jake', name: 'Jake (LaTeX)', component: JakeTemplate },
-]
+import { ArrowLeft, Download, Eye, FileX, Pencil } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { Resume } from '@/lib/types/database'
+import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/field'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Card } from '@/components/ui/card'
+import { useToast } from '@/components/ui/toast'
+import { getTemplateDef, RESUME_TEMPLATES, RESUME_PAGE_WIDTH_PX } from '@/lib/templates'
+import { normalizeResumeData, normalizeSettings } from '@/lib/utils/normalize-resume'
 
 export default function ResumeViewPage() {
-  const params = useParams()
+  const params = useParams<{ id: string }>()
+  const resumeId = typeof params.id === 'string' ? params.id : ''
   const [resume, setResume] = useState<Resume | null>(null)
-  const [selectedTemplate, setSelectedTemplate] = useState('')
+  const [selectedTemplate, setSelectedTemplate] = useState('classic')
   const [loading, setLoading] = useState(true)
+  const [loadFailed, setLoadFailed] = useState(false)
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
+  const toast = useToast()
   const supabase = createClient()
 
-  useEffect(() => {
-    const fetchResumeData = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('resumes')
-          .select('*')
-          .eq('id', params.id)
-          .single()
+  const fetchResume = useCallback(async (): Promise<Resume | null | 'error'> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return 'error'
 
-        if (!error && data) {
-          setResume(data)
-          setSelectedTemplate(data.template_id || 'classic')
-        }
-      } catch (error) {
+      const { data, error } = await supabase
+        .from('resumes')
+        .select('*')
+        .eq('id', resumeId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (error) {
         console.error('Error fetching resume:', error)
-      } finally {
-        setLoading(false)
+        return 'error'
       }
+      return data
+    } catch (error) {
+      console.error('Error fetching resume:', error)
+      return 'error'
     }
-    
-    fetchResumeData()
-  }, [params.id, supabase])
+  }, [supabase, resumeId])
+
+  useEffect(() => {
+    let active = true
+    fetchResume().then((result) => {
+      if (!active) return
+      if (result === 'error') {
+        setLoadFailed(true)
+      } else if (result) {
+        setResume(result)
+        setSelectedTemplate(result.template_id || 'classic')
+      }
+      setLoading(false)
+    })
+    return () => {
+      active = false
+    }
+  }, [fetchResume])
+
+  // Persist template choice - previously the dropdown was local-only state
+  // and silently reset on every reload.
+  const handleTemplateChange = async (templateId: string) => {
+    const previous = selectedTemplate
+    setSelectedTemplate(templateId)
+    const { error } = await supabase
+      .from('resumes')
+      .update({ template_id: templateId })
+      .eq('id', resumeId)
+
+    if (error) {
+      setSelectedTemplate(previous)
+      toast.error('Template not saved', 'Could not save your template choice. Please try again.')
+    }
+  }
 
   const handleDownload = async () => {
     if (!resume) return
@@ -63,43 +90,38 @@ export default function ResumeViewPage() {
     setIsGeneratingPDF(true)
 
     try {
-      // Get the resume container element
-      const resumeElement = document.querySelector('.resume-container') as HTMLElement
+      const resumeElement = document.querySelector('.resume-container') as HTMLElement | null
       if (!resumeElement) {
-        console.error('Resume container not found')
-        return
+        throw new Error('Resume container not found')
       }
 
-      // Configure html2canvas options for better quality
+      // The capture container is fixed at RESUME_PAGE_WIDTH_PX, so output is
+      // identical on every screen; scale 2 keeps text crisp.
       const canvas = await html2canvas(resumeElement, {
-        useCORS: true, // Enable cross-origin images
-        logging: false, // Disable console logging
+        useCORS: true,
+        logging: false,
+        scale: 2,
+        windowWidth: RESUME_PAGE_WIDTH_PX,
       })
 
-      // Calculate PDF dimensions
       const imgWidth = 210 // A4 width in mm
+      const pageHeight = 297 // A4 height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width
 
-      // Create PDF with proper dimensions
       const pdf = new jsPDF({
-        orientation: imgHeight > 297 ? 'portrait' : 'portrait',
+        orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
       })
 
-      // Add the image to PDF
       const imgData = canvas.toDataURL('image/png', 1.0)
 
-      // Check if content needs multiple pages
-      const pageHeight = 297 // A4 height in mm
       let heightLeft = imgHeight
       let position = 0
 
-      // Add first page
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
       heightLeft -= pageHeight
 
-      // Add additional pages if needed
       while (heightLeft > 0) {
         position = heightLeft - imgHeight
         pdf.addPage()
@@ -107,14 +129,12 @@ export default function ResumeViewPage() {
         heightLeft -= pageHeight
       }
 
-      // Generate filename with job title and date
       const fileName = `${resume.job_title.replace(/\s+/g, '_')}_Resume_${new Date().toISOString().split('T')[0]}.pdf`
-
-      // Save the PDF
       pdf.save(fileName)
+      toast.success('PDF downloaded', fileName)
     } catch (error) {
       console.error('Error generating PDF:', error)
-      alert('Failed to generate PDF. Please try again.')
+      toast.error('PDF failed', 'The PDF could not be generated. Please try again.')
     } finally {
       setIsGeneratingPDF(false)
     }
@@ -122,103 +142,114 @@ export default function ResumeViewPage() {
 
   if (loading) {
     return (
-      <div className="p-8">
-        <div className="text-center">Loading resume...</div>
+      <div className="px-4 py-8 sm:px-6 lg:px-8" role="status" aria-label="Loading resume">
+        <div className="mx-auto max-w-4xl space-y-6">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-[600px] w-full" />
+        </div>
       </div>
     )
   }
 
-  if (!resume) {
+  if (loadFailed || !resume) {
     return (
-      <div className="p-8">
-        <div className="text-center">Resume not found</div>
+      <div className="px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-lg">
+          <Card>
+            <EmptyState
+              icon={FileX}
+              title={loadFailed ? "Couldn't load this resume" : 'Resume not found'}
+              description={
+                loadFailed
+                  ? 'Something went wrong while loading. Please try again.'
+                  : "This resume doesn't exist or may have been deleted."
+              }
+              action={
+                <Link href="/dashboard/documents">
+                  <Button variant="secondary">
+                    <ArrowLeft aria-hidden />
+                    Back to documents
+                  </Button>
+                </Link>
+              }
+            />
+          </Card>
+        </div>
       </div>
     )
   }
 
-  const SelectedTemplateComponent = templates.find(t => t.id === selectedTemplate)?.component || ClassicTemplate
+  const TemplateComponent = getTemplateDef(selectedTemplate).component
+  const data = normalizeResumeData(resume.generated_data)
+  const settings = normalizeSettings(resume.generation_settings)
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header Controls */}
-      <div className="bg-white shadow-xs border-b no-print">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center gap-4">
-              <Link href="/dashboard/documents" className="flex items-center gap-2 text-gray-600 hover:text-gray-800">
-                <ArrowLeft className="w-4 h-4" />
-                Back to Documents
-              </Link>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">{resume.job_title}</h1>
-                <p className="text-sm text-gray-500">
-                  Created {new Date(resume.created_at).toLocaleDateString()}
-                </p>
-              </div>
+    <div className="min-h-full bg-stone-100">
+      {/* Toolbar */}
+      <div className="no-print sticky top-14 z-30 border-b border-stone-200 bg-white lg:top-0">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link
+              href="/dashboard/documents"
+              aria-label="Back to documents"
+              className="rounded-lg p-2 text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-800"
+            >
+              <ArrowLeft className="h-5 w-5" aria-hidden />
+            </Link>
+            <div className="min-w-0">
+              <h1 className="truncate font-display text-base font-semibold text-stone-900">
+                {resume.job_title}
+              </h1>
+              <p className="text-xs text-stone-500">
+                Created {new Date(resume.created_at).toLocaleDateString()}
+              </p>
             </div>
+          </div>
 
-            <div className="flex items-center gap-4">
-              {/* Template Selector */}
-              <select
-                value={selectedTemplate}
-                onChange={(e) => setSelectedTemplate(e.target.value)}
-                className="rounded-md border-gray-300 text-sm"
-              >
-                {templates.map(template => (
-                  <option key={template.id} value={template.id}>
-                    {template.name}
-                  </option>
-                ))}
-              </select>
+          <div className="flex flex-wrap items-center gap-2">
+            <label htmlFor="template-select" className="sr-only">
+              Template
+            </label>
+            <Select
+              id="template-select"
+              value={selectedTemplate}
+              onChange={(e) => handleTemplateChange(e.target.value)}
+              className="w-40"
+            >
+              {RESUME_TEMPLATES.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.name}
+                </option>
+              ))}
+            </Select>
 
-              {/* Action Buttons */}
-              <div className="flex gap-2">
-                <Link
-                  href={`/dashboard/documents/${params.id}/edit`}
-                  className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  <Edit className="w-4 h-4" />
-                  Edit
-                </Link>
-                <Link
-                  href={`/preview/${params.id}?template=${selectedTemplate}`}
-                  target="_blank"
-                  className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  <Eye className="w-4 h-4" />
-                  Preview
-                </Link>
-                <button
-                  onClick={handleDownload}
-                  title="To be implemented in future"
-                  disabled={true}
-                  className="inline-flex items-center gap-2 px-3 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isGeneratingPDF ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Generating PDF...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4" />
-                      Download PDF
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+            <Link href={`/dashboard/documents/${resumeId}/edit`}>
+              <Button variant="secondary">
+                <Pencil aria-hidden />
+                Edit
+              </Button>
+            </Link>
+            <Link href={`/preview/${resumeId}?template=${selectedTemplate}`} target="_blank">
+              <Button variant="secondary">
+                <Eye aria-hidden />
+                Preview
+              </Button>
+            </Link>
+            <Button onClick={handleDownload} loading={isGeneratingPDF}>
+              {!isGeneratingPDF && <Download aria-hidden />}
+              {isGeneratingPDF ? 'Generating…' : 'Download PDF'}
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Resume Preview */}
-      <div className="py-8">
-        <div className="resume-container max-w-none px-8">
-          <SelectedTemplateComponent
-            data={resume.generated_data}
-            settings={resume.generation_settings}
-          />
+      {/* Resume sheet - fixed page width so PDF output is deterministic */}
+      <div className="overflow-x-auto py-8">
+        <div
+          className="resume-container mx-auto bg-white shadow-lg"
+          style={{ width: RESUME_PAGE_WIDTH_PX }}
+        >
+          <TemplateComponent data={data} settings={settings} />
         </div>
       </div>
     </div>

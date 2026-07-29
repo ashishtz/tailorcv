@@ -1,4 +1,4 @@
-import { createOpenRouterClient } from '../ai/openrouter.service'
+import { createOpenRouterClient, messageContentToText } from '../ai/openrouter.service'
 import {
   workExperienceEnhancementPrompt,
   projectDescriptionEnhancementPrompt
@@ -19,10 +19,10 @@ export async function enhanceText(text: string, type: EnhancementType): Promise<
 
   const client = createOpenRouterClient({
     temperature: 0.7,
-    maxTokens: 300
+    maxTokens: 600
   })
 
   const response = await prompt.pipe(client).invoke({ text })
 
-  return response.content as string
+  return messageContentToText(response.content).trim()
 }

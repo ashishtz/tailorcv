@@ -1,640 +1,765 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useForm, useFieldArray } from 'react-hook-form'
-import { createClient } from '@/lib/supabase/client'
-import { Resume } from '@/lib/types/database'
-import { ArrowLeft, Plus, Trash2, Save, Loader2 } from 'lucide-react'
-import { LinkedInIcon, GitHubIcon, StackOverflowIcon } from '@/components/icons/SocialIcons'
 import Link from 'next/link'
+import { ArrowLeft, FileX, Plus, Save, Trash2, X } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { Resume, CategorizedSkill } from '@/lib/types/database'
+import { Button } from '@/components/ui/button'
+import { Field, Input, Textarea } from '@/components/ui/field'
+import { Card, CardHeader, CardBody } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
+import { useToast } from '@/components/ui/toast'
+import {
+  normalizeResumeData,
+  normalizeSettings,
+  type GeneratedResumeData,
+  type GenerationSettings,
+} from '@/lib/utils/normalize-resume'
 
-type FormData = {
-  contact: {
-    name: string
-    email: string
-    phone: string
-    location: string
-    address?: string
-    socialLinks?: {
-      linkedin?: string
-      github?: string
-      stackoverflow?: string
-    }
+/* ------------------------------------------------------------------ *
+ * Content helpers: bullets render in textareas as lines and are saved
+ * back in the shape the template settings expect - the old editor
+ * flattened arrays to comma-joined strings and dropped the summary.
+ * ------------------------------------------------------------------ */
+
+const contentToText = (content: string | string[] | undefined): string =>
+  Array.isArray(content) ? content.join('\n') : content ?? ''
+
+const textToContent = (text: string, format: 'paragraph' | 'bullets'): string | string[] => {
+  if (format === 'bullets') {
+    return text
+      .split('\n')
+      .map((line) => line.replace(/^[-•]\s*/, '').trim())
+      .filter(Boolean)
   }
-  skills: string[]
-  workExperience: Array<{
-    company: string
-    position: string
-    location: string
-    type: string
-    duration: string
-    description: string
-  }>
-  education: Array<{
-    institution: string
-    degree: string
-    field: string
-    duration: string
-  }>
-  projects: Array<{
-    name: string
-    role: string
-    description: string
-    link?: string
-  }>
+  return text.trim()
 }
 
-export default function EditResumePage() {
-  const params = useParams()
+/* ------------------------------------------------------------------ *
+ * Skill editors - generated resumes use categorized skills; legacy
+ * rows may have plain string arrays. Both shapes are supported.
+ * ------------------------------------------------------------------ */
+
+function SkillChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-800">
+      {label}
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Remove ${label}`}
+        className="rounded-full p-0.5 text-brand-500 hover:bg-brand-100 hover:text-brand-800"
+      >
+        <X className="h-3 w-3" aria-hidden />
+      </button>
+    </span>
+  )
+}
+
+function ChipInput({ onAdd, placeholder }: { onAdd: (value: string) => void; placeholder: string }) {
+  const [value, setValue] = useState('')
+
+  const add = () => {
+    const trimmed = value.trim()
+    if (!trimmed) return
+    onAdd(trimmed)
+    setValue('')
+  }
+
+  return (
+    <div className="flex gap-2">
+      <Input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            add()
+          }
+        }}
+        placeholder={placeholder}
+        aria-label={placeholder}
+        className="max-w-56"
+      />
+      <Button variant="secondary" size="sm" onClick={add} className="h-10">
+        <Plus aria-hidden />
+        Add
+      </Button>
+    </div>
+  )
+}
+
+interface SkillsEditorProps {
+  skills: GeneratedResumeData['skills']
+  onChange: (skills: GeneratedResumeData['skills']) => void
+}
+
+function SkillsEditor({ skills, onChange }: SkillsEditorProps) {
+  const isCategorized = skills.length > 0 && typeof skills[0] === 'object'
+
+  if (isCategorized) {
+    const categorized = skills as CategorizedSkill[]
+    return (
+      <div className="space-y-4">
+        {categorized.map((group, groupIndex) => (
+          <div
+            key={`${group.category}-${groupIndex}`}
+            className="rounded-lg border border-stone-200 p-4"
+          >
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <Input
+                value={group.category}
+                onChange={(e) => {
+                  const next = categorized.map((g, i) =>
+                    i === groupIndex ? { ...g, category: e.target.value } : g
+                  )
+                  onChange(next)
+                }}
+                aria-label="Category name"
+                className="max-w-56 font-medium"
+              />
+              <Button
+                variant="danger-ghost"
+                size="icon-sm"
+                aria-label={`Remove category ${group.category}`}
+                onClick={() => onChange(categorized.filter((_, i) => i !== groupIndex))}
+              >
+                <Trash2 aria-hidden />
+              </Button>
+            </div>
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {group.skills.map((skill, skillIndex) => (
+                <SkillChip
+                  key={`${skill}-${skillIndex}`}
+                  label={skill}
+                  onRemove={() => {
+                    const next = categorized.map((g, i) =>
+                      i === groupIndex
+                        ? { ...g, skills: g.skills.filter((_, si) => si !== skillIndex) }
+                        : g
+                    )
+                    onChange(next)
+                  }}
+                />
+              ))}
+              {group.skills.length === 0 && (
+                <p className="text-xs text-stone-400">No skills in this category yet.</p>
+              )}
+            </div>
+            <ChipInput
+              placeholder="Add a skill"
+              onAdd={(value) => {
+                const next = categorized.map((g, i) =>
+                  i === groupIndex && !g.skills.includes(value)
+                    ? { ...g, skills: [...g.skills, value] }
+                    : g
+                )
+                onChange(next)
+              }}
+            />
+          </div>
+        ))}
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => onChange([...categorized, { category: 'New category', skills: [] }])}
+        >
+          <Plus aria-hidden />
+          Add category
+        </Button>
+      </div>
+    )
+  }
+
+  const plain = skills as string[]
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-1.5">
+        {plain.map((skill, index) => (
+          <SkillChip
+            key={`${skill}-${index}`}
+            label={skill}
+            onRemove={() => onChange(plain.filter((_, i) => i !== index))}
+          />
+        ))}
+        {plain.length === 0 && <p className="text-xs text-stone-400">No skills yet.</p>}
+      </div>
+      <ChipInput
+        placeholder="Add a skill"
+        onAdd={(value) => {
+          if (!plain.includes(value)) onChange([...plain, value])
+        }}
+      />
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ *
+ * Page
+ * ------------------------------------------------------------------ */
+
+export default function ResumeEditPage() {
+  const params = useParams<{ id: string }>()
+  const resumeId = typeof params.id === 'string' ? params.id : ''
   const router = useRouter()
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [resume, setResume] = useState<Resume | null>(null)
+  const toast = useToast()
   const supabase = createClient()
 
-  const { register, control, handleSubmit, reset, formState: { errors } } = useForm<FormData>()
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [notFound, setNotFound] = useState(false)
+  const [jobTitle, setJobTitle] = useState('')
+  const [data, setData] = useState<GeneratedResumeData | null>(null)
+  const [settings, setSettings] = useState<GenerationSettings | null>(null)
 
-  const [skillsArray, setSkillsArray] = useState<string[]>([])
+  const fetchResume = useCallback(async (): Promise<Resume | null> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return null
 
-  const appendSkill = (value: string) => {
-    setSkillsArray([...skillsArray, value])
-  }
+      const { data: row, error } = await supabase
+        .from('resumes')
+        .select('*')
+        .eq('id', resumeId)
+        .eq('user_id', user.id)
+        .maybeSingle()
 
-  const removeSkill = (index: number) => {
-    setSkillsArray(skillsArray.filter((_, i) => i !== index))
-  }
-
-  const { fields: workFields, append: appendWork, remove: removeWork } = useFieldArray({
-    control,
-    name: 'workExperience'
-  })
-
-  const { fields: educationFields, append: appendEducation, remove: removeEducation } = useFieldArray({
-    control,
-    name: 'education'
-  })
-
-  const { fields: projectFields, append: appendProject, remove: removeProject } = useFieldArray({
-    control,
-    name: 'projects'
-  })
+      if (error) {
+        console.error('Error fetching resume:', error)
+        return null
+      }
+      return row
+    } catch (error) {
+      console.error('Error fetching resume:', error)
+      return null
+    }
+  }, [supabase, resumeId])
 
   useEffect(() => {
-    const fetchResumeData = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('resumes')
-          .select('*')
-          .eq('id', params.id)
-          .single()
-
-        if (!error && data) {
-          setResume(data)
-          // Set skills array state
-          setSkillsArray(data.generated_data.skills || [])
-          // Transform skills array to objects for field array
-          const formData: FormData = {
-            contact: data.generated_data.contact,
-            skills: data.generated_data.skills || [],
-            workExperience: data.generated_data.workExperience || [],
-            education: data.generated_data.education || [],
-            projects: data.generated_data.projects || []
-          }
-          reset(formData)
-        }
-      } catch (error) {
-        console.error('Error fetching resume:', error)
-      } finally {
-        setLoading(false)
+    let active = true
+    fetchResume().then((row) => {
+      if (!active) return
+      if (!row) {
+        setNotFound(true)
+      } else {
+        setJobTitle(row.job_title)
+        setData(normalizeResumeData(row.generated_data))
+        setSettings(normalizeSettings(row.generation_settings))
       }
+      setLoading(false)
+    })
+    return () => {
+      active = false
     }
+  }, [fetchResume])
 
-    fetchResumeData()
-  }, [params.id, supabase, reset])
+  const update = (patch: Partial<GeneratedResumeData>) =>
+    setData((prev) => (prev ? { ...prev, ...patch } : prev))
 
-  const onSubmit = async (data: FormData) => {
-    if (!resume) return
+  const handleSave = async () => {
+    if (!data || !settings) return
+    if (!jobTitle.trim()) {
+      toast.error('Job title required', 'Give this resume a title before saving.')
+      return
+    }
 
     setSaving(true)
     try {
-      const updatedData = {
-        generated_data: {
-          contact: {
-            ...data.contact,
-            socialLinks: data.contact.socialLinks
-          },
-          skills: skillsArray.filter(skill => skill && skill.trim()),
-          workExperience: data.workExperience,
-          education: data.education,
-          projects: data.projects
-        }
-      }
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not signed in')
 
+      // The full normalized object is saved - summary, social links and all
+      // sections included (the old editor silently dropped the summary).
       const { error } = await supabase
         .from('resumes')
-        .update(updatedData)
-        .eq('id', resume.id)
+        .update({
+          job_title: jobTitle.trim(),
+          generated_data: data,
+        })
+        .eq('id', resumeId)
+        .eq('user_id', user.id)
 
-      if (!error) {
-        router.push(`/dashboard/documents/${resume.id}`)
-      } else {
-        console.error('Error updating resume:', error)
-        alert('Failed to save resume. Please try again.')
-      }
+      if (error) throw error
+
+      toast.success('Resume saved')
+      router.push(`/dashboard/documents/${resumeId}`)
+      router.refresh()
     } catch (error) {
       console.error('Error saving resume:', error)
-      alert('Failed to save resume. Please try again.')
-    } finally {
+      toast.error('Save failed', 'Your changes could not be saved. Please try again.')
       setSaving(false)
     }
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="text-center">Loading resume...</div>
+      <div className="px-4 py-8 sm:px-6 lg:px-8" role="status" aria-label="Loading editor">
+        <div className="mx-auto max-w-3xl space-y-6">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-48 w-full" />
+        </div>
       </div>
     )
   }
 
-  if (!resume) {
+  if (notFound || !data || !settings) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="text-center">Resume not found</div>
+      <div className="px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-lg">
+          <Card>
+            <EmptyState
+              icon={FileX}
+              title="Resume not found"
+              description="This resume doesn't exist or may have been deleted."
+              action={
+                <Link href="/dashboard/documents">
+                  <Button variant="secondary">
+                    <ArrowLeft aria-hidden />
+                    Back to documents
+                  </Button>
+                </Link>
+              }
+            />
+          </Card>
+        </div>
       </div>
     )
   }
+
+  const workFormat = settings.work_experience_format
+  const projectFormat = settings.projects_format
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <form onSubmit={handleSubmit(onSubmit)}>
-        {/* Header */}
-        <div className="bg-white shadow-xs border-b sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-4">
-              <div className="flex items-center gap-4">
-                <Link
-                  href={`/dashboard/documents/${params.id}`}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Back to Resume
-                </Link>
-                <h1 className="text-xl font-semibold text-gray-900">Edit Resume</h1>
-              </div>
-
-              <div className="flex gap-2">
-                <Link
-                  href={`/dashboard/documents/${params.id}`}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  Cancel
-                </Link>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 mr-2" />
-                      Save Changes
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+    <div className="min-h-full bg-stone-50">
+      {/* Sticky action bar */}
+      <div className="no-print sticky top-14 z-30 border-b border-stone-200 bg-white lg:top-0">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link
+              href={`/dashboard/documents/${resumeId}`}
+              aria-label="Back to resume"
+              className="rounded-lg p-2 text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-800"
+            >
+              <ArrowLeft className="h-5 w-5" aria-hidden />
+            </Link>
+            <h1 className="truncate font-display text-base font-semibold text-stone-900">
+              Edit resume
+            </h1>
           </div>
+          <Button onClick={handleSave} loading={saving}>
+            {!saving && <Save aria-hidden />}
+            {saving ? 'Saving…' : 'Save changes'}
+          </Button>
         </div>
+      </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="space-y-8">
-            {/* Contact Information */}
-            <div className="bg-white shadow-sm rounded-lg p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name *
-                  </label>
-                  <input
-                    {...register('contact.name', { required: 'Name is required' })}
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                  />
-                  {errors.contact?.name && (
-                    <p className="mt-1 text-sm text-red-600">{errors.contact.name.message}</p>
-                  )}
+      <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
+        {/* Document */}
+        <Card>
+          <CardHeader title="Document" description="Internal name for this resume." />
+          <CardBody>
+            <Field label="Job title" required>
+              <Input value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} required />
+            </Field>
+          </CardBody>
+        </Card>
+
+        {/* Contact */}
+        <Card>
+          <CardHeader title="Contact" />
+          <CardBody className="grid gap-4 sm:grid-cols-2">
+            <Field label="Full name">
+              <Input
+                value={data.contact.name}
+                onChange={(e) => update({ contact: { ...data.contact, name: e.target.value } })}
+              />
+            </Field>
+            <Field label="Email">
+              <Input
+                type="email"
+                value={data.contact.email}
+                onChange={(e) => update({ contact: { ...data.contact, email: e.target.value } })}
+              />
+            </Field>
+            <Field label="Phone">
+              <Input
+                value={data.contact.phone}
+                onChange={(e) => update({ contact: { ...data.contact, phone: e.target.value } })}
+              />
+            </Field>
+            <Field label="Location">
+              <Input
+                value={data.contact.location}
+                onChange={(e) =>
+                  update({ contact: { ...data.contact, location: e.target.value } })
+                }
+              />
+            </Field>
+          </CardBody>
+        </Card>
+
+        {/* Summary */}
+        <Card>
+          <CardHeader
+            title="Professional summary"
+            description={
+              settings.summary_format === 'bullets'
+                ? 'One bullet point per line.'
+                : 'A short paragraph.'
+            }
+          />
+          <CardBody>
+            <Textarea
+              value={contentToText(data.summary)}
+              onChange={(e) =>
+                update({ summary: textToContent(e.target.value, settings.summary_format) })
+              }
+              rows={5}
+              aria-label="Professional summary"
+            />
+          </CardBody>
+        </Card>
+
+        {/* Skills */}
+        <Card>
+          <CardHeader title="Skills" />
+          <CardBody>
+            <SkillsEditor skills={data.skills} onChange={(skills) => update({ skills })} />
+          </CardBody>
+        </Card>
+
+        {/* Work experience */}
+        <Card>
+          <CardHeader
+            title="Work experience"
+            actions={
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() =>
+                  update({
+                    workExperience: [
+                      ...data.workExperience,
+                      {
+                        company: '',
+                        position: '',
+                        location: '',
+                        type: '',
+                        duration: '',
+                        description: workFormat === 'bullets' ? [] : '',
+                      },
+                    ],
+                  })
+                }
+              >
+                <Plus aria-hidden />
+                Add
+              </Button>
+            }
+          />
+          <CardBody className="space-y-5">
+            {data.workExperience.length === 0 && (
+              <p className="text-sm text-stone-400">No work experience entries.</p>
+            )}
+            {data.workExperience.map((entry, index) => (
+              <div key={index} className="rounded-lg border border-stone-200 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-sm font-medium text-stone-500">Entry {index + 1}</p>
+                  <Button
+                    variant="danger-ghost"
+                    size="icon-sm"
+                    aria-label={`Remove work entry ${index + 1}`}
+                    onClick={() =>
+                      update({ workExperience: data.workExperience.filter((_, i) => i !== index) })
+                    }
+                  >
+                    <Trash2 aria-hidden />
+                  </Button>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    {...register('contact.email', { required: 'Email is required' })}
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                  />
-                  {errors.contact?.email && (
-                    <p className="mt-1 text-sm text-red-600">{errors.contact.email.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone *
-                  </label>
-                  <input
-                    {...register('contact.phone', { required: 'Phone is required' })}
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                  />
-                  {errors.contact?.phone && (
-                    <p className="mt-1 text-sm text-red-600">{errors.contact.phone.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Location *
-                  </label>
-                  <input
-                    {...register('contact.location', { required: 'Location is required' })}
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                  />
-                  {errors.contact?.location && (
-                    <p className="mt-1 text-sm text-red-600">{errors.contact.location.message}</p>
-                  )}
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Address (Optional)
-                  </label>
-                  <input
-                    {...register('contact.address')}
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                    <LinkedInIcon className="w-4 h-4 text-[#0A66C2]" />
-                    LinkedIn (Optional)
-                  </label>
-                  <input
-                    type="url"
-                    {...register('contact.socialLinks.linkedin')}
-                    placeholder="https://linkedin.com/in/username"
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                    <GitHubIcon className="w-4 h-4 text-gray-900" />
-                    GitHub (Optional)
-                  </label>
-                  <input
-                    type="url"
-                    {...register('contact.socialLinks.github')}
-                    placeholder="https://github.com/username"
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                    <StackOverflowIcon className="w-4 h-4 text-[#F48024]" />
-                    StackOverflow (Optional)
-                  </label>
-                  <input
-                    type="url"
-                    {...register('contact.socialLinks.stackoverflow')}
-                    placeholder="https://stackoverflow.com/users/id"
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Skills */}
-            <div className="bg-white shadow-sm rounded-lg p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Skills</h2>
-                <button
-                  type="button"
-                  onClick={() => appendSkill('')}
-                  className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-100 hover:bg-blue-200"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Skill
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {skillsArray.map((skill, index) => (
-                  <div key={index} className="flex gap-2">
-                    <input
-                      value={skill}
-                      onChange={(e) => {
-                        const newSkills = [...skillsArray]
-                        newSkills[index] = e.target.value
-                        setSkillsArray(newSkills)
-                      }}
-                      placeholder="Enter skill"
-                      className="flex-1 px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Company">
+                    <Input
+                      value={entry.company}
+                      onChange={(e) =>
+                        update({
+                          workExperience: data.workExperience.map((w, i) =>
+                            i === index ? { ...w, company: e.target.value } : w
+                          ),
+                        })
+                      }
                     />
-                    <button
-                      type="button"
-                      onClick={() => removeSkill(index)}
-                      className="p-2 text-red-600 hover:text-red-800"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
+                  </Field>
+                  <Field label="Position">
+                    <Input
+                      value={entry.position}
+                      onChange={(e) =>
+                        update({
+                          workExperience: data.workExperience.map((w, i) =>
+                            i === index ? { ...w, position: e.target.value } : w
+                          ),
+                        })
+                      }
+                    />
+                  </Field>
+                  <Field label="Location">
+                    <Input
+                      value={entry.location}
+                      onChange={(e) =>
+                        update({
+                          workExperience: data.workExperience.map((w, i) =>
+                            i === index ? { ...w, location: e.target.value } : w
+                          ),
+                        })
+                      }
+                    />
+                  </Field>
+                  <Field label="Duration" hint='e.g. "Jan 2022 - Present"'>
+                    <Input
+                      value={entry.duration}
+                      onChange={(e) =>
+                        update({
+                          workExperience: data.workExperience.map((w, i) =>
+                            i === index ? { ...w, duration: e.target.value } : w
+                          ),
+                        })
+                      }
+                    />
+                  </Field>
+                </div>
+                <div className="mt-3">
+                  <Field
+                    label="Description"
+                    hint={workFormat === 'bullets' ? 'One bullet per line.' : undefined}
+                  >
+                    <Textarea
+                      value={contentToText(entry.description)}
+                      onChange={(e) =>
+                        update({
+                          workExperience: data.workExperience.map((w, i) =>
+                            i === index
+                              ? { ...w, description: textToContent(e.target.value, workFormat) }
+                              : w
+                          ),
+                        })
+                      }
+                      rows={4}
+                    />
+                  </Field>
+                </div>
               </div>
-            </div>
+            ))}
+          </CardBody>
+        </Card>
 
-            {/* Work Experience */}
-            <div className="bg-white shadow-sm rounded-lg p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Work Experience</h2>
-                <button
-                  type="button"
-                  onClick={() => appendWork({
-                    company: '',
-                    position: '',
-                    location: '',
-                    type: 'Full-Time',
-                    duration: '',
-                    description: ''
-                  })}
-                  className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-100 hover:bg-blue-200"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Experience
-                </button>
+        {/* Education */}
+        <Card>
+          <CardHeader
+            title="Education"
+            actions={
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() =>
+                  update({
+                    education: [
+                      ...data.education,
+                      { institution: '', degree: '', field: '', duration: '' },
+                    ],
+                  })
+                }
+              >
+                <Plus aria-hidden />
+                Add
+              </Button>
+            }
+          />
+          <CardBody className="space-y-5">
+            {data.education.length === 0 && (
+              <p className="text-sm text-stone-400">No education entries.</p>
+            )}
+            {data.education.map((entry, index) => (
+              <div key={index} className="rounded-lg border border-stone-200 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-sm font-medium text-stone-500">Entry {index + 1}</p>
+                  <Button
+                    variant="danger-ghost"
+                    size="icon-sm"
+                    aria-label={`Remove education entry ${index + 1}`}
+                    onClick={() =>
+                      update({ education: data.education.filter((_, i) => i !== index) })
+                    }
+                  >
+                    <Trash2 aria-hidden />
+                  </Button>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Institution">
+                    <Input
+                      value={entry.institution}
+                      onChange={(e) =>
+                        update({
+                          education: data.education.map((ed, i) =>
+                            i === index ? { ...ed, institution: e.target.value } : ed
+                          ),
+                        })
+                      }
+                    />
+                  </Field>
+                  <Field label="Degree" hint="e.g. Bachelor's, Master's, PhD">
+                    <Input
+                      value={entry.degree}
+                      onChange={(e) =>
+                        update({
+                          education: data.education.map((ed, i) =>
+                            i === index ? { ...ed, degree: e.target.value } : ed
+                          ),
+                        })
+                      }
+                    />
+                  </Field>
+                  <Field label="Field of study">
+                    <Input
+                      value={entry.field}
+                      onChange={(e) =>
+                        update({
+                          education: data.education.map((ed, i) =>
+                            i === index ? { ...ed, field: e.target.value } : ed
+                          ),
+                        })
+                      }
+                    />
+                  </Field>
+                  <Field label="Duration" hint='e.g. "2016 - 2020"'>
+                    <Input
+                      value={entry.duration}
+                      onChange={(e) =>
+                        update({
+                          education: data.education.map((ed, i) =>
+                            i === index ? { ...ed, duration: e.target.value } : ed
+                          ),
+                        })
+                      }
+                    />
+                  </Field>
+                </div>
               </div>
+            ))}
+          </CardBody>
+        </Card>
 
-              <div className="space-y-6">
-                {workFields.map((field, index) => (
-                  <div key={field.id} className="p-4 border border-gray-200 rounded-lg">
-                    <div className="flex justify-between mb-3">
-                      <h3 className="font-medium text-gray-900">Experience #{index + 1}</h3>
-                      <button
-                        type="button"
-                        onClick={() => removeWork(index)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Company
-                        </label>
-                        <input
-                          {...register(`workExperience.${index}.company` as const)}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Position
-                        </label>
-                        <input
-                          {...register(`workExperience.${index}.position` as const)}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Location
-                        </label>
-                        <input
-                          {...register(`workExperience.${index}.location` as const)}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Type
-                        </label>
-                        <select
-                          {...register(`workExperience.${index}.type` as const)}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                        >
-                          <option value="Full-Time">Full-Time</option>
-                          <option value="Part-Time">Part-Time</option>
-                          <option value="Contract">Contract</option>
-                          <option value="Internship">Internship</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Duration
-                        </label>
-                        <input
-                          {...register(`workExperience.${index}.duration` as const)}
-                          placeholder="e.g., Jan 2020 - Present"
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                        />
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Description
-                        </label>
-                        <textarea
-                          {...register(`workExperience.${index}.description` as const)}
-                          rows={3}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
+        {/* Projects */}
+        <Card>
+          <CardHeader
+            title="Projects"
+            actions={
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() =>
+                  update({
+                    projects: [
+                      ...data.projects,
+                      {
+                        name: '',
+                        role: '',
+                        description: projectFormat === 'bullets' ? [] : '',
+                        link: undefined,
+                      },
+                    ],
+                  })
+                }
+              >
+                <Plus aria-hidden />
+                Add
+              </Button>
+            }
+          />
+          <CardBody className="space-y-5">
+            {data.projects.length === 0 && (
+              <p className="text-sm text-stone-400">No project entries.</p>
+            )}
+            {data.projects.map((entry, index) => (
+              <div key={index} className="rounded-lg border border-stone-200 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-sm font-medium text-stone-500">Entry {index + 1}</p>
+                  <Button
+                    variant="danger-ghost"
+                    size="icon-sm"
+                    aria-label={`Remove project ${index + 1}`}
+                    onClick={() => update({ projects: data.projects.filter((_, i) => i !== index) })}
+                  >
+                    <Trash2 aria-hidden />
+                  </Button>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Name">
+                    <Input
+                      value={entry.name}
+                      onChange={(e) =>
+                        update({
+                          projects: data.projects.map((p, i) =>
+                            i === index ? { ...p, name: e.target.value } : p
+                          ),
+                        })
+                      }
+                    />
+                  </Field>
+                  <Field label="Role">
+                    <Input
+                      value={entry.role}
+                      onChange={(e) =>
+                        update({
+                          projects: data.projects.map((p, i) =>
+                            i === index ? { ...p, role: e.target.value } : p
+                          ),
+                        })
+                      }
+                    />
+                  </Field>
+                </div>
+                <div className="mt-3 space-y-3">
+                  <Field label="Link">
+                    <Input
+                      type="url"
+                      value={entry.link ?? ''}
+                      placeholder="https://…"
+                      onChange={(e) =>
+                        update({
+                          projects: data.projects.map((p, i) =>
+                            i === index ? { ...p, link: e.target.value || undefined } : p
+                          ),
+                        })
+                      }
+                    />
+                  </Field>
+                  <Field
+                    label="Description"
+                    hint={projectFormat === 'bullets' ? 'One bullet per line.' : undefined}
+                  >
+                    <Textarea
+                      value={contentToText(entry.description)}
+                      onChange={(e) =>
+                        update({
+                          projects: data.projects.map((p, i) =>
+                            i === index
+                              ? { ...p, description: textToContent(e.target.value, projectFormat) }
+                              : p
+                          ),
+                        })
+                      }
+                      rows={3}
+                    />
+                  </Field>
+                </div>
               </div>
-            </div>
-
-            {/* Education */}
-            <div className="bg-white shadow-sm rounded-lg p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Education</h2>
-                <button
-                  type="button"
-                  onClick={() => appendEducation({
-                    institution: '',
-                    degree: '',
-                    field: '',
-                    duration: ''
-                  })}
-                  className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-green-600 bg-green-100 hover:bg-green-200"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Education
-                </button>
-              </div>
-
-              <div className="space-y-6">
-                {educationFields.map((field, index) => (
-                  <div key={field.id} className="p-4 border border-gray-200 rounded-lg">
-                    <div className="flex justify-between mb-3">
-                      <h3 className="font-medium text-gray-900">Education #{index + 1}</h3>
-                      <button
-                        type="button"
-                        onClick={() => removeEducation(index)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Institution
-                        </label>
-                        <input
-                          {...register(`education.${index}.institution` as const)}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Degree
-                        </label>
-                        <input
-                          {...register(`education.${index}.degree` as const)}
-                          placeholder="e.g., Bachelor&apos;s, Master&apos;s"
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Field of Study
-                        </label>
-                        <input
-                          {...register(`education.${index}.field` as const)}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Duration
-                        </label>
-                        <input
-                          {...register(`education.${index}.duration` as const)}
-                          placeholder="e.g., 2016 - 2020"
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Projects */}
-            <div className="bg-white shadow-sm rounded-lg p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Projects</h2>
-                <button
-                  type="button"
-                  onClick={() => appendProject({
-                    name: '',
-                    role: '',
-                    description: '',
-                    link: ''
-                  })}
-                  className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-purple-600 bg-purple-100 hover:bg-purple-200"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Project
-                </button>
-              </div>
-
-              <div className="space-y-6">
-                {projectFields.map((field, index) => (
-                  <div key={field.id} className="p-4 border border-gray-200 rounded-lg">
-                    <div className="flex justify-between mb-3">
-                      <h3 className="font-medium text-gray-900">Project #{index + 1}</h3>
-                      <button
-                        type="button"
-                        onClick={() => removeProject(index)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Project Name
-                        </label>
-                        <input
-                          {...register(`projects.${index}.name` as const)}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Your Role
-                        </label>
-                        <input
-                          {...register(`projects.${index}.role` as const)}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                        />
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Project Link (Optional)
-                        </label>
-                        <input
-                          {...register(`projects.${index}.link` as const)}
-                          type="url"
-                          placeholder="https://..."
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                        />
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Description
-                        </label>
-                        <textarea
-                          {...register(`projects.${index}.description` as const)}
-                          rows={3}
-                          className="w-full px-3 py-2 rounded-md border border-gray-300 shadow-xs focus:border-slate-400 focus:ring-1 focus:ring-slate-300 text-slate-700 bg-white placeholder-gray-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </form>
+            ))}
+          </CardBody>
+        </Card>
+      </div>
     </div>
   )
 }

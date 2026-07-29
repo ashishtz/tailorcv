@@ -1,73 +1,122 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { FileX, Printer } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Resume } from '@/lib/types/database'
-import { ClassicTemplate } from '@/components/resume-templates/classic-template'
-import { ModernTemplate } from '@/components/resume-templates/modern-template'
-import { MinimalTemplate } from '@/components/resume-templates/minimal-template'
-import { ProfessionalTemplate } from '@/components/resume-templates/professional-template'
-import { CreativeTemplate } from '@/components/resume-templates/creative-template'
-import { ExecutiveTemplate } from '@/components/resume-templates/executive-template'
-import { JakeTemplate } from '@/components/resume-templates/jake-template'
+import { Button } from '@/components/ui/button'
+import { getTemplateDef, RESUME_PAGE_WIDTH_PX } from '@/lib/templates'
+import { normalizeResumeData, normalizeSettings } from '@/lib/utils/normalize-resume'
 
-const templates = [
-  { id: 'classic', name: 'Classic', component: ClassicTemplate },
-  { id: 'modern', name: 'Modern', component: ModernTemplate },
-  { id: 'minimal', name: 'Minimal', component: MinimalTemplate },
-  { id: 'professional', name: 'Professional', component: ProfessionalTemplate },
-  { id: 'creative', name: 'Creative', component: CreativeTemplate },
-  { id: 'executive', name: 'Executive', component: ExecutiveTemplate },
-  { id: 'jake', name: 'Jake (LaTeX)', component: JakeTemplate },
-]
-
-export default function PreviewPage() {
-  const params = useParams()
+function PreviewContent() {
+  const params = useParams<{ id: string }>()
+  const resumeId = typeof params.id === 'string' ? params.id : ''
   const searchParams = useSearchParams()
   const [resume, setResume] = useState<Resume | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
-  const templateId = searchParams.get('template') || 'classic'
-  const SelectedTemplate = templates.find(t => t.id === templateId)?.component || ClassicTemplate
+  const templateId = searchParams.get('template')
+
+  const fetchResume = useCallback(async (): Promise<Resume | null> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return null
+
+      const { data, error } = await supabase
+        .from('resumes')
+        .select('*')
+        .eq('id', resumeId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (error) {
+        console.error('Error fetching resume:', error)
+        return null
+      }
+      return data
+    } catch (error) {
+      console.error('Error fetching resume:', error)
+      return null
+    }
+  }, [supabase, resumeId])
 
   useEffect(() => {
-    const fetchResumeData = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('resumes')
-          .select('*')
-          .eq('id', params.id)
-          .single()
-
-        if (!error && data) {
-          setResume(data)
-        }
-      } catch (error) {
-        console.error('Error fetching resume:', error)
-      } finally {
-        setLoading(false)
-      }
+    let active = true
+    fetchResume().then((data) => {
+      if (!active) return
+      setResume(data)
+      setLoading(false)
+    })
+    return () => {
+      active = false
     }
-
-    fetchResumeData()
-  }, [params.id, supabase])
+  }, [fetchResume])
 
   if (loading) {
-    return null
+    // This page opens in a new tab - never leave it blank.
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-stone-100" role="status">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-300 border-t-brand-600" />
+        <span className="sr-only">Loading resume preview…</span>
+      </div>
+    )
   }
 
   if (!resume) {
-    return null
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-stone-100 px-4">
+        <div className="w-full max-w-md rounded-xl border border-stone-200 bg-white p-8 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-stone-100">
+            <FileX className="h-6 w-6 text-stone-500" aria-hidden />
+          </div>
+          <h1 className="mt-4 font-display text-lg font-bold text-stone-900">
+            Resume not available
+          </h1>
+          <p className="mt-2 text-sm text-stone-600">
+            This resume doesn&apos;t exist, was deleted, or you need to sign in to view it.
+          </p>
+          <Link href="/dashboard/documents" className="mt-5 inline-block">
+            <Button variant="secondary">Go to documents</Button>
+          </Link>
+        </div>
+      </div>
+    )
   }
 
+  const TemplateComponent = getTemplateDef(templateId ?? resume.template_id).component
+  const data = normalizeResumeData(resume.generated_data)
+  const settings = normalizeSettings(resume.generation_settings)
+
   return (
-    <div className="resume-container">
-      <SelectedTemplate
-        data={resume.generated_data}
-        settings={resume.generation_settings}
-      />
+    <div className="min-h-screen bg-stone-100">
+      <div className="no-print sticky top-0 z-10 border-b border-stone-200 bg-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
+          <p className="truncate text-sm font-medium text-stone-700">{resume.job_title} — preview</p>
+          <Button variant="secondary" size="sm" onClick={() => window.print()}>
+            <Printer aria-hidden />
+            Print
+          </Button>
+        </div>
+      </div>
+      <div className="overflow-x-auto py-8 print:p-0">
+        <div
+          className="resume-container mx-auto bg-white shadow-lg print:shadow-none"
+          style={{ width: RESUME_PAGE_WIDTH_PX }}
+        >
+          <TemplateComponent data={data} settings={settings} />
+        </div>
+      </div>
     </div>
+  )
+}
+
+export default function PreviewPage() {
+  return (
+    <Suspense>
+      <PreviewContent />
+    </Suspense>
   )
 }

@@ -2,8 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { generateResume } from '@/lib/services/resume'
 import { fetchUserProfileData, fetchResumeById, saveResume } from '@/lib/repositories'
+import { normalizeResumeData, normalizeSettings } from '@/lib/utils/normalize-resume'
 
 export const runtime = 'nodejs'
+// AI generation legitimately takes tens of seconds - don't let the default
+// serverless timeout kill it mid-flight.
+export const maxDuration = 300
+
+interface GenerateRequestBody {
+  job_title?: unknown
+  job_description?: unknown
+  mode?: unknown
+  template?: unknown
+  generation_settings?: unknown
+  context_source?: unknown
+  base_resume_id?: unknown
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,15 +30,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { job_title, job_description, mode, template, generation_settings, context_source, base_resume_id } =
-      await request.json()
+    const body = (await request.json()) as GenerateRequestBody
+
+    // Validate inputs up front so failures are specific, not a generic 500.
+    const job_title = typeof body.job_title === 'string' ? body.job_title.trim() : ''
+    const job_description =
+      typeof body.job_description === 'string' ? body.job_description.trim() : ''
+    const mode = body.mode === 'free' ? 'free' : body.mode === 'strict' ? 'strict' : null
+    const template = typeof body.template === 'string' && body.template ? body.template : 'classic'
+    const context_source = body.context_source === 'resume' ? 'resume' : 'profile'
+    const base_resume_id = typeof body.base_resume_id === 'string' ? body.base_resume_id : null
+
+    if (!job_title) {
+      return NextResponse.json({ error: 'Job title is required.' }, { status: 400 })
+    }
+    if (!job_description) {
+      return NextResponse.json({ error: 'Job description is required.' }, { status: 400 })
+    }
+    if (!mode) {
+      return NextResponse.json({ error: 'Generation mode must be strict or free.' }, { status: 400 })
+    }
+    if (context_source === 'resume' && !base_resume_id) {
+      return NextResponse.json(
+        { error: 'Select which existing resume to use as the starting point.' },
+        { status: 400 }
+      )
+    }
+
+    const generation_settings = normalizeSettings(body.generation_settings)
 
     let userData
     let resumeContext
 
-    // Determine context source
     if (context_source === 'resume' && base_resume_id) {
-      // Fetch existing resume data
       const { data: existingResume, error: resumeError } = await fetchResumeById(
         supabase,
         user.id,
@@ -32,10 +70,9 @@ export async function POST(request: NextRequest) {
       )
 
       if (resumeError || !existingResume) {
-        return NextResponse.json({ error: 'Resume not found' }, { status: 404 })
+        return NextResponse.json({ error: 'The selected base resume was not found.' }, { status: 404 })
       }
 
-      // Use empty user data since we're using resume context
       userData = {
         profile: null,
         skills: [],
@@ -45,16 +82,14 @@ export async function POST(request: NextRequest) {
       }
 
       resumeContext = {
-        generated_data: existingResume.generated_data
+        generated_data: normalizeResumeData(existingResume.generated_data)
       }
     } else {
-      // Fetch user profile data (from scratch)
       userData = await fetchUserProfileData(supabase, user.id)
       resumeContext = undefined
     }
 
-    // Generate resume
-    const resumeData = await generateResume({
+    const rawResumeData = await generateResume({
       ...userData,
       jobTitle: job_title,
       jobDescription: job_description,
@@ -63,7 +98,16 @@ export async function POST(request: NextRequest) {
       resumeContext
     })
 
-    // Save resume
+    // Never store unvalidated model output - normalize to the exact shape
+    // the templates render, so a missing key can't crash the viewer.
+    const resumeData = normalizeResumeData(rawResumeData)
+    if (!resumeData.contact.name && !resumeData.summary && resumeData.workExperience.length === 0) {
+      return NextResponse.json(
+        { error: 'The AI returned an unusable resume. Please try again.' },
+        { status: 502 }
+      )
+    }
+
     const { data: resume, error } = await saveResume(supabase, user.id, {
       job_title,
       job_description,
@@ -73,11 +117,21 @@ export async function POST(request: NextRequest) {
       generation_settings
     })
 
-    if (error) throw error
+    if (error || !resume) {
+      console.error('Error saving resume:', error)
+      return NextResponse.json(
+        { error: 'The resume was generated but could not be saved. Please try again.' },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json({ resumeId: resume.id })
   } catch (error) {
     console.error('Error generating resume:', error)
-    return NextResponse.json({ error: 'Failed to generate resume' }, { status: 500 })
+    const message =
+      error instanceof Error && error.message === 'OPENROUTER_API_KEY is not configured'
+        ? 'The AI service is not configured (missing API key).'
+        : 'Resume generation failed. This is usually temporary - please try again.'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

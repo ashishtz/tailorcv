@@ -1,17 +1,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type {
+  GeneratedResumeData,
+  GenerationSettings,
+} from '@/lib/utils/normalize-resume'
 
 export interface SaveResumeData {
   job_title: string
   job_description: string
   mode: 'strict' | 'free'
-  generated_data: unknown
+  generated_data: GeneratedResumeData
   template_id: string
-  generation_settings: {
-    summary_format: 'paragraph' | 'bullets'
-    work_experience_format: 'paragraph' | 'bullets'
-    projects_format: 'paragraph' | 'bullets'
-    highlight_important_content: boolean
-  }
+  generation_settings: GenerationSettings
 }
 
 /**
@@ -31,7 +30,7 @@ export async function fetchResumeById(
     .select('*')
     .eq('id', resumeId)
     .eq('user_id', userId)
-    .single()
+    .maybeSingle()
 }
 
 /**
@@ -54,4 +53,37 @@ export async function saveResume(
     })
     .select()
     .single()
+}
+
+/**
+ * Updates fields on an existing resume (always scoped to the owner).
+ */
+export async function updateResume(
+  supabase: SupabaseClient,
+  userId: string,
+  resumeId: string,
+  updates: Partial<Pick<SaveResumeData, 'generated_data' | 'template_id' | 'job_title'>>
+) {
+  return await supabase
+    .from('resumes')
+    .update(updates)
+    .eq('id', resumeId)
+    .eq('user_id', userId)
+    .select()
+    .maybeSingle()
+}
+
+/**
+ * Deletes a resume (always scoped to the owner).
+ */
+export async function deleteResume(
+  supabase: SupabaseClient,
+  userId: string,
+  resumeId: string
+) {
+  return await supabase
+    .from('resumes')
+    .delete()
+    .eq('id', resumeId)
+    .eq('user_id', userId)
 }

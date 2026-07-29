@@ -1,4 +1,8 @@
-import { createOpenRouterClient } from '../ai/openrouter.service'
+import {
+  createOpenRouterClient,
+  messageContentToText,
+  extractJsonObject,
+} from '../ai/openrouter.service'
 import { resumeParsingPrompt } from '@/lib/prompts'
 
 export interface ParsedResumeData {
@@ -42,16 +46,15 @@ export interface ParsedResumeData {
  */
 export async function parseResumeText(resumeText: string): Promise<ParsedResumeData> {
   const client = createOpenRouterClient({
-    model: 'anthropic/claude-opus-4',
     temperature: 0.1,
-    maxTokens: 2000
+    // A long resume produces a large JSON payload - don't let the provider
+    // default truncate it mid-object.
+    maxTokens: 8000,
   })
 
   const response = await resumeParsingPrompt.pipe(client).invoke({
-    resume_text: resumeText
+    resume_text: resumeText,
   })
 
-  const content = response.content as string
-  console.log('content', content)
-  return JSON.parse(content)
+  return extractJsonObject<ParsedResumeData>(messageContentToText(response.content))
 }
