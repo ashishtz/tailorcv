@@ -1,5 +1,93 @@
 @import 'tailwindcss';
 
+/* ============================================================
+   Atelier design tokens — see .claude/memory/DESIGN_SYSTEM.md
+   ============================================================ */
+@theme {
+  /* Brand — "Evergreen" */
+  --color-brand-50: #f0fbf9;
+  --color-brand-100: #d7f4ef;
+  --color-brand-200: #aee9df;
+  --color-brand-300: #7dd8ca;
+  --color-brand-400: #45beab;
+  --color-brand-500: #0e9384;
+  --color-brand-600: #0b7a6e;
+  --color-brand-700: #0a655c;
+  --color-brand-800: #0b514a;
+  --color-brand-900: #0a433e;
+  --color-brand-950: #052e2a;
+
+  /* Accent — "Amber" (AI moments, highlights; never large surfaces) */
+  --color-accent-50: #fffbeb;
+  --color-accent-100: #fef3c7;
+  --color-accent-200: #fde68a;
+  --color-accent-300: #fcd34d;
+  --color-accent-400: #fbbf24;
+  --color-accent-500: #f59e0b;
+  --color-accent-600: #d97706;
+  --color-accent-700: #b45309;
+  --color-accent-800: #92400e;
+  --color-accent-900: #78350f;
+  --color-accent-950: #451a03;
+
+  /* App typography */
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Resume template typography (user documents, not app chrome) */
+  --font-inter: var(--font-inter), ui-sans-serif, sans-serif;
+  --font-source-sans: var(--font-source-sans), ui-sans-serif, sans-serif;
+  --font-roboto: var(--font-roboto), ui-sans-serif, sans-serif;
+  --font-libre-baskerville: var(--font-libre-baskerville), ui-serif, serif;
+
+  /* Motion */
+  --animate-fade-in: fade-in 0.25s ease-out;
+  --animate-slide-up: slide-up 0.3s ease-out;
+  --animate-scale-in: scale-in 0.2s ease-out;
+  --animate-shimmer: shimmer 1.8s linear infinite;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes slide-up {
+    from {
+      transform: translateY(8px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  @keyframes scale-in {
+    from {
+      transform: scale(0.98);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: -400px 0;
+    }
+    to {
+      background-position: 400px 0;
+    }
+  }
+}
+
+/* ============================================================
+   LEGACY tokens — referenced only by not-yet-rebuilt screens.
+   Remove when the last legacy screen is converted.
+   ============================================================ */
 @theme {
   --color-primary-50: #f0f9ff;
   --color-primary-100: #e0f2fe;
@@ -25,184 +113,59 @@
   --color-secondary-900: #581c87;
   --color-secondary-950: #3b0764;
 
-  --color-accent-50: #fdf4ff;
-  --color-accent-100: #fae8ff;
-  --color-accent-200: #f5d0fe;
-  --color-accent-300: #f0abfc;
-  --color-accent-400: #e879f9;
-  --color-accent-500: #d946ef;
-  --color-accent-600: #c026d3;
-  --color-accent-700: #a21caf;
-  --color-accent-800: #86198f;
-  --color-accent-900: #701a75;
-  --color-accent-950: #4a044e;
-
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-
-  --font-inter: var(--font-inter), sans-serif;
   --font-poppins: var(--font-poppins), sans-serif;
-  --font-source-sans: var(--font-source-sans), sans-serif;
-  --font-roboto: var(--font-roboto), sans-serif;
-  --font-libre-baskerville: var(--font-libre-baskerville), serif;
-
-  --animate-fade-in: fadeIn 0.5s ease-in-out;
-  --animate-slide-in: slideIn 0.4s ease-out;
-  --animate-slide-up: slideUp 0.3s ease-out;
-  --animate-scale-in: scaleIn 0.3s ease-out;
-  --animate-shimmer: shimmer 2s infinite;
 
   --shadow-soft: 0 2px 15px 0 rgba(0, 0, 0, 0.05);
   --shadow-medium: 0 4px 20px 0 rgba(0, 0, 0, 0.08);
   --shadow-large: 0 10px 40px 0 rgba(0, 0, 0, 0.1);
 
-  @keyframes fadeIn {
-    0% {
-      opacity: 0;
-    }
-    100% {
-      opacity: 1;
-    }
-  }
-  @keyframes slideIn {
-    0% {
+  --animate-slide-in: slide-in 0.4s ease-out;
+
+  @keyframes slide-in {
+    from {
       transform: translateX(-100%);
       opacity: 0;
     }
-    100% {
+    to {
       transform: translateX(0);
       opacity: 1;
     }
   }
-  @keyframes slideUp {
-    0% {
-      transform: translateY(20px);
-      opacity: 0;
-    }
-    100% {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-  @keyframes scaleIn {
-    0% {
-      transform: scale(0.95);
-      opacity: 0;
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-  @keyframes shimmer {
-    0% {
-      background-position: -1000px 0;
-    }
-    100% {
-      background-position: 1000px 0;
-    }
-  }
 }
 
-/*
-  The default border color has changed to `currentcolor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
-@layer base {
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
-    border-color: var(--color-gray-200, currentcolor);
-  }
-}
-
+/* LEGACY utilities/keyframes + global form styling used by not-yet-rebuilt
+   screens — remove with the legacy tokens above. */
 @utility animate-blob {
   animation: blob 7s infinite;
 }
-
 @utility animation-delay-2000 {
   animation-delay: 2s;
 }
-
 @utility animation-delay-100 {
   animation-delay: 100ms;
 }
-
 @utility animation-delay-200 {
   animation-delay: 200ms;
 }
-
 @utility animation-delay-300 {
   animation-delay: 300ms;
 }
-
 @utility animation-delay-400 {
   animation-delay: 400ms;
 }
-
 @utility animate-float {
   animation: float 6s ease-in-out infinite;
 }
-
 @utility animate-pulse-slow {
   animation: pulse-slow 4s ease-in-out infinite;
 }
-
 @utility animate-bounce-slow {
   animation: bounce-slow 3s ease-in-out infinite;
 }
-
 @utility particle {
-  /* Floating particles */
   position: absolute;
   border-radius: 50%;
   pointer-events: none;
-}
-
-@layer base {
-  :root {
-    --background: #ffffff;
-    --foreground: #171717;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --background: #0a0a0a;
-      --foreground: #ededed;
-    }
-  }
-
-  body {
-    background: var(--background);
-    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont,
-      "Segoe UI", sans-serif;
-  }
-
-  html {
-    scroll-behavior: smooth;
-  }
-
-  input[type="text"],
-  input[type="email"],
-  input[type="tel"],
-  input[type="date"],
-  input[type="password"],
-  input[type="url"],
-  textarea,
-  select {
-    @apply px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-1 focus:ring-slate-300 focus:border-slate-400 text-slate-700 bg-white placeholder-gray-500;
-  }
-
-  input[type="checkbox"],
-  input[type="radio"] {
-    @apply text-slate-600 border-gray-300 focus:ring-slate-300 focus:ring-1;
-  }
 }
 
 @layer utilities {
@@ -220,7 +183,6 @@
       transform: translate(0px, 0px) scale(1);
     }
   }
-
   @keyframes float {
     0%,
     100% {
@@ -230,7 +192,6 @@
       transform: translateY(-20px);
     }
   }
-
   @keyframes pulse-slow {
     0%,
     100% {
@@ -242,7 +203,6 @@
       transform: scale(1.05);
     }
   }
-
   @keyframes bounce-slow {
     0%,
     100% {
@@ -252,7 +212,6 @@
       transform: translateY(-10px);
     }
   }
-
   @keyframes float-particle {
     0% {
       transform: translateY(0) translateX(0);
@@ -271,7 +230,68 @@
   }
 }
 
-/* Print Styles */
+@layer base {
+  input[type='text'],
+  input[type='email'],
+  input[type='tel'],
+  input[type='date'],
+  input[type='month'],
+  input[type='password'],
+  input[type='url'],
+  textarea,
+  select {
+    @apply px-3 py-2 border border-stone-300 rounded-lg bg-white text-stone-900 placeholder-stone-400 focus:outline-hidden focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20;
+  }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    @apply text-brand-600 border-stone-300 focus:ring-brand-500/30 focus:ring-2;
+  }
+}
+
+/* Tailwind v4 compatibility: keep v3's default border color until every
+   border has an explicit color utility. */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-stone-200, currentcolor);
+  }
+}
+
+@layer base {
+  body {
+    background: var(--color-stone-50);
+    color: var(--color-stone-900);
+    font-family: var(--font-sans);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Anchor targets clear the fixed marketing header */
+    scroll-padding-top: 5rem;
+  }
+
+  ::selection {
+    background: var(--color-brand-200);
+    color: var(--color-brand-950);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Print: only the resume sheet */
 @media print {
   .no-print {
     display: none !important;
@@ -279,10 +299,10 @@
   body {
     margin: 0;
     padding: 0;
+    background: white;
   }
   .resume-container {
     margin: 0;
     padding: 0;
   }
 }
-

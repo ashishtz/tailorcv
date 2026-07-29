@@ -35,17 +35,22 @@ export async function proxy(request: NextRequest) {
   const isLandingPage = request.nextUrl.pathname === '/'
   const isPublicPage = isAuthPage || isLandingPage
 
-  // Redirect authenticated users away from auth pages to dashboard
-  if (user && isAuthPage) {
+  // Authenticated users don't need the auth pages (except the reset-password
+  // flow, which is used while logged in via the recovery link)
+  const isResetPassword = request.nextUrl.pathname.startsWith('/auth/reset-password')
+  if (user && isAuthPage && !isResetPassword) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
+    url.search = ''
     return NextResponse.redirect(url)
   }
 
-  // Redirect unauthenticated users from protected pages to landing page
+  // Unauthenticated users go to login, preserving where they were headed
   if (!user && !isPublicPage) {
     const url = request.nextUrl.clone()
+    const next = request.nextUrl.pathname + request.nextUrl.search
     url.pathname = '/auth/login'
+    url.search = next && next !== '/' ? `?next=${encodeURIComponent(next)}` : ''
     return NextResponse.redirect(url)
   }
 

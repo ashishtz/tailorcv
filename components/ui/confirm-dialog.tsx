@@ -1,6 +1,9 @@
 'use client'
 
-import { AlertTriangle, X } from 'lucide-react'
+import { AlertTriangle, Info } from 'lucide-react'
+import { Modal } from '@/components/ui/modal'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 interface ConfirmDialogProps {
   isOpen: boolean
@@ -14,6 +17,12 @@ interface ConfirmDialogProps {
   loading?: boolean
 }
 
+const TYPE_STYLES = {
+  danger: { icon: AlertTriangle, wash: 'bg-red-50', color: 'text-red-600' },
+  warning: { icon: AlertTriangle, wash: 'bg-accent-100', color: 'text-accent-700' },
+  info: { icon: Info, wash: 'bg-sky-50', color: 'text-sky-600' },
+} as const
+
 export function ConfirmDialog({
   isOpen,
   onClose,
@@ -25,86 +34,40 @@ export function ConfirmDialog({
   type = 'danger',
   loading = false,
 }: ConfirmDialogProps) {
-  if (!isOpen) return null
-
-  const handleConfirm = () => {
-    onConfirm()
-  }
-
-  const getButtonStyles = () => {
-    switch (type) {
-      case 'danger':
-        return 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
-      case 'warning':
-        return 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500'
-      case 'info':
-        return 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
-      default:
-        return 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
-    }
-  }
-
-  const getIconColor = () => {
-    switch (type) {
-      case 'danger':
-        return 'text-red-600'
-      case 'warning':
-        return 'text-yellow-600'
-      case 'info':
-        return 'text-blue-600'
-      default:
-        return 'text-red-600'
-    }
-  }
+  const { icon: Icon, wash, color } = TYPE_STYLES[type]
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose} />
-
-        <div className="relative bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
-          <div className="absolute top-4 right-4">
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-500 transition-colors"
-              disabled={loading}
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          <div className="flex items-start">
-            <div className={`shrink-0 ${getIconColor()}`}>
-              <AlertTriangle className="h-6 w-6" />
-            </div>
-            <div className="ml-3 w-full">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {title}
-              </h3>
-              <p className="text-sm text-gray-600 mb-6">
-                {message}
-              </p>
-
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={onClose}
-                  disabled={loading}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {cancelText}
-                </button>
-                <button
-                  onClick={handleConfirm}
-                  disabled={loading}
-                  className={`px-4 py-2 border border-transparent rounded-md shadow-xs text-sm font-medium text-white focus:outline-hidden focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${getButtonStyles()}`}
-                >
-                  {loading ? 'Deleting...' : confirmText}
-                </button>
-              </div>
-            </div>
-          </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      size="sm"
+      hideHeader
+      locked={loading}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose} disabled={loading}>
+            {cancelText}
+          </Button>
+          <Button
+            variant={type === 'danger' ? 'danger' : 'primary'}
+            onClick={onConfirm}
+            loading={loading}
+          >
+            {confirmText}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex items-start gap-4">
+        <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full', wash)}>
+          <Icon className={cn('h-5 w-5', color)} aria-hidden />
+        </div>
+        <div className="min-w-0 pt-0.5">
+          <h2 className="font-display text-base font-semibold text-stone-900">{title}</h2>
+          <p className="mt-1.5 text-sm text-stone-600">{message}</p>
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }
