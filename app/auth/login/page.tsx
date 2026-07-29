@@ -3,7 +3,7 @@
 import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { createClient, getSessionUser } from '@/lib/supabase/client'
 import { AuthShell } from '@/components/auth/auth-shell'
 import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/field'
@@ -40,7 +40,7 @@ function LoginForm() {
     }
 
     // Route unfinished onboarding back into the flow; honor ?next= otherwise.
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getSessionUser(supabase)
     let destination = searchParams.get('next') || '/dashboard'
     if (user) {
       const { data: profile } = await supabase

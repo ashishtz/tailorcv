@@ -11,7 +11,6 @@ import {
   ClipboardList,
   Download,
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
 import { LandingHeader } from '@/components/landing/header'
 import { TemplateThumbnail } from '@/components/landing/template-thumbnail'
 import { Logo } from '@/components/brand/logo'
@@ -81,17 +80,14 @@ const STEPS = [
   },
 ]
 
-export default async function Home() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const ctaHref = user ? '/dashboard' : '/auth/register'
+export default function Home() {
+  // Signed-in visitors who follow the CTA are bounced to /dashboard by the
+  // proxy, so the page can stay fully static.
+  const ctaHref = '/auth/register'
 
   return (
     <div className="min-h-screen bg-stone-50">
-      <LandingHeader isAuthenticated={!!user} />
+      <LandingHeader />
 
       {/* Hero */}
       <section className="px-4 pb-20 pt-32 sm:px-6 sm:pt-40 lg:px-8">
@@ -112,7 +108,7 @@ export default async function Home() {
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link href={ctaHref}>
               <Button size="lg">
-                {user ? 'Go to dashboard' : "Start building - it's free"}
+                {"Start building - it's free"}
                 <ArrowRight aria-hidden />
               </Button>
             </Link>
@@ -238,7 +234,7 @@ export default async function Home() {
           </p>
           <Link href={ctaHref} className="mt-8 inline-block">
             <Button size="lg" className="bg-white text-brand-900 hover:bg-brand-50 active:bg-brand-100">
-              {user ? 'Go to dashboard' : 'Create your account'}
+              Create your account
               <ArrowRight aria-hidden />
             </Button>
           </Link>

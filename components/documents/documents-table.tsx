@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
 import { useToast } from '@/components/ui/toast'
-import { createClient } from '@/lib/supabase/client'
+import { createClient, getSessionUser } from '@/lib/supabase/client'
 import { getTemplateDef } from '@/lib/templates'
 import { formatMonthYear } from '@/lib/utils'
 
@@ -54,7 +54,7 @@ function ActionsCell({ resume, onDelete }: ActionsCellProps) {
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getSessionUser(supabase)
       if (!user) throw new Error('Not signed in')
 
       const { error } = await supabase

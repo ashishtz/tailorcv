@@ -4,7 +4,7 @@ import { useState, type ReactNode, type ChangeEvent } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, FileX, Plus, Save, Trash2, X } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient, getSessionUser } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import { Card, CardHeader, CardBody } from '@/components/ui/card'
@@ -248,7 +248,7 @@ export default function ResumeEditPage() {
 
     setSaving(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getSessionUser(supabase)
       if (!user) throw new Error('Not signed in')
 
       // The full normalized object is saved - summary, social links and all

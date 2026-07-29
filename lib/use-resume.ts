@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient, getSessionUser } from '@/lib/supabase/client'
 import type { Resume } from '@/lib/types/database'
 import { rowToResume } from '@/lib/utils/normalize-resume'
 
@@ -19,7 +19,7 @@ export function useResume(id: string) {
     const supabase = createClient()
     const fetchResume = async (): Promise<Resume | null | 'failed'> => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const user = await getSessionUser(supabase)
         if (!user) return 'failed'
 
         const { data, error } = await supabase

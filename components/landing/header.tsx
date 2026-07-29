@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { createClient, getSessionUser } from '@/lib/supabase/client'
 import { Menu, X } from 'lucide-react'
 import { Logo } from '@/components/brand/logo'
 import { Button } from '@/components/ui/button'
@@ -44,12 +45,15 @@ function AuthButtons({ isAuthenticated, mobile }: { isAuthenticated: boolean; mo
   )
 }
 
-interface LandingHeaderProps {
-  isAuthenticated: boolean
-}
-
-export function LandingHeader({ isAuthenticated }: LandingHeaderProps) {
+export function LandingHeader() {
   const [menuOpen, setMenuOpen] = useState(false)
+  // Detected client-side from the local session so the landing page itself
+  // can be statically prerendered. Defaults to signed-out until mounted.
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  useEffect(() => {
+    getSessionUser(createClient()).then((user) => setIsAuthenticated(!!user))
+  }, [])
 
   return (
     <header className="no-print fixed inset-x-0 top-0 z-50 border-b border-stone-200/80 bg-stone-50/80 backdrop-blur-md">

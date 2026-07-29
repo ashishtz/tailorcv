@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient, getSessionUser } from '@/lib/supabase/client'
 import { Briefcase, Plus } from 'lucide-react'
 import { Card, CardHeader, CardBody } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -51,7 +51,7 @@ export default function WorkExperienceSection() {
   const toast = useToast()
 
   const fetchExperiences = useCallback(async (): Promise<WorkExperience[]> => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getSessionUser(supabase)
     if (!user) return []
 
     const { data, error } = await supabase
@@ -127,7 +127,7 @@ export default function WorkExperienceSection() {
     setDateError(null)
     setSaving(true)
 
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getSessionUser(supabase)
     if (!user) {
       setSaving(false)
       toast.error('You are signed out', 'Sign in again to save your changes.')
@@ -180,7 +180,7 @@ export default function WorkExperienceSection() {
     if (!deleteTarget) return
     setDeleting(true)
 
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getSessionUser(supabase)
     if (!user) {
       setDeleting(false)
       toast.error('You are signed out', 'Sign in again to delete this entry.')

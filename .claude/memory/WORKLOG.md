@@ -5,6 +5,18 @@
 
 ---
 
+## Session 2f — 2026-07-29 (performance review + fixes)
+
+User reported slow page loads + high memory. Measured (prod build + chunk analysis), found 3 real causes, fixed all:
+1. **652KB PDF chunk on every document-view load**: `jspdf` + `html2canvas-pro` statically imported in `app/dashboard/documents/[id]/page.tsx`. Now `await import()`ed inside the download handler — loads only on Download click (split into async 412K+240K chunks).
+2. **Network auth round-trip on every page load AND every CRUD action**: 26 client-side `supabase.auth.getUser()` calls (each = RTT to Supabase Auth). Added `getSessionUser()` to `lib/supabase/client.ts` (reads LOCAL session via `getSession()`, zero network, auto-refreshes expired tokens) and swapped all client call sites (pages, profile sections, onboarding steps, documents table, use-resume). SECURITY NOTE: server-side `getUser()` kept in proxy.ts + layouts + server pages — that's the verified check per Supabase guidance; RLS remains the real boundary.
+3. **Landing page was ƒ dynamic** (server `getUser` for header state + CTA). Now ○ static: `LandingHeader` detects auth client-side from local session; CTA always `/auth/register` (proxy redirects signed-in users to /dashboard anyway).
+Measured after: landing 59ms, login 6ms (prod, local). Route table: `/` now static.
+Memory complaint: largely dev-server (Turbopack) + the removed 652K parse; html2canvas capture (scale 2) still spikes browser memory transiently during PDF export — acceptable, only on demand now.
+Verified: tsc ✓ eslint ✓ jest 6/6 ✓ build ✓ prod smoke ✓.
+
+---
+
 ## Session 2e — 2026-07-29 (generation modal → split-screen page)
 
 User decision: modal too small for the live preview. Replaced it with `app/dashboard/documents/new/page.tsx` — left column (~30%) inputs, right (~70%) live preview:

@@ -3,8 +3,6 @@
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import html2canvas from 'html2canvas-pro'
-import jsPDF from 'jspdf'
 import { ArrowLeft, Download, Eye, FileX, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -55,6 +53,12 @@ export default function ResumeViewPage() {
       if (!resumeElement) {
         throw new Error('Resume container not found')
       }
+
+      // ~650KB of libraries only needed at download time - load on demand.
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import('html2canvas-pro'),
+        import('jspdf'),
+      ])
 
       // The capture container is fixed at RESUME_PAGE_WIDTH_PX, so output is
       // identical on every screen; scale 2 keeps text crisp.
