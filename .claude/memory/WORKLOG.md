@@ -7,6 +7,8 @@
 
 ## Session 3b — 2026-07-29 (generator preview polish + collapsible sidebar)
 
+Follow-up in same session: preview read as landscape — portrait framing added (`max-w-[62vh]` wrapper so one 816:1056 page fits ~80vh; zoom fills that width), box cap raised to 85vh; page title/subtitle moved INTO the left form card (top header block deleted, vertical space reclaimed). Overflow e2e selector updated (85vh). Suite 44/44.
+
 User asks: no horizontal scroll on preview, shorter box, collapsible sidebar auto-collapsed on generator page. Done:
 - Preview pane (`app/dashboard/documents/new/page.tsx`): sheet still renders at RESUME_PAGE_WIDTH_PX but a ResizeObserver computes `zoom = paneWidth/816` so it always fills 100% of the pane — identical proportions, no horizontal scroll. Box capped `max-h-[70vh] overflow-y-auto`.
 - Sidebar (`components/dashboard/shell.tsx`): `collapsed` state + PanelLeftClose button in header; collapsed shows a floating PanelLeftOpen rail button (desktop only, mobile drawer untouched). Auto-collapses on `/dashboard/documents/new` via initial state + render-time adjust (NOT an effect — react-hooks/set-state-in-effect compiler rule). State persists across dashboard navigation otherwise.

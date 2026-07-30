@@ -186,18 +186,17 @@ export default function NewResumePage() {
   return (
     <div className="px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-6">
-          <h1 className="font-display text-2xl font-bold tracking-tight text-stone-900">
-            Generate a resume
-          </h1>
-          <p className="mt-1 text-sm text-stone-500">
-            Paste the job posting and watch the AI tailor your resume to it, live.
-          </p>
-        </div>
-
         <div className="grid gap-6 lg:grid-cols-[minmax(320px,3fr)_7fr]">
           {/* Left: inputs */}
           <form onSubmit={handleSubmit} onReset={handleCancel} className="space-y-5 self-start rounded-xl border border-stone-200 bg-white p-5">
+            <div>
+              <h1 className="font-display text-xl font-bold tracking-tight text-stone-900">
+                Generate a resume
+              </h1>
+              <p className="mt-1 text-sm text-stone-500">
+                Paste the job posting and watch the AI tailor your resume to it, live.
+              </p>
+            </div>
             {error && (
               <div
                 role="alert"
@@ -408,10 +407,11 @@ export default function NewResumePage() {
                 <>Sample preview of the {getTemplateDef(formData.template).name} template - your generated resume will replace it here.</>
               )}
             </p>
-            <div className="max-h-[70vh] overflow-y-auto rounded-xl border border-stone-200 bg-stone-100 p-4 sm:p-6">
-              {/* Full-page-width sheet zoomed to exactly fill the pane - no
-                  horizontal scroll, identical proportions at any size. */}
-              <div ref={previewBoxRef}>
+            <div className="max-h-[85vh] overflow-y-auto rounded-xl border border-stone-200 bg-stone-100 p-4 sm:p-6">
+              {/* Portrait framing: width capped so one full US-Letter page
+                  (816:1056) fits ~80vh tall; the sheet zooms to fill that
+                  width exactly - no horizontal scroll at any size. */}
+              <div ref={previewBoxRef} className="mx-auto w-full max-w-[62vh]">
                 <div
                   className={cn(
                     'bg-white shadow-md transition-opacity',
