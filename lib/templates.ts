@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react'
 import type { Resume } from '@/lib/types/database'
 import { ClassicTemplate } from '@/components/resume-templates/classic-template'
-import { HybridTemplate } from '@/components/resume-templates/hybrid-template'
+import { ModernTemplate } from '@/components/resume-templates/modern-template'
 import { TechnicalTemplate } from '@/components/resume-templates/technical-template'
 import { ExecutiveTemplate } from '@/components/resume-templates/executive-template'
 import { AcademicTemplate } from '@/components/resume-templates/academic-template'
@@ -34,27 +34,27 @@ export const RESUME_TEMPLATES: ResumeTemplateDef[] = [
     component: ClassicTemplate,
   },
   {
-    id: 'hybrid',
-    name: 'Hybrid',
-    description: 'Skills above experience. Good for career changes.',
-    component: HybridTemplate,
+    id: 'modern',
+    name: 'Modern',
+    description: 'Teal accent bar, tinted skill chips, skills above experience.',
+    component: ModernTemplate,
   },
   {
     id: 'technical',
     name: 'Technical',
-    description: 'Dense layout with grouped skills and prominent projects.',
+    description: 'Monospaced metadata and ruled entries. Built for engineers.',
     component: TechnicalTemplate,
   },
   {
     id: 'executive',
     name: 'Executive',
-    description: 'Serif masthead and roomy leading for senior roles.',
+    description: 'Formal masthead, tinted summary, centred small-caps headings.',
     component: ExecutiveTemplate,
   },
   {
     id: 'academic',
     name: 'Academic',
-    description: 'Education first, Times typography for research and teaching.',
+    description: 'Maroon scholarly setting with years in a left gutter.',
     component: AcademicTemplate,
   },
   {

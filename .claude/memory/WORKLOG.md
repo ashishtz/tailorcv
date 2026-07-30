@@ -5,6 +5,22 @@
 
 ---
 
+## Session 3h — 2026-07-30 (templates redesigned: distinct identities, still ATS-safe)
+
+User pushback, and it was right: session 3e produced four templates that differed only by font and section order. I had conflated "ATS-safe" with "visually plain". The real constraint is STRUCTURAL (one column, standard headings, real text, no images/tables/text boxes/icons); colour, rules, tints, type scale and accents are all free because parsers read text, not styling.
+
+Redesigned all four with their own identity:
+- **modern** (id renamed from `hybrid`, migration 20260730000001): 10px teal bar across the top, 32px name, 2px teal rules under headings, teal dates, skills as tinted rounded chips grouped by category.
+- **technical**: dark slate label chips for section headings (reversed-out mono type), monospace contact/meta lines, 2px slate rule down the left of every experience entry, lighter rule for projects.
+- **executive**: name uppercased and wide-tracked between a 3px/1px double rule, summary in a tinted panel with a left bar, centred small-caps headings flanked by hairlines, right-aligned dates.
+- **academic**: maroon rule under the name, maroon small-caps headings, and years/links set in a 104px left gutter with the entry hanging beside them.
+
+Print safety (this matters because export is browser print-to-PDF, which drops backgrounds by default): added `print-color-adjust: exact` + `-webkit-` prefix to `.resume-container` and its descendants, so tints and the reversed-out technical headings survive. Every other design uses dark text on light tint, so it degrades readably even if a browser ignores that.
+
+Registry descriptions rewritten to describe the design, not the format. Landing spec name list updated (Hybrid -> Modern). Each template screenshotted at full page size and reviewed. jest 10/10, **e2e 59/59**.
+
+---
+
 ## Session 3g — 2026-07-30 (independent pane scrolling + 3f verification)
 
 Docker recovered, so the session-3f gap is closed: **full suite 59/59 green.**

@@ -30,7 +30,7 @@ test.describe('landing page', () => {
 
   test('shows all six template thumbnails', async ({ page }) => {
     await page.locator('#templates').scrollIntoViewIfNeeded()
-    for (const name of ['Classic', 'Hybrid', 'Technical', 'Executive', 'Academic', 'Compact']) {
+    for (const name of ['Classic', 'Modern', 'Technical', 'Executive', 'Academic', 'Compact']) {
       await expect(page.locator('#templates').getByText(name, { exact: true })).toBeVisible()
     }
   })

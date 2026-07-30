@@ -186,6 +186,14 @@
     padding: 0;
     /* Screen zoom-to-fit must never leak into the printed PDF. */
     zoom: 1 !important;
+    /* Templates use tints and accent bars; without this Chrome prints them
+       white and reversed-out headings vanish. */
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .resume-container * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
   .resume-container h2,
   .resume-container h3 {

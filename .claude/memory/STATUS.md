@@ -5,7 +5,7 @@
 > and MUST update all three before finishing a work chunk. Keep entries detailed enough
 > that a brand-new session can resume without any other context.
 
-**Last updated:** 2026-07-30 (session 3g)
+**Last updated:** 2026-07-30 (session 3h)
 **Working branch:** `claude/deps-ui-modernize-mkz7xm` (never push to main)
 
 ---
@@ -65,4 +65,4 @@
 - **API:** `/api/parse-resume`, `/api/enhance-text`, `/api/resumes/generate`
 - **Data layer:** `lib/repositories/` (user-profile, onboarding — incl. `importParsedResume`) → Supabase; `lib/services/` (ai/openrouter, resume parser/enhancer/generator); prompts in `lib/prompts/*.prompt.ts` (system msg = instructions, user msg = data; rule variants as exported constants; contract test guards variable drift); shared form pieces in `components/forms/`
 - **DB:** Supabase; migrations in `supabase/migrations/` (profiles, skills, user_skills, work_experiences, education, projects, resumes, imported_resumes, skill categories, social links)
-- **Templates:** `components/resume-templates/` - classic, hybrid, technical, executive, academic, compact (6, all single-column ATS-safe; rebuilt session 3e from researched ATS rules. creative/modern/minimal/professional retired; `jake` renamed `compact`. Old ids remapped by migration 20260730000000.)
+- **Templates:** `components/resume-templates/` - classic, modern, technical, executive, academic, compact (6, all single-column ATS-safe; rebuilt session 3e from researched ATS rules. creative/modern/minimal/professional retired; `jake` renamed `compact`. Old ids remapped by migration 20260730000000.)
