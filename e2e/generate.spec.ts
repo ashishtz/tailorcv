@@ -22,9 +22,10 @@ test.describe('resume generator (split-screen)', () => {
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeHidden()
   })
 
-  test('preview pane has no horizontal overflow', async ({ page }) => {
-    const box = page.locator('.max-h-\\[85vh\\]')
-    const overflow = await box.evaluate((el) => el.scrollWidth - el.clientWidth)
+  test('page has no horizontal overflow anywhere', async ({ page }) => {
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth
+    )
     expect(overflow).toBeLessThanOrEqual(1)
   })
 

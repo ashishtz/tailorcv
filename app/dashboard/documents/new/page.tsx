@@ -407,23 +407,21 @@ export default function NewResumePage() {
                 <>Sample preview of the {getTemplateDef(formData.template).name} template - your generated resume will replace it here.</>
               )}
             </p>
-            <div className="max-h-[85vh] overflow-y-auto rounded-xl border border-stone-200 bg-stone-100 p-4 sm:p-6">
-              {/* Portrait framing: width capped so one full US-Letter page
-                  (816:1056) fits ~80vh tall; the sheet zooms to fill that
-                  width exactly - no horizontal scroll at any size. */}
-              <div ref={previewBoxRef} className="mx-auto w-full max-w-[62vh]">
-                <div
-                  className={cn(
-                    'bg-white shadow-md transition-opacity',
-                    !loading && !preview && 'opacity-60'
-                  )}
-                  style={{ width: RESUME_PAGE_WIDTH_PX, zoom: previewScale }}
-                >
-                  <Template
-                    data={preview ?? landingSampleResume}
-                    settings={formData.generation_settings}
-                  />
-                </div>
+            {/* Bare sheet, no framing: zoomed to exactly fill this width so
+                there is never horizontal scroll, and never height-capped so
+                the full page is visible and reads portrait. */}
+            <div ref={previewBoxRef} className="mx-auto w-full max-w-2xl">
+              <div
+                className={cn(
+                  'bg-white shadow-lg ring-1 ring-stone-200 transition-opacity',
+                  !loading && !preview && 'opacity-60'
+                )}
+                style={{ width: RESUME_PAGE_WIDTH_PX, zoom: previewScale }}
+              >
+                <Template
+                  data={preview ?? landingSampleResume}
+                  settings={formData.generation_settings}
+                />
               </div>
             </div>
           </div>
