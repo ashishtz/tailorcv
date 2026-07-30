@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient, getSessionUser } from '@/lib/supabase/client'
+import { createClient, requireSessionUser } from '@/lib/supabase/client'
 import { useOnboarding, type PersonalInfoDraft } from '@/lib/contexts/onboarding-context'
 import { StepShell, StepSkeleton } from '@/components/onboarding/step-shell'
 import { Card, CardBody } from '@/components/ui/card'
@@ -13,7 +13,7 @@ type PersonalErrors = Partial<Record<'first_name' | 'last_name' | 'email', strin
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 async function fetchAuthEmail(supabase: ReturnType<typeof createClient>): Promise<string> {
-  const user = await getSessionUser(supabase)
+  const user = await requireSessionUser(supabase)
   return user?.email ?? ''
 }
 

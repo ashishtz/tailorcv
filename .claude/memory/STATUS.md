@@ -5,7 +5,7 @@
 > and MUST update all three before finishing a work chunk. Keep entries detailed enough
 > that a brand-new session can resume without any other context.
 
-**Last updated:** 2026-07-30 (session 3e)
+**Last updated:** 2026-07-30 (session 3f)
 **Working branch:** `claude/deps-ui-modernize-mkz7xm` (never push to main)
 
 ---
@@ -48,7 +48,7 @@
 
 ## ⛔ Known Constraints / Gotchas
 
-- **Client components must use `getSessionUser()` (lib/supabase/client.ts), never `auth.getUser()`** — local read vs network RTT. Server code (proxy, layouts, server pages, API routes) keeps `auth.getUser()` (verified). Landing page is static — don't add server-side auth reads to it.
+- **Client components must use `requireSessionUser()` (redirects to login with next= when the session is dead), never `auth.getUser()`; plain `getSessionUser()` only where signed-out is a valid state (marketing header, login page)** — local read vs network RTT. Server code (proxy, layouts, server pages, API routes) keeps `auth.getUser()` (verified). Landing page is static — don't add server-side auth reads to it.
 - **`buttonVariants` must be imported from `components/ui/button-variants` in SERVER components** (button.tsx is `'use client'`; calling its cva export from a server component breaks prerender).
 - **No em/en dashes in user-visible copy** (house rule, D-008): guarded by `e2e/copy.spec.ts`; model output is stripped by `deDash()` in normalize-resume.ts.
 - **Node 24+** (`.nvmrc` = v24.18.0, `engines` >=24, npm 11). npm 11 gates install scripts — new native deps may need `npm approve-scripts` (allowScripts block in package.json).

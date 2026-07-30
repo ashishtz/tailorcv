@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient, getSessionUser } from '@/lib/supabase/client'
+import { createClient, requireSessionUser } from '@/lib/supabase/client'
 import { ExternalLink, FolderGit2, Plus } from 'lucide-react'
 import { Card, CardHeader, CardBody } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -40,7 +40,7 @@ export default function ProjectsSection() {
   const toast = useToast()
 
   const fetchProjects = useCallback(async (): Promise<Project[]> => {
-    const user = await getSessionUser(supabase)
+    const user = await requireSessionUser(supabase)
     if (!user) return []
 
     const { data, error } = await supabase
@@ -90,7 +90,7 @@ export default function ProjectsSection() {
     if (!form) return
     setSaving(true)
 
-    const user = await getSessionUser(supabase)
+    const user = await requireSessionUser(supabase)
     if (!user) {
       setSaving(false)
       toast.error('You are signed out', 'Sign in again to save your changes.')
@@ -131,7 +131,7 @@ export default function ProjectsSection() {
     if (!deleteTarget) return
     setDeleting(true)
 
-    const user = await getSessionUser(supabase)
+    const user = await requireSessionUser(supabase)
     if (!user) {
       setDeleting(false)
       toast.error('You are signed out', 'Sign in again to delete this entry.')

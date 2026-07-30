@@ -5,6 +5,23 @@
 
 ---
 
+## Session 3f — 2026-07-30 (expired-session redirect fix)
+
+User report: when the refresh token is also expired, pages sit loading forever instead of redirecting to login with a next= path. Regression from session 2f, where 26 client `auth.getUser()` calls became local `getSessionUser()` reads: every caller treated "no session" as a data problem (`failed` card, silent `return null`, or a toast) and NOTHING routed to login. Server-side paths were fine (proxy.ts already adds next=), so only the client paths hung.
+
+Fix, three parts:
+- `lib/supabase/client.ts`: `loginUrlForCurrentPage()` + `requireSessionUser()` (same local read, but `window.location.assign('/auth/login?next=...')` when the session is gone; full page load so no stale client state survives).
+- `components/auth/session-watchdog.tsx` (new): subscribes to `onAuthStateChange` and redirects on SIGNED_OUT / refresh failure, which covers the user sitting idle on a page with no fetch in flight. Mounted in `DashboardShell` and the onboarding layout.
+- Swapped 36 call sites across 14 files to `requireSessionUser`. Deliberately NOT swapped: `components/landing/header.tsx` (signed-out is valid there) and `app/auth/login/page.tsx` (runs right after sign-in; redirecting would loop).
+- Also: `app/dashboard/layout.tsx` and `app/onboarding/layout.tsx` server redirects now carry `?next=` (they previously dropped the destination).
+- Interaction handled: a deliberate sign-out also emits SIGNED_OUT, which would have sent the user to `/auth/login?next=/dashboard...`. `markSigningOut()` flag in client.ts makes the watchdog stand down so the sign-out handler owns that navigation (also keeps the existing sign-out e2e assertion valid).
+
+New spec `e2e/session-expiry.spec.ts` (3 tests; clearing auth cookies reproduces what a dead refresh token leaves behind).
+
+**VERIFICATION GAP**: tsc, eslint, jest 10/10 and `next build` all pass, but the e2e suite could NOT run - the local Supabase gateway (:54321) stopped answering mid-session and `docker ps` hangs, i.e. the Docker daemon is wedged on this machine. Next session: restart Docker Desktop, `supabase start`, then `npm run build && npx playwright test` (expect 58 tests).
+
+---
+
 ## Session 3e — 2026-07-30 (template catalog rebuilt on researched ATS formats)
 
 Web research (Jobscan, Resume.io, scale.jobs, PitchMe 2026 guides) agreed on: single column only, reverse-chronological is the most ATS-safe (hybrid acceptable if headings stay standard), standard headings ("Professional Summary", "Skills", "Work Experience", "Education", "Projects"), no tables/text boxes/images/icons/decorative lines/multi-column, Arial/Calibri/Georgia/Times/Helvetica at 10-12pt, plain bullets, text-based PDF.

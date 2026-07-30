@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient, getSessionUser } from '@/lib/supabase/client'
+import { createClient, requireSessionUser } from '@/lib/supabase/client'
 import {
   Briefcase,
   FileText,
@@ -126,7 +126,7 @@ export function ImportResumeModal({ isOpen, onClose, onSuccess }: ImportResumeMo
     if (!parsed) return
     setApplying(true)
 
-    const user = await getSessionUser(supabase)
+    const user = await requireSessionUser(supabase)
     if (!user) {
       setApplying(false)
       toast.error('You are signed out', 'Sign in again to apply the import.')

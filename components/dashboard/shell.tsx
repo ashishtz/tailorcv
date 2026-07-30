@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Home, FileText, User, LogOut, Menu, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient, markSigningOut } from '@/lib/supabase/client'
 import { Logo } from '@/components/brand/logo'
+import { SessionWatchdog } from '@/components/auth/session-watchdog'
 import { cn } from '@/lib/utils'
 
 const NAVIGATION = [
@@ -65,6 +66,7 @@ function UserFooter({ userEmail }: { userEmail: string }) {
   const supabase = createClient()
 
   const handleSignOut = async () => {
+    markSigningOut()
     await supabase.auth.signOut()
     router.push('/auth/login')
     router.refresh()
@@ -123,6 +125,7 @@ export function DashboardShell({ userEmail, children }: DashboardShellProps) {
 
   return (
     <div className="flex min-h-screen bg-stone-50">
+      <SessionWatchdog />
       {/* Desktop sidebar. A plain div: the inner nav (aria-label="Main") is
           the landmark, so an unlabeled aside landmark would only add noise. */}
       <div

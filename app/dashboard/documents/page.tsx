@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { FileText, Plus } from 'lucide-react'
-import { createClient, getSessionUser } from '@/lib/supabase/client'
+import { createClient, requireSessionUser } from '@/lib/supabase/client'
 import { DocumentsTable } from '@/components/documents/documents-table'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -22,7 +22,7 @@ export default function DocumentsPage() {
 
   const fetchResumes = useCallback(async (): Promise<Resume[] | null> => {
     try {
-      const user = await getSessionUser(supabase)
+      const user = await requireSessionUser(supabase)
       if (!user) return null
 
       const { data, error } = await supabase

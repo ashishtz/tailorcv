@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AlertCircle, Sparkles } from 'lucide-react'
-import { createClient, getSessionUser } from '@/lib/supabase/client'
+import { createClient, requireSessionUser } from '@/lib/supabase/client'
 import { Resume } from '@/lib/types/database'
 import type { GeneratedResumeData } from '@/lib/utils/normalize-resume'
 import { rowToResume } from '@/lib/utils/normalize-resume'
@@ -69,7 +69,7 @@ export default function NewResumePage() {
   useEffect(() => {
     let active = true
     ;(async () => {
-      const user = await getSessionUser(supabase)
+      const user = await requireSessionUser(supabase)
       if (!user) return
       const { data } = await supabase
         .from('resumes')

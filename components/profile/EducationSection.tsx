@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient, getSessionUser } from '@/lib/supabase/client'
+import { createClient, requireSessionUser } from '@/lib/supabase/client'
 import { GraduationCap, Plus } from 'lucide-react'
 import { Card, CardHeader, CardBody } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -44,7 +44,7 @@ export default function EducationSection() {
   const toast = useToast()
 
   const fetchEducation = useCallback(async (): Promise<Education[]> => {
-    const user = await getSessionUser(supabase)
+    const user = await requireSessionUser(supabase)
     if (!user) return []
 
     const { data, error } = await supabase
@@ -117,7 +117,7 @@ export default function EducationSection() {
     setDateError(null)
     setSaving(true)
 
-    const user = await getSessionUser(supabase)
+    const user = await requireSessionUser(supabase)
     if (!user) {
       setSaving(false)
       toast.error('You are signed out', 'Sign in again to save your changes.')
@@ -167,7 +167,7 @@ export default function EducationSection() {
     if (!deleteTarget) return
     setDeleting(true)
 
-    const user = await getSessionUser(supabase)
+    const user = await requireSessionUser(supabase)
     if (!user) {
       setDeleting(false)
       toast.error('You are signed out', 'Sign in again to delete this entry.')

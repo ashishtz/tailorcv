@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useId } from 'react'
-import { createClient, getSessionUser } from '@/lib/supabase/client'
+import { createClient, requireSessionUser } from '@/lib/supabase/client'
 import { Plus, Tags, Trash2, X } from 'lucide-react'
 import { Card, CardHeader, CardBody } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -103,7 +103,7 @@ export default function SkillsSection() {
   const toast = useToast()
 
   const fetchUserSkills = useCallback(async (): Promise<CategorizedSkills[]> => {
-    const user = await getSessionUser(supabase)
+    const user = await requireSessionUser(supabase)
     if (!user) return []
 
     const { data, error } = await supabase
@@ -169,7 +169,7 @@ export default function SkillsSection() {
   const handleQuickAdd = async (category: CategoryRow, name: string) => {
     setQuickAddBusy(category.id)
     try {
-      const user = await getSessionUser(supabase)
+      const user = await requireSessionUser(supabase)
       if (!user) throw new Error('You are signed out. Sign in again to add skills.')
 
       // Find-or-create by name, so picking a suggestion and typing a brand
@@ -215,7 +215,7 @@ export default function SkillsSection() {
   }
 
   const handleRemoveSkill = async (skill: SkillRow, category: CategoryRow) => {
-    const user = await getSessionUser(supabase)
+    const user = await requireSessionUser(supabase)
     if (!user) {
       toast.error('You are signed out', 'Sign in again to remove skills.')
       return
@@ -241,7 +241,7 @@ export default function SkillsSection() {
     if (!deleteTarget) return
     setDeletingCategory(true)
 
-    const user = await getSessionUser(supabase)
+    const user = await requireSessionUser(supabase)
     if (!user) {
       setDeletingCategory(false)
       toast.error('You are signed out', 'Sign in again to remove the category.')

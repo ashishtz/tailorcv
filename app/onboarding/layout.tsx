@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { SessionWatchdog } from '@/components/auth/session-watchdog'
 import { OnboardingProvider } from '@/lib/contexts/onboarding-context'
 import { OnboardingStepper } from '@/components/onboarding/stepper'
 import { Logo } from '@/components/brand/logo'
@@ -17,7 +18,7 @@ export default async function OnboardingLayout({ children }: { children: React.R
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  if (!user) redirect('/auth/login?next=%2Fonboarding')
 
   const { data } = await supabase
     .from('profiles')
@@ -29,6 +30,7 @@ export default async function OnboardingLayout({ children }: { children: React.R
 
   return (
     <div className="flex min-h-screen flex-col bg-stone-50">
+      <SessionWatchdog />
       <header className="border-b border-stone-200 bg-white">
         <div className="flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8">
           <Logo href="/onboarding" />

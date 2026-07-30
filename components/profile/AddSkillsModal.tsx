@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useId } from 'react'
-import { createClient, getSessionUser } from '@/lib/supabase/client'
+import { createClient, requireSessionUser } from '@/lib/supabase/client'
 import { Plus, X } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
@@ -80,7 +80,7 @@ export function AddSkillsModal({ isOpen, onClose, onSuccess }: AddSkillsModalPro
     setSaving(true)
 
     try {
-      const user = await getSessionUser(supabase)
+      const user = await requireSessionUser(supabase)
       if (!user) throw new Error('You are signed out. Sign in again to add skills.')
 
       // Find-or-create the category and every skill by name.

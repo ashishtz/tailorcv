@@ -23,3 +23,38 @@ export async function getSessionUser(
   } = await supabase.auth.getSession()
   return session?.user ?? null
 }
+
+/**
+ * Set just before a deliberate sign-out so the session watchdog sends the user
+ * to a clean /auth/login instead of one carrying a next= back to the page they
+ * chose to leave.
+ */
+let signingOut = false
+export function markSigningOut() {
+  signingOut = true
+}
+export function isSigningOut() {
+  return signingOut
+}
+
+/** Login URL that returns the user to wherever they were. */
+export function loginUrlForCurrentPage(): string {
+  const next = window.location.pathname + window.location.search
+  return next && next !== '/' ? `/auth/login?next=${encodeURIComponent(next)}` : '/auth/login'
+}
+
+/**
+ * Same read as getSessionUser, but sends the user to the login page when the
+ * session is gone (refresh token expired or revoked) instead of leaving the
+ * caller stuck with a null user. Full page load, not a router push, so no
+ * stale client state survives. Use in every authenticated client data path;
+ * use getSessionUser only where signed-out is a valid state (e.g. the
+ * marketing header).
+ */
+export async function requireSessionUser(
+  supabase: ReturnType<typeof createClient>
+): Promise<User | null> {
+  const user = await getSessionUser(supabase)
+  if (!user) window.location.assign(loginUrlForCurrentPage())
+  return user
+}

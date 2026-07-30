@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient, getSessionUser } from '@/lib/supabase/client'
+import { createClient, requireSessionUser } from '@/lib/supabase/client'
 import { KeyRound, Save, Upload } from 'lucide-react'
 import { Card, CardHeader, CardBody, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -99,7 +99,7 @@ export default function ProfilePage() {
   const toast = useToast()
 
   const fetchProfile = useCallback(async (): Promise<ProfileFormState | null> => {
-    const user = await getSessionUser(supabase)
+    const user = await requireSessionUser(supabase)
     if (!user) return null
 
     const { data, error } = await supabase
@@ -163,7 +163,7 @@ export default function ProfilePage() {
     }
 
     setSaving(true)
-    const user = await getSessionUser(supabase)
+    const user = await requireSessionUser(supabase)
     if (!user) {
       setSaving(false)
       toast.error('You are signed out', 'Sign in again to save your changes.')

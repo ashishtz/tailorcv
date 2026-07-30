@@ -19,7 +19,7 @@ export default async function DashboardLayout({
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect('/auth/login')
+    redirect('/auth/login?next=%2Fdashboard')
   }
 
   return <DashboardShell userEmail={user.email ?? ''}>{children}</DashboardShell>

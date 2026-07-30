@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ExternalLink, Plus, Rocket } from 'lucide-react'
-import { createClient, getSessionUser } from '@/lib/supabase/client'
+import { createClient, requireSessionUser } from '@/lib/supabase/client'
 import { useOnboarding, type ProjectDraft } from '@/lib/contexts/onboarding-context'
 import { normalizeLink, saveOnboardingData } from '@/lib/repositories/onboarding.repository'
 import { StepShell, StepSkeleton } from '@/components/onboarding/step-shell'
@@ -100,7 +100,7 @@ function ProjectsList() {
     }
     setSaving(true)
     try {
-      const user = await getSessionUser(supabase)
+      const user = await requireSessionUser(supabase)
       if (!user) {
         toast.error('You are signed out', 'Sign in again to finish setting up your profile.')
         return
