@@ -5,6 +5,24 @@
 
 ---
 
+## Session 3g — 2026-07-30 (independent pane scrolling + 3f verification)
+
+Docker recovered, so the session-3f gap is closed: **full suite 59/59 green.**
+
+Generator page split scrolling (user request):
+- Page root `lg:h-screen lg:overflow-hidden`; form and preview panes each `lg:h-full lg:min-h-0 lg:overflow-y-auto`. Below lg they stack and scroll with the page as before.
+- New `@utility no-scrollbar` in globals.css (scrollbar-width/-ms-overflow-style/::-webkit-scrollbar) on both panes.
+- Preview pane got `tabIndex={0}` + focus ring: it holds no focusable content, so with the scrollbar hidden it would otherwise be unreachable by keyboard (D-007).
+- Measured: page scrollable 0px, form 404px, preview 46px, wheel over one pane never moves the other or the page, both scrollbars 0px wide.
+- e2e guard added in generate.spec.
+
+Session-expiry fix (3f) verification, and what it taught:
+- 2 of the 3 tests I wrote in 3f were wrong, not the fix. Test premise "clearing cookies kills the session" is FALSE for an already-mounted browser client - supabase-js caches the session in memory, so `requireSessionUser` cannot see cookie clearing mid-session. The other failure was just a wrong heading (login h1 is "Welcome back", not "Sign in").
+- Spec rewritten to the reachable paths: any navigation/reload without a usable session redirects with next=, and signing in returns the user to that page (round trip verified end to end).
+- **Known coverage limit, documented in the spec:** the SessionWatchdog path (SIGNED_OUT emitted when a refresh fails while the page sits open) cannot be forced in e2e without a real expiry; it stays verified by inspection.
+
+---
+
 ## Session 3f — 2026-07-30 (expired-session redirect fix)
 
 User report: when the refresh token is also expired, pages sit loading forever instead of redirecting to login with a next= path. Regression from session 2f, where 26 client `auth.getUser()` calls became local `getSessionUser()` reads: every caller treated "no session" as a data problem (`failed` card, silent `return null`, or a toast) and NOTHING routed to login. Server-side paths were fine (proxy.ts already adds next=), so only the client paths hung.

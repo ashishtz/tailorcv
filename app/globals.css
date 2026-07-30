@@ -157,6 +157,16 @@
   }
 }
 
+/* Scroll without a visible scrollbar. Only for panes that stay keyboard
+   scrollable (focusable content or tabindex), never for the page itself. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* Print: only the resume sheet */
 @page {
   size: letter;

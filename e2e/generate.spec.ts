@@ -22,6 +22,29 @@ test.describe('resume generator (split-screen)', () => {
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeHidden()
   })
 
+  test('form and preview scroll independently, page itself does not', async ({ page }) => {
+    const metrics = await page.evaluate(() => {
+      const doc = document.documentElement
+      const form = document.querySelector('form')!
+      const preview = document.querySelector('section[aria-label="Resume preview"]')!
+      return {
+        page: doc.scrollHeight - doc.clientHeight,
+        formScrollable: form.scrollHeight - form.clientHeight,
+        // offsetWidth - clientWidth is the visible scrollbar (the form's own
+        // 1px borders account for 2px there).
+        formScrollbar: (form as HTMLElement).offsetWidth - form.clientWidth - 2,
+        previewScrollbar: (preview as HTMLElement).offsetWidth - preview.clientWidth,
+        previewTabIndex: (preview as HTMLElement).tabIndex,
+      }
+    })
+    expect(metrics.page).toBe(0)
+    expect(metrics.formScrollable).toBeGreaterThan(0)
+    expect(metrics.formScrollbar).toBeLessThanOrEqual(0)
+    expect(metrics.previewScrollbar).toBe(0)
+    // Hidden scrollbar still has to be reachable by keyboard.
+    expect(metrics.previewTabIndex).toBe(0)
+  })
+
   test('page has no horizontal overflow anywhere', async ({ page }) => {
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth

@@ -179,11 +179,17 @@ export default function NewResumePage() {
   const templateName = templateDef.name
 
   return (
-    <div className="px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="grid gap-6 lg:grid-cols-[minmax(320px,3fr)_7fr]">
+    // From lg up the two panes each own their scrolling and the page itself
+    // does not scroll; below lg they stack and scroll with the page as usual.
+    <div className="px-4 py-8 sm:px-6 lg:h-screen lg:overflow-hidden lg:px-8 lg:py-6">
+      <div className="mx-auto h-full max-w-7xl">
+        <div className="grid h-full gap-6 lg:grid-cols-[minmax(320px,3fr)_7fr]">
           {/* Left: inputs */}
-          <form onSubmit={handleSubmit} onReset={handleCancel} className="space-y-5 self-start rounded-xl border border-stone-200 bg-white p-5">
+          <form
+            onSubmit={handleSubmit}
+            onReset={handleCancel}
+            className="no-scrollbar space-y-5 self-start rounded-xl border border-stone-200 bg-white p-5 lg:h-full lg:min-h-0 lg:self-stretch lg:overflow-y-auto"
+          >
             <div>
               <h1 className="font-display text-xl font-bold tracking-tight text-stone-900">
                 Generate a resume
@@ -369,7 +375,13 @@ export default function NewResumePage() {
           </form>
 
           {/* Right: live preview */}
-          <section aria-label="Resume preview" className="min-w-0 self-start lg:sticky lg:top-6">
+          {/* tabIndex keeps this pane scrollable by keyboard: it holds no
+              focusable content, and the scrollbar is hidden. */}
+          <section
+            aria-label="Resume preview"
+            tabIndex={0}
+            className="no-scrollbar min-w-0 self-start focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 lg:h-full lg:min-h-0 lg:self-stretch lg:overflow-y-auto"
+          >
             <div className="mx-auto w-full max-w-2xl">
               {/* Announced on every state change; also the visible caption
                   that ties the sheet below to what it currently shows. */}
