@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useId } from 'react'
 import { createClient, getSessionUser } from '@/lib/supabase/client'
 import { Plus, Tags, Trash2, X } from 'lucide-react'
 import { Card, CardHeader, CardBody } from '@/components/ui/card'
@@ -56,6 +56,7 @@ function QuickAddSkill({
   onAdd: (name: string) => Promise<void>
 }) {
   const [name, setName] = useState('')
+  const hintId = useId()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -75,9 +76,18 @@ function QuickAddSkill({
         aria-label={`Add a skill to ${category.name}`}
         disabled={busy}
       />
-      <Button type="submit" variant="secondary" size="sm" disabled={busy || !name.trim()}>
+      <Button
+        type="submit"
+        variant="secondary"
+        size="sm"
+        disabled={busy || !name.trim()}
+        aria-describedby={hintId}
+      >
         Add
       </Button>
+      <span id={hintId} className="sr-only">
+        Type a skill name to add
+      </span>
     </form>
   )
 }

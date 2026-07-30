@@ -3,15 +3,23 @@ import type { TemplateProps } from '@/lib/templates'
 import { renderFormattedContent } from '@/lib/utils/render-content'
 import { ContactLinks } from './shared'
 
-export function ProfessionalTemplate({ data, settings }: TemplateProps) {
+export function ProfessionalTemplate({ data, settings, nameTag: NameTag = 'h1' }: TemplateProps) {
   return (
-    <div className="bg-white w-full shadow-lg font-inter" style={{ minHeight: '11in' }}>
+    <div
+      className="bg-white w-full shadow-lg font-inter"
+      // Sidebar color painted on the root so it always reaches the sheet
+      // bottom, independent of flex-stretch/zoom rendering quirks.
+      style={{
+        minHeight: '11in',
+        background: 'linear-gradient(to right, #1e293b 33.3333%, #ffffff 33.3333%)',
+      }}
+    >
       {/* Header Section with Sidebar */}
       <div className="flex">
         {/* Left Sidebar */}
         <div className="w-1/3 bg-slate-800 text-white p-8">
           <div className="mb-8">
-            <h1 className="text-2xl font-bold mb-2">{data.contact.name}</h1>
+            <NameTag className="text-2xl font-bold mb-2">{data.contact.name}</NameTag>
             <div className="w-12 h-1 bg-blue-400 mb-6"></div>
           </div>
 

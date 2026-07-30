@@ -59,9 +59,16 @@ export function ContactLinks({ links, variant = 'icons', className, linkClassNam
 
   return (
     <div className={className}>
-      {present.map(({ key, url, Icon }) => (
-        <a key={key} href={url} target="_blank" rel="noopener noreferrer" className={linkClassName}>
-          <Icon className="w-4 h-4" />
+      {present.map(({ key, label, url, Icon }) => (
+        <a
+          key={key}
+          href={url}
+          aria-label={label}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={linkClassName}
+        >
+          <Icon className="w-4 h-4" aria-hidden />
         </a>
       ))}
     </div>

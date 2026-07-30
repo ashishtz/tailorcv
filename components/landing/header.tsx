@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { createClient, getSessionUser } from '@/lib/supabase/client'
 import { Menu, X } from 'lucide-react'
 import { Logo } from '@/components/brand/logo'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
   { label: 'Features', href: '#features' },
@@ -28,18 +29,19 @@ function NavLinks({ className, onClick }: { className: string; onClick?: () => v
 function AuthButtons({ isAuthenticated, mobile }: { isAuthenticated: boolean; mobile?: boolean }) {
   const width = mobile ? 'w-full' : undefined
   return isAuthenticated ? (
-    <Link href="/dashboard">
-      <Button className={width}>Go to dashboard</Button>
+    <Link href="/dashboard" className={cn(buttonVariants({}), width)}>
+      Go to dashboard
     </Link>
   ) : (
     <>
-      <Link href="/auth/login">
-        <Button variant={mobile ? 'secondary' : 'ghost'} className={width}>
-          Sign in
-        </Button>
+      <Link
+        href="/auth/login"
+        className={cn(buttonVariants({ variant: mobile ? 'secondary' : 'ghost' }), width)}
+      >
+        Sign in
       </Link>
-      <Link href="/auth/register">
-        <Button className={width}>Get started</Button>
+      <Link href="/auth/register" className={cn(buttonVariants({}), width)}>
+        Get started
       </Link>
     </>
   )
@@ -57,7 +59,10 @@ export function LandingHeader() {
 
   return (
     <header className="no-print fixed inset-x-0 top-0 z-50 border-b border-stone-200/80 bg-stone-50/80 backdrop-blur-md">
-      <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <nav
+        aria-label="Main"
+        className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
+      >
         <Logo />
 
         {/* Desktop nav */}

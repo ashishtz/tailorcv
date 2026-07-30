@@ -5,6 +5,12 @@
 
 ---
 
+## D-007 · 2026-07-29 · Accessibility baseline (WCAG 2.1 AA) is enforced, not aspirational
+
+- **Decision:** All 35 findings of the session-3c audit are fixed and guarded by `e2e/a11y.spec.ts` (skip link is first tab stop, zero `a button` nesting, all controls pointer-cursored, every form control named, `aria-required` on required fields, table sort semantics, one h1 + no horizontal overflow on resume pages, generation status live region, drawer focus-trap + Escape).
+- **Rules that follow:** never nest `<Button>` inside `<Link>` (use `buttonVariants({...})` on the Link — from `button-variants.ts` in server components); every route gets its own `metadata.title`; icon-only controls need `aria-label` + `aria-hidden` icon; meaningful text stays at `stone-500` or darker (stone-400 fails 4.5:1); fixed-width resume sheets are always zoom-scaled via `lib/use-fit-scale.ts`, never `overflow-x-auto`; templates take `nameTag` so an embedded sheet doesn't duplicate the page h1.
+- **Why:** the app is a resume tool whose users include people with disabilities applying for jobs; a11y regressions here are product failures, and the audit found 9 serious ones that had accumulated silently.
+
 ## D-006 · 2026-07-29 · Prompt architecture: one ChatPromptTemplate per feature, system=rules / user=data
 
 - **Decision:** Each AI feature has exactly one `ChatPromptTemplate.fromMessages([system, user])` in `lib/prompts/`, consumed via `prompt.pipe(client).invoke(vars)`. The system message carries every instruction; the user message carries only data. Conditional rule text (mode, section formats, highlighting) lives as exported constants in the prompt file; services only select variants and format data — no prompt strings in services. `SECTION_FORMATS` pairs each format's rules with its JSON-schema example so they cannot drift. `lib/prompts/__tests__/prompt-contract.test.ts` formats the real template with the real variable builder — any variable rename breaks the test, not production.

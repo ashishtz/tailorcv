@@ -82,7 +82,7 @@ export function Modal({
           onClick={onClose}
           disabled={locked}
           aria-label="Close dialog"
-          className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 disabled:opacity-50"
+          className="rounded-lg p-1.5 text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-600 disabled:opacity-50"
         >
           <X className="h-5 w-5" aria-hidden />
         </button>

@@ -82,7 +82,7 @@ function ActionsCell({ resume, onDelete }: ActionsCellProps) {
           href={`/dashboard/documents/${resume.id}`}
           aria-label={`View ${resume.job_title}`}
           title="View"
-          className="rounded-lg p-2 text-stone-400 transition-colors hover:bg-stone-100 hover:text-brand-700"
+          className="rounded-lg p-2 text-stone-500 transition-colors hover:bg-stone-100 hover:text-brand-700"
         >
           <Eye className="h-4 w-4" aria-hidden />
         </Link>
@@ -90,7 +90,7 @@ function ActionsCell({ resume, onDelete }: ActionsCellProps) {
           href={`/dashboard/documents/${resume.id}/edit`}
           aria-label={`Edit ${resume.job_title}`}
           title="Edit"
-          className="rounded-lg p-2 text-stone-400 transition-colors hover:bg-stone-100 hover:text-brand-700"
+          className="rounded-lg p-2 text-stone-500 transition-colors hover:bg-stone-100 hover:text-brand-700"
         >
           <Pencil className="h-4 w-4" aria-hidden />
         </Link>
@@ -99,7 +99,7 @@ function ActionsCell({ resume, onDelete }: ActionsCellProps) {
           onClick={() => setIsDeleteDialogOpen(true)}
           aria-label={`Delete ${resume.job_title}`}
           title="Delete"
-          className="rounded-lg p-2 text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600"
+          className="rounded-lg p-2 text-stone-500 transition-colors hover:bg-red-50 hover:text-red-600"
         >
           <Trash2 className="h-4 w-4" aria-hidden />
         </button>
@@ -176,25 +176,35 @@ export function DocumentsTable({ resumes, onResumeDeleted }: DocumentsTableProps
             className="pl-9"
           />
         </div>
-        <p className="text-sm text-stone-500">
+        <p role="status" className="text-sm text-stone-500">
           {filtered.length} of {resumes.length}
         </p>
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm" aria-label="Resumes">
           <thead>
             <tr className="border-b border-stone-200">
               {COLUMNS.map(({ key, label }) => (
                 <th
                   key={key}
+                  scope="col"
+                  // 'none' (rather than omitting it) marks the column as
+                  // sortable-but-unsorted, which is what AT announces.
+                  aria-sort={
+                    sort?.key === key
+                      ? sort.dir === 'asc'
+                        ? 'ascending'
+                        : 'descending'
+                      : 'none'
+                  }
                   className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-500 sm:px-5"
                 >
                   <button
                     type="button"
                     onClick={() => toggleSort(key)}
-                    className="inline-flex items-center gap-1 rounded-sm hover:text-stone-800"
+                    className="inline-flex items-center gap-1 rounded-sm hover:text-stone-800 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
                   >
                     {label}
                     {sort?.key === key && sort.dir === 'asc' && (
@@ -206,7 +216,7 @@ export function DocumentsTable({ resumes, onResumeDeleted }: DocumentsTableProps
                   </button>
                 </th>
               ))}
-              <th className="px-4 py-3 sm:px-5">
+              <th scope="col" className="px-4 py-3 sm:px-5">
                 <span className="sr-only">Actions</span>
               </th>
             </tr>

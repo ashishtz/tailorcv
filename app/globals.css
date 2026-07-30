@@ -135,6 +135,28 @@
   }
 }
 
+/* Tailwind v4 preflight ships cursor:default on buttons - restore the
+   pointer affordance on every enabled interactive control. */
+@layer base {
+  :is(
+    button,
+    select,
+    summary,
+    [role='button'],
+    [role='radio'],
+    [role='tab'],
+    input[type='checkbox'],
+    input[type='radio'],
+    input[type='file']
+  ):not(:disabled) {
+    cursor: pointer;
+  }
+  label:has(> input[type='checkbox']:not(:disabled)),
+  label:has(> input[type='radio']:not(:disabled)) {
+    cursor: pointer;
+  }
+}
+
 /* Print: only the resume sheet */
 @page {
   size: letter;
@@ -152,6 +174,8 @@
   .resume-container {
     margin: 0;
     padding: 0;
+    /* Screen zoom-to-fit must never leak into the printed PDF. */
+    zoom: 1 !important;
   }
   .resume-container h2,
   .resume-container h3 {

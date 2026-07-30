@@ -14,7 +14,8 @@ import {
 import { LandingHeader } from '@/components/landing/header'
 import { TemplateThumbnail } from '@/components/landing/template-thumbnail'
 import { Logo } from '@/components/brand/logo'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button-variants'
+import { cn } from '@/lib/utils'
 import { RESUME_TEMPLATES } from '@/lib/templates'
 
 const FEATURES = [
@@ -89,6 +90,7 @@ export default function Home() {
     <div className="min-h-screen bg-stone-50">
       <LandingHeader />
 
+      <main>
       {/* Hero */}
       <section className="px-4 pb-20 pt-32 sm:px-6 sm:pt-40 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
@@ -106,16 +108,12 @@ export default function Home() {
             application in minutes - with templates recruiters actually enjoy reading.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link href={ctaHref}>
-              <Button size="lg">
-                {"Start building - it's free"}
-                <ArrowRight aria-hidden />
-              </Button>
+            <Link href={ctaHref} className={buttonVariants({ size: 'lg' })}>
+              {"Start building - it's free"}
+              <ArrowRight aria-hidden />
             </Link>
-            <a href="#templates">
-              <Button size="lg" variant="secondary">
-                Browse templates
-              </Button>
+            <a href="#templates" className={buttonVariants({ size: 'lg', variant: 'secondary' })}>
+              Browse templates
             </a>
           </div>
         </div>
@@ -232,14 +230,19 @@ export default function Home() {
             Free to start. Set up your profile once and generate a tailored resume for the next
             posting you find.
           </p>
-          <Link href={ctaHref} className="mt-8 inline-block">
-            <Button size="lg" className="bg-white text-brand-900 hover:bg-brand-50 active:bg-brand-100">
-              Create your account
-              <ArrowRight aria-hidden />
-            </Button>
+          <Link
+            href={ctaHref}
+            className={cn(
+              buttonVariants({ size: 'lg' }),
+              'mt-8 bg-white text-brand-900 hover:bg-brand-50 active:bg-brand-100'
+            )}
+          >
+            Create your account
+            <ArrowRight aria-hidden />
           </Link>
         </div>
       </section>
+      </main>
 
       {/* Footer */}
       <footer className="border-t border-stone-200 bg-white px-4 py-12 sm:px-6 lg:px-8">
@@ -256,7 +259,7 @@ export default function Home() {
               Templates
             </a>
           </nav>
-          <p className="flex items-center gap-1.5 text-sm text-stone-400">
+          <p className="flex items-center gap-1.5 text-sm text-stone-500">
             <FileText className="h-4 w-4" aria-hidden />© {new Date().getFullYear()} Resume Builder
           </p>
         </div>

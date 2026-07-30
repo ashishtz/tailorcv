@@ -36,10 +36,10 @@ test.describe('resume generator (split-screen)', () => {
     await expect(page.getByText(/sample preview/i)).toBeVisible()
   })
 
-  test('template picker switches the live preview', async ({ page }) => {
-    await page.getByRole('radio', { name: /minimal/i }).click()
+  test('template dropdown switches the live preview', async ({ page }) => {
+    await page.getByLabel('Template').selectOption('minimal')
     await expect(page.getByText(/sample preview of the minimal template/i)).toBeVisible()
-    await page.getByRole('radio', { name: /classic/i }).click()
+    await page.getByLabel('Template').selectOption('classic')
     await expect(page.getByText(/sample preview of the classic template/i)).toBeVisible()
   })
 

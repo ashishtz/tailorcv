@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import { Card, CardBody } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button-variants'
 import { formatMonthYear } from '@/lib/utils'
 
 export default async function DashboardPage() {
@@ -67,11 +67,9 @@ export default async function DashboardPage() {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            <Link href="/dashboard/documents/new">
-              <Button>
-                <Plus aria-hidden />
-                New resume
-              </Button>
+            <Link href="/dashboard/documents/new" className={buttonVariants({})}>
+              <Plus aria-hidden />
+              New resume
             </Link>
           </div>
         </div>
@@ -152,11 +150,9 @@ export default async function DashboardPage() {
                 </p>
                 <Link
                   href={profileReady ? '/dashboard/documents/new' : '/dashboard/profile'}
-                  className="mt-4 inline-block"
+                  className={`${buttonVariants({ size: 'sm' })} mt-4`}
                 >
-                  <Button size="sm">
-                    {profileReady ? 'Generate resume' : 'Complete profile'}
-                  </Button>
+                  {profileReady ? 'Generate resume' : 'Complete profile'}
                 </Link>
               </CardBody>
             ) : (

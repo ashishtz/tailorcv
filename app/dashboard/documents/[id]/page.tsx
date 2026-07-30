@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Download, Eye, FileX, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
 import { Select } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/toast'
 import { getTemplateDef, RESUME_TEMPLATES, RESUME_PAGE_WIDTH_PX } from '@/lib/templates'
 import { normalizeSettings } from '@/lib/utils/normalize-resume'
 import { useResume } from '@/lib/use-resume'
+import { useFitScale } from '@/lib/use-fit-scale'
 
 export default function ResumeViewPage() {
   const params = useParams<{ id: string }>()
@@ -23,6 +24,8 @@ export default function ResumeViewPage() {
   const [templateOverride, setTemplateOverride] = useState<string | null>(null)
   const toast = useToast()
   const supabase = createClient()
+  // Shrink the fixed-width sheet on narrow viewports instead of side-scrolling.
+  const { ref: fitRef, scale } = useFitScale()
 
   const selectedTemplate = templateOverride ?? resume?.template_id ?? 'classic'
 
@@ -68,11 +71,12 @@ export default function ResumeViewPage() {
                   : "This resume doesn't exist or may have been deleted."
               }
               action={
-                <Link href="/dashboard/documents">
-                  <Button variant="secondary">
-                    <ArrowLeft aria-hidden />
-                    Back to documents
-                  </Button>
+                <Link
+                  href="/dashboard/documents"
+                  className={buttonVariants({ variant: 'secondary' })}
+                >
+                  <ArrowLeft aria-hidden />
+                  Back to documents
                 </Link>
               }
             />
@@ -126,35 +130,43 @@ export default function ResumeViewPage() {
               ))}
             </Select>
 
-            <Link href={`/dashboard/documents/${resumeId}/edit`}>
-              <Button variant="secondary">
-                <Pencil aria-hidden />
-                Edit
-              </Button>
+            <Link
+              href={`/dashboard/documents/${resumeId}/edit`}
+              className={buttonVariants({ variant: 'secondary' })}
+            >
+              <Pencil aria-hidden />
+              Edit
             </Link>
-            <Link href={`/preview/${resumeId}?template=${selectedTemplate}`} target="_blank">
-              <Button variant="secondary">
-                <Eye aria-hidden />
-                Preview
-              </Button>
+            <Link
+              href={`/preview/${resumeId}?template=${selectedTemplate}`}
+              target="_blank"
+              className={buttonVariants({ variant: 'secondary' })}
+            >
+              <Eye aria-hidden />
+              Preview
             </Link>
-            <Link href={`/preview/${resumeId}?template=${selectedTemplate}&print=1`} target="_blank">
-              <Button>
-                <Download aria-hidden />
-                Download PDF
-              </Button>
+            <Link
+              href={`/preview/${resumeId}?template=${selectedTemplate}&print=1`}
+              target="_blank"
+              className={buttonVariants({})}
+            >
+              <Download aria-hidden />
+              Download PDF
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Resume sheet - fixed page width so PDF output is deterministic */}
-      <div className="overflow-x-auto py-8">
-        <div
-          className="resume-container mx-auto bg-white shadow-lg"
-          style={{ width: RESUME_PAGE_WIDTH_PX }}
-        >
-          <TemplateComponent data={data} settings={settings} />
+      {/* Resume sheet - fixed page width (deterministic PDF output), zoomed
+          down to fit narrow viewports instead of side-scrolling */}
+      <div className="px-4 py-8">
+        <div ref={fitRef} className="mx-auto w-full max-w-[816px]">
+          <div
+            className="resume-container bg-white shadow-lg"
+            style={{ width: RESUME_PAGE_WIDTH_PX, zoom: scale }}
+          >
+            <TemplateComponent data={data} settings={settings} nameTag="h2" />
+          </div>
         </div>
       </div>
     </div>

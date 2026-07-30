@@ -3,12 +3,12 @@ import { Mail, Phone, MapPin, Link as LinkIcon } from 'lucide-react'
 import { renderFormattedContent } from '@/lib/utils/render-content'
 import { ContactLinks } from './shared'
 
-export function ModernTemplate({ data, settings }: TemplateProps) {
+export function ModernTemplate({ data, settings, nameTag: NameTag = 'h1' }: TemplateProps) {
   return (
     <div className="bg-white p-8 w-full shadow-lg font-poppins" style={{ minHeight: '11in' }}>
       {/* Header Section */}
       <header className="bg-linear-to-r from-blue-600 to-blue-700 text-white p-8 -m-8 mb-6">
-        <h1 className="text-4xl font-bold mb-4">{data.contact.name}</h1>
+        <NameTag className="text-4xl font-bold mb-4">{data.contact.name}</NameTag>
         <div className="flex flex-wrap gap-6 text-sm">
           <div className="flex items-center gap-2">
             <Mail className="w-4 h-4" />
@@ -114,8 +114,14 @@ export function ModernTemplate({ data, settings }: TemplateProps) {
                         {project.role && <p className="text-sm text-gray-600 font-semibold">{project.role}</p>}
                       </div>
                       {project.link && (
-                        <a href={project.link} className="text-blue-600 hover:text-blue-700" target="_blank" rel="noopener noreferrer">
-                          <LinkIcon className="w-4 h-4" />
+                        <a
+                          href={project.link}
+                          aria-label={`Open ${project.name}`}
+                          className="text-blue-600 hover:text-blue-700"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <LinkIcon className="w-4 h-4" aria-hidden />
                         </a>
                       )}
                     </div>

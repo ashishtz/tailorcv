@@ -2,12 +2,12 @@ import type { TemplateProps } from '@/lib/templates'
 import { renderFormattedContent } from '@/lib/utils/render-content'
 import { ContactLinks } from './shared'
 
-export function MinimalTemplate({ data, settings }: TemplateProps) {
+export function MinimalTemplate({ data, settings, nameTag: NameTag = 'h1' }: TemplateProps) {
   return (
     <div className="bg-white p-8 w-full shadow-lg font-source-sans" style={{ minHeight: '11in' }}>
       {/* Header Section */}
       <header className="text-center mb-8">
-        <h1 className="text-4xl font-semibold text-gray-900 mb-2">{data.contact.name}</h1>
+        <NameTag className="text-4xl font-semibold text-gray-900 mb-2">{data.contact.name}</NameTag>
         <div className="text-gray-600 text-sm space-y-1">
           <p>{data.contact.email} • {data.contact.phone}</p>
           <p>{data.contact.location}</p>
@@ -85,7 +85,13 @@ export function MinimalTemplate({ data, settings }: TemplateProps) {
                     </div>
                   </div>
                   {project.link && (
-                    <a href={project.link} className="text-gray-400 hover:text-gray-600 text-sm underline" target="_blank" rel="noopener noreferrer">
+                    <a
+                      href={project.link}
+                      aria-label={`Open ${project.name}`}
+                      className="text-gray-600 hover:text-gray-800 text-sm underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       Link
                     </a>
                   )}

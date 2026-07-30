@@ -30,11 +30,11 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
         />
         <Logo tone="light" className="relative" />
         <div className="relative">
-          <h2 className="font-display text-3xl font-bold leading-tight text-white">
+          <p className="font-display text-3xl font-bold leading-tight text-white">
             Craft resumes
             <br />
             that get read.
-          </h2>
+          </p>
           <ul className="mt-8 space-y-4">
             {HIGHLIGHTS.map((item) => (
               <li key={item} className="flex items-start gap-3 text-brand-100">
@@ -50,7 +50,7 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
       </div>
 
       {/* Form panel */}
-      <div className="flex w-full items-center justify-center px-4 py-12 lg:w-1/2">
+      <main className="flex w-full items-center justify-center px-4 py-12 lg:w-1/2">
         <div className="w-full max-w-sm">
           <div className="lg:hidden">
             <Logo />
@@ -61,7 +61,7 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
           <p className="mt-1.5 text-sm text-stone-500">{subtitle}</p>
           <div className="mt-8">{children}</div>
         </div>
-      </div>
+      </main>
     </div>
   )
 }

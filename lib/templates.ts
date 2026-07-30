@@ -9,6 +9,12 @@ import { JakeTemplate } from '@/components/resume-templates/jake-template'
 export interface TemplateProps {
   data: Resume['generated_data']
   settings?: Resume['generation_settings']
+  /**
+   * Heading element for the candidate name. Defaults to 'h1' (the sheet is
+   * the page, e.g. /preview). Pages that embed the sheet under their own h1
+   * pass 'h2' to keep the document outline valid.
+   */
+  nameTag?: 'h1' | 'h2'
 }
 
 export interface ResumeTemplateDef {

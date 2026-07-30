@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { OnboardingProvider } from '@/lib/contexts/onboarding-context'
 import { OnboardingStepper } from '@/components/onboarding/stepper'
 import { Logo } from '@/components/brand/logo'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button-variants'
 
 export const metadata: Metadata = {
   title: 'Set up your profile',
@@ -35,16 +35,19 @@ export default async function OnboardingLayout({ children }: { children: React.R
           <Link
             href="/dashboard"
             title="Your answers are saved as a draft in this browser — come back anytime to finish."
+            className={buttonVariants({ variant: 'ghost', size: 'sm' })}
           >
-            <Button variant="ghost" size="sm">
-              Save & exit
-            </Button>
+            Save & exit
+            <span className="sr-only">
+              {' '}
+              (your answers are saved as a draft in this browser — come back anytime to finish)
+            </span>
           </Link>
         </div>
       </header>
 
       <OnboardingProvider>
-        <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:px-6">
+        <main id="main" className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:px-6">
           <OnboardingStepper />
           <div className="mt-8">{children}</div>
         </main>

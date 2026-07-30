@@ -19,7 +19,7 @@ export default function ResetPasswordPage() {
   const toast = useToast()
   const supabase = createClient()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
 
@@ -27,7 +27,14 @@ export default function ResetPasswordPage() {
     if (password.length < 8) nextFieldErrors.password = 'Use at least 8 characters.'
     if (confirm !== password) nextFieldErrors.confirm = 'Passwords do not match.'
     setFieldErrors(nextFieldErrors)
-    if (Object.keys(nextFieldErrors).length > 0) return
+    if (Object.keys(nextFieldErrors).length > 0) {
+      // Move focus to the first invalid field once the errors have rendered.
+      const form = e.currentTarget
+      requestAnimationFrame(() => {
+        form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+      })
+      return
+    }
 
     setLoading(true)
     const { error: updateError } = await supabase.auth.updateUser({ password })

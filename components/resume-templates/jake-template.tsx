@@ -3,14 +3,14 @@ import { renderFormattedContent } from '@/lib/utils/render-content'
 import { Fragment } from 'react'
 import { ContactLinks, stripScheme } from './shared'
 
-export function JakeTemplate({ data, settings }: TemplateProps) {
+export function JakeTemplate({ data, settings, nameTag: NameTag = 'h1' }: TemplateProps) {
   return (
     <div className="bg-white px-10 py-8 w-full font-libre-baskerville" style={{ minHeight: '11in' }}>
       {/* Header Section - Centered with small caps name */}
       <header className="text-center mb-4">
-        <h1 className="text-3xl font-bold text-gray-900 tracking-wide" style={{ fontVariant: 'small-caps' }}>
+        <NameTag className="text-3xl font-bold text-gray-900 tracking-wide" style={{ fontVariant: 'small-caps' }}>
           {data.contact.name}
-        </h1>
+        </NameTag>
         <div className="text-sm text-gray-800 mt-1">
           {/* Contact info on one line with pipe separators */}
           <p>

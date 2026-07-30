@@ -5,7 +5,7 @@
 > and MUST update all three before finishing a work chunk. Keep entries detailed enough
 > that a brand-new session can resume without any other context.
 
-**Last updated:** 2026-07-29 (session 3b)
+**Last updated:** 2026-07-29 (session 3c)
 **Working branch:** `claude/deps-ui-modernize-mkz7xm` (never push to main)
 
 ---
@@ -49,6 +49,7 @@
 ## ⛔ Known Constraints / Gotchas
 
 - **Client components must use `getSessionUser()` (lib/supabase/client.ts), never `auth.getUser()`** — local read vs network RTT. Server code (proxy, layouts, server pages, API routes) keeps `auth.getUser()` (verified). Landing page is static — don't add server-side auth reads to it.
+- **`buttonVariants` must be imported from `components/ui/button-variants` in SERVER components** (button.tsx is `'use client'`; calling its cva export from a server component breaks prerender).
 - **Node 24+** (`.nvmrc` = v24.18.0, `engines` >=24, npm 11). npm 11 gates install scripts — new native deps may need `npm approve-scripts` (allowScripts block in package.json).
 - Env: `.env.example` is empty. App needs `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `OPENROUTER_API_KEY` (optional `OPENROUTER_MODEL`).
 - No Docker/nginx deploy stack (removed session 2 as unused) — deploy is `next start` or a platform; recreate from git history if ever needed.

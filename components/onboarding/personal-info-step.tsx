@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient, getSessionUser } from '@/lib/supabase/client'
 import { useOnboarding, type PersonalInfoDraft } from '@/lib/contexts/onboarding-context'
@@ -30,6 +30,8 @@ function PersonalInfoForm() {
   const supabase = createClient()
   const [form, setForm] = useState<PersonalInfoDraft>(data.personalInfo)
   const [errors, setErrors] = useState<PersonalErrors>({})
+  // Wraps the fields so failed validation can focus the first invalid input.
+  const fieldsRef = useRef<HTMLDivElement>(null)
 
   // Prefill the email from the signed-in account when the draft has none.
   useEffect(() => {
@@ -57,7 +59,13 @@ function PersonalInfoForm() {
     const email = form.email.trim()
     if (email && !EMAIL_PATTERN.test(email)) nextErrors.email = 'Enter a valid email address.'
     setErrors(nextErrors)
-    if (Object.keys(nextErrors).length > 0) return
+    if (Object.keys(nextErrors).length > 0) {
+      // Move focus to the first invalid field once the errors have rendered.
+      requestAnimationFrame(() => {
+        fieldsRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+      })
+      return
+    }
 
     updateData({
       personalInfo: {
@@ -80,6 +88,7 @@ function PersonalInfoForm() {
       description="The essentials that sit at the top of every resume. Only your name is required."
       onContinue={handleContinue}
     >
+      <div ref={fieldsRef}>
       <Card>
         <CardBody className="space-y-5">
           <div className="grid gap-5 sm:grid-cols-2">
@@ -169,6 +178,7 @@ function PersonalInfoForm() {
           </div>
         </CardBody>
       </Card>
+      </div>
     </StepShell>
   )
 }

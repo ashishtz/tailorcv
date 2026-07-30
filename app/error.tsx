@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { AlertTriangle, RotateCcw, Home } from 'lucide-react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 
 export default function ErrorPage({
   error,
@@ -17,7 +17,7 @@ export default function ErrorPage({
   }, [error])
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-stone-50 px-4">
+    <main className="flex min-h-screen items-center justify-center bg-stone-50 px-4">
       <div className="w-full max-w-md rounded-xl border border-stone-200 bg-white p-8 text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
           <AlertTriangle className="h-6 w-6 text-red-600" aria-hidden />
@@ -30,21 +30,19 @@ export default function ErrorPage({
           or head back to the dashboard.
         </p>
         {error.digest && (
-          <p className="mt-2 text-xs text-stone-400">Error reference: {error.digest}</p>
+          <p className="mt-2 text-xs text-stone-500">Error reference: {error.digest}</p>
         )}
         <div className="mt-6 flex items-center justify-center gap-3">
           <Button variant="secondary" onClick={reset}>
             <RotateCcw aria-hidden />
             Try again
           </Button>
-          <Link href="/dashboard">
-            <Button>
-              <Home aria-hidden />
-              Go to dashboard
-            </Button>
+          <Link href="/dashboard" className={buttonVariants({})}>
+            <Home aria-hidden />
+            Go to dashboard
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useId } from 'react'
 import { createClient, getSessionUser } from '@/lib/supabase/client'
 import { Plus, X } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
@@ -22,6 +22,8 @@ export function AddSkillsModal({ isOpen, onClose, onSuccess }: AddSkillsModalPro
   const [skills, setSkills] = useState<string[]>([])
   const [skillInput, setSkillInput] = useState('')
   const [saving, setSaving] = useState(false)
+  const submitHintId = useId()
+  const addChipHintId = useId()
   const supabase = createClient()
   const toast = useToast()
 
@@ -125,7 +127,12 @@ export function AddSkillsModal({ isOpen, onClose, onSuccess }: AddSkillsModalPro
           <Button variant="secondary" onClick={resetAndClose} disabled={saving}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} loading={saving} disabled={!canSubmit}>
+          <Button
+            onClick={handleSubmit}
+            loading={saving}
+            disabled={!canSubmit}
+            aria-describedby={!canSubmit ? submitHintId : undefined}
+          >
             Add skills
           </Button>
         </>
@@ -166,11 +173,21 @@ export function AddSkillsModal({ isOpen, onClose, onSuccess }: AddSkillsModalPro
               onClick={addSkillChip}
               disabled={saving || !skillInput.trim()}
               aria-label="Add skill to the list"
+              aria-describedby={addChipHintId}
             >
               <Plus aria-hidden />
             </Button>
+            <span id={addChipHintId} className="sr-only">
+              Type a skill name to add
+            </span>
           </div>
         </Field>
+
+        {!canSubmit && (
+          <p id={submitHintId} className="text-xs text-stone-500">
+            Enter a category and at least one skill to enable saving.
+          </p>
+        )}
 
         {skills.length > 0 && (
           <div className="flex flex-wrap gap-2">

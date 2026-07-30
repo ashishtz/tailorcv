@@ -9,12 +9,14 @@ import type { GeneratedResumeData } from '@/lib/utils/normalize-resume'
 import { rowToResume } from '@/lib/utils/normalize-resume'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Textarea, Select } from '@/components/ui/field'
-import { TemplateThumbnail } from '@/components/landing/template-thumbnail'
 import { RESUME_TEMPLATES, getTemplateDef, RESUME_PAGE_WIDTH_PX } from '@/lib/templates'
 import { landingSampleResume } from '@/lib/data/landing-sample'
+import { useFitScale } from '@/lib/use-fit-scale'
 import { cn } from '@/lib/utils'
 
 type ContentFormat = 'paragraph' | 'bullets'
+
+type GenerationStatus = 'idle' | 'generating' | 'cancelled' | 'failed'
 
 interface GenerationFormState {
   job_title: string
@@ -51,7 +53,7 @@ const FORMAT_SECTIONS = [
 export default function NewResumePage() {
   const router = useRouter()
   const supabase = createClient()
-  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState<GenerationStatus>('idle')
   const [error, setError] = useState<string | null>(null)
   const [contextSource, setContextSource] = useState<'scratch' | 'resume'>('scratch')
   const [selectedResumeId, setSelectedResumeId] = useState<string>('')
@@ -60,18 +62,9 @@ export default function NewResumePage() {
   const [existingResumes, setExistingResumes] = useState<Resume[]>([])
   const abortRef = useRef<AbortController | null>(null)
   // Scale the fixed-width resume sheet to always fill the preview pane.
-  const previewBoxRef = useRef<HTMLDivElement>(null)
-  const [previewScale, setPreviewScale] = useState(1)
+  const { ref: previewBoxRef, scale: previewScale } = useFitScale()
 
-  useEffect(() => {
-    const el = previewBoxRef.current
-    if (!el) return
-    const observer = new ResizeObserver(() => {
-      if (el.clientWidth > 0) setPreviewScale(el.clientWidth / RESUME_PAGE_WIDTH_PX)
-    })
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
+  const generating = status === 'generating'
 
   useEffect(() => {
     let active = true
@@ -95,14 +88,14 @@ export default function NewResumePage() {
   // Wired to the form's onReset (Cancel is type="reset"): the native form
   // event path is reliable while a generation is in flight, where a plain
   // delegated onClick on the swapped-in button proved not to be.
-  const handleCancel = (e: React.FormEvent) => {
+  const handleCancel = (e: { preventDefault(): void }) => {
     e.preventDefault() // keep the field values - only cancel the generation
     abortRef.current?.abort()
-    setLoading(false)
+    setStatus('cancelled')
     setPreview(null)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: { preventDefault(): void }) => {
     e.preventDefault()
     setError(null)
 
@@ -111,7 +104,7 @@ export default function NewResumePage() {
       return
     }
 
-    setLoading(true)
+    setStatus('generating')
     setPreview(null)
     const controller = new AbortController()
     abortRef.current = controller
@@ -171,17 +164,19 @@ export default function NewResumePage() {
       // User cancelled - the rejection flavor varies (AbortError or a generic
       // fetch TypeError), so trust the signal, not the error type.
       if (controller.signal.aborted) {
-        setLoading(false)
+        setStatus('cancelled')
         setPreview(null)
         return
       }
       setError(err instanceof Error ? err.message : 'Resume generation failed. Please try again.')
-      setLoading(false)
+      setStatus('failed')
       setPreview(null)
     }
   }
 
-  const Template = getTemplateDef(formData.template).component
+  const templateDef = getTemplateDef(formData.template)
+  const Template = templateDef.component
+  const templateName = templateDef.name
 
   return (
     <div className="px-4 py-8 sm:px-6 lg:px-8">
@@ -216,7 +211,7 @@ export default function NewResumePage() {
                     setContextSource(id ? 'resume' : 'scratch')
                     setSelectedResumeId(id)
                   }}
-                  disabled={loading}
+                  disabled={generating}
                 >
                   <option value="">My profile data</option>
                   {existingResumes.map((resume) => (
@@ -235,7 +230,7 @@ export default function NewResumePage() {
                 placeholder="e.g. Senior Frontend Engineer"
                 required
                 maxLength={200}
-                disabled={loading}
+                disabled={generating}
               />
             </Field>
             <Field
@@ -249,51 +244,25 @@ export default function NewResumePage() {
                 rows={8}
                 placeholder="Paste the job description here…"
                 required
-                disabled={loading}
+                disabled={generating}
               />
             </Field>
 
-            <fieldset disabled={loading}>
-              <legend className="mb-2 block text-sm font-medium text-stone-700">Template</legend>
-              <div
-                role="radiogroup"
-                aria-label="Resume template"
-                className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2"
+            <Field label="Template" hint="Shown live in the preview on the right.">
+              <Select
+                value={formData.template}
+                onChange={(e) => setFormData({ ...formData, template: e.target.value })}
+                disabled={generating}
               >
-                {RESUME_TEMPLATES.map((template) => {
-                  const selected = formData.template === template.id
-                  return (
-                    <button
-                      key={template.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      onClick={() => setFormData({ ...formData, template: template.id })}
-                      className={cn(
-                        'group overflow-hidden rounded-lg border text-left transition-all focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2',
-                        selected
-                          ? 'border-brand-500 ring-2 ring-brand-500/30'
-                          : 'border-stone-200 hover:border-stone-300'
-                      )}
-                    >
-                      <TemplateThumbnail templateId={template.id} width={120} />
-                      <span
-                        className={cn(
-                          'block border-t px-2.5 py-1.5 text-xs font-medium',
-                          selected
-                            ? 'border-brand-200 bg-brand-50 text-brand-800'
-                            : 'border-stone-200 bg-white text-stone-700'
-                        )}
-                      >
-                        {template.name}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-            </fieldset>
+                {RESUME_TEMPLATES.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
 
-            <fieldset disabled={loading}>
+            <fieldset disabled={generating}>
               <legend className="mb-2 block text-sm font-medium text-stone-700">
                 Generation mode
               </legend>
@@ -330,7 +299,7 @@ export default function NewResumePage() {
               </div>
             </fieldset>
 
-            <fieldset disabled={loading}>
+            <fieldset disabled={generating}>
               <legend className="mb-2 block text-sm font-medium text-stone-700">Content format</legend>
               <div className="grid gap-3">
                 {FORMAT_SECTIONS.map((section) => (
@@ -380,51 +349,70 @@ export default function NewResumePage() {
             </fieldset>
 
             <div className="flex items-center gap-3 border-t border-stone-200 pt-4">
-              {loading ? (
-                <Button type="reset" variant="secondary" className="w-full">
-                  Cancel generation
-                </Button>
-              ) : (
-                <Button type="submit" className="w-full">
-                  <Sparkles aria-hidden />
-                  Generate resume
-                </Button>
-              )}
+              {/* One button kept mounted across the generating swap so keyboard
+                  focus survives; only its type/label/style toggle. */}
+              <Button
+                type={generating ? 'reset' : 'submit'}
+                variant={generating ? 'secondary' : 'primary'}
+                className="w-full"
+              >
+                {generating ? (
+                  'Cancel generation'
+                ) : (
+                  <>
+                    <Sparkles aria-hidden />
+                    Generate resume
+                  </>
+                )}
+              </Button>
             </div>
           </form>
 
           {/* Right: live preview */}
-          <div className="min-w-0 self-start lg:sticky lg:top-6">
-            <p className="mb-3 flex items-center gap-2 text-sm text-stone-600" aria-live="polite">
-              {loading ? (
-                <>
-                  <Sparkles className="h-4 w-4 animate-pulse text-brand-600" aria-hidden />
-                  {preview
-                    ? 'Building your resume - watch it take shape. This usually takes 30-60 seconds.'
-                    : 'Contacting the AI and drafting the first section…'}
-                </>
-              ) : (
-                <>Sample preview of the {getTemplateDef(formData.template).name} template - your generated resume will replace it here.</>
-              )}
-            </p>
-            {/* Bare sheet, no framing: zoomed to exactly fill this width so
-                there is never horizontal scroll, and never height-capped so
-                the full page is visible and reads portrait. */}
-            <div ref={previewBoxRef} className="mx-auto w-full max-w-2xl">
+          <section aria-label="Resume preview" className="min-w-0 self-start lg:sticky lg:top-6">
+            <div className="mx-auto w-full max-w-2xl">
+              {/* Announced on every state change; also the visible caption
+                  that ties the sheet below to what it currently shows. */}
               <div
-                className={cn(
-                  'bg-white shadow-lg ring-1 ring-stone-200 transition-opacity',
-                  !loading && !preview && 'opacity-60'
-                )}
-                style={{ width: RESUME_PAGE_WIDTH_PX, zoom: previewScale }}
+                role="status"
+                className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm text-stone-600"
               >
-                <Template
-                  data={preview ?? landingSampleResume}
-                  settings={formData.generation_settings}
-                />
+                <span>
+                  {generating
+                    ? 'Generating your resume…'
+                    : status === 'cancelled'
+                      ? `Generation cancelled. Sample preview of the ${templateName} template.`
+                      : status === 'failed'
+                        ? `Generation failed. Sample preview of the ${templateName} template.`
+                        : `Sample preview of the ${templateName} template.`}
+                </span>
+                {!preview && (
+                  <span className="rounded-full bg-stone-200/80 px-2 py-0.5 text-xs font-medium text-stone-600">
+                    Sample data
+                  </span>
+                )}
+              </div>
+
+              {/* Bare sheet, no framing: zoomed to exactly fill this width so
+                  there is never horizontal scroll, and never height-capped so
+                  the full page is visible and reads portrait. */}
+              <div ref={previewBoxRef} className="w-full">
+                <div
+                  className={cn(
+                    'bg-white shadow-lg ring-1 ring-stone-200 transition-opacity',
+                    !generating && !preview && 'opacity-60'
+                  )}
+                  style={{ width: RESUME_PAGE_WIDTH_PX, zoom: previewScale }}
+                >
+                  <Template
+                    data={preview ?? landingSampleResume}
+                    settings={formData.generation_settings}
+                    nameTag="h2"
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          </section>
         </div>
       </div>
     </div>

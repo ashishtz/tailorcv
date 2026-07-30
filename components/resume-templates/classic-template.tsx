@@ -3,12 +3,12 @@ import { renderFormattedContent } from '@/lib/utils/render-content'
 import { Fragment } from 'react'
 import { ContactLinks, stripScheme } from './shared'
 
-export function ClassicTemplate({ data, settings }: TemplateProps) {
+export function ClassicTemplate({ data, settings, nameTag: NameTag = 'h1' }: TemplateProps) {
   return (
     <div className="bg-white p-8 w-full font-inter" style={{ minHeight: '11in' }}>
       {/* Header Section - ATS-friendly: no icons, plain text with separators */}
       <header className="border-b-2 border-gray-800 pb-4 mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">{data.contact.name}</h1>
+        <NameTag className="text-3xl font-bold text-gray-900 mb-2">{data.contact.name}</NameTag>
         <div className="text-sm text-gray-600 font-medium">
           {/* Primary contact info on one line with pipe separators */}
           <p>

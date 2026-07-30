@@ -199,7 +199,14 @@ export default function ProfilePage() {
       confirmPassword !== newPassword ? 'Passwords do not match.' : null
     setPasswordError(lengthError)
     setConfirmError(matchError)
-    if (lengthError || matchError) return
+    if (lengthError || matchError) {
+      // Move focus to the first invalid field once the errors have rendered.
+      const form = e.currentTarget
+      requestAnimationFrame(() => {
+        form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+      })
+      return
+    }
 
     setChangingPassword(true)
     const { error } = await supabase.auth.updateUser({ password: newPassword })

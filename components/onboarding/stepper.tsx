@@ -75,7 +75,7 @@ export function OnboardingStepper() {
                       'flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold',
                       isActive
                         ? 'border-2 border-brand-600 bg-brand-50 text-brand-700'
-                        : 'border border-stone-300 bg-white text-stone-400'
+                        : 'border border-stone-300 bg-white text-stone-500'
                     )}
                   >
                     {index + 1}

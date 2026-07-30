@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, FileX, Plus, Save, Trash2, X } from 'lucide-react'
 import { createClient, getSessionUser } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import { Card, CardHeader, CardBody } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -142,7 +142,7 @@ function SkillsEditor({ skills, onChange }: SkillsEditorProps) {
               />
             ))}
             {group.skills.length === 0 && (
-              <p className="text-xs text-stone-400">No skills in this category yet.</p>
+              <p className="text-xs text-stone-500">No skills in this category yet.</p>
             )}
           </div>
           <ChipInput
@@ -188,7 +188,7 @@ function EntryCard({
   return (
     <div className="rounded-lg border border-stone-200 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <p className="text-sm font-medium text-stone-500">Entry {index + 1}</p>
+        <h3 className="text-sm font-medium text-stone-500">Entry {index + 1}</h3>
         <Button
           variant="danger-ghost"
           size="icon-sm"
@@ -204,7 +204,7 @@ function EntryCard({
 }
 
 const NoEntries = ({ what }: { what: string }) => (
-  <p className="text-sm text-stone-400">No {what} entries.</p>
+  <p className="text-sm text-stone-500">No {what} entries.</p>
 )
 
 /* ------------------------------------------------------------------ *
@@ -298,11 +298,12 @@ export default function ResumeEditPage() {
               title="Resume not found"
               description="This resume doesn't exist or may have been deleted."
               action={
-                <Link href="/dashboard/documents">
-                  <Button variant="secondary">
-                    <ArrowLeft aria-hidden />
-                    Back to documents
-                  </Button>
+                <Link
+                  href="/dashboard/documents"
+                  className={buttonVariants({ variant: 'secondary' })}
+                >
+                  <ArrowLeft aria-hidden />
+                  Back to documents
                 </Link>
               }
             />

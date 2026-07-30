@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Sparkles } from 'lucide-react'
 import { Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
@@ -26,6 +26,9 @@ export default function EnhanceTextarea({
   enhanceType,
 }: EnhanceTextareaProps) {
   const [isEnhancing, setIsEnhancing] = useState(false)
+  // Announced via the role="status" region after a successful AI rewrite.
+  const [announcement, setAnnouncement] = useState('')
+  const helpId = useId()
   const toast = useToast()
 
   // Derived directly from the current value - no effect/state needed
@@ -36,6 +39,7 @@ export default function EnhanceTextarea({
     if (isEnhancing || !value.trim()) return
 
     setIsEnhancing(true)
+    setAnnouncement('')
     try {
       const response = await fetch('/api/enhance-text', {
         method: 'POST',
@@ -53,6 +57,7 @@ export default function EnhanceTextarea({
       }
 
       onChange(data.enhancedText)
+      setAnnouncement('Description enhanced')
     } catch (error) {
       toast.error(
         'Could not enhance the text',
@@ -72,11 +77,15 @@ export default function EnhanceTextarea({
         placeholder={placeholder}
         className={className}
         disabled={isEnhancing}
+        aria-describedby={helpId}
       />
+      <p role="status" className="sr-only">
+        {announcement}
+      </p>
       <div className="mt-2 flex min-h-8 flex-wrap items-center justify-between gap-2">
         {canEnhance ? (
           <>
-            <p className="text-xs text-stone-500">
+            <p id={helpId} className="text-xs text-stone-500">
               AI rewrites this into concise, resume-ready language.
             </p>
             <Button
@@ -91,7 +100,7 @@ export default function EnhanceTextarea({
             </Button>
           </>
         ) : (
-          <p className="text-xs text-stone-500">
+          <p id={helpId} className="text-xs text-stone-500">
             Write at least {MIN_WORDS} words to unlock AI enhancement.
           </p>
         )}

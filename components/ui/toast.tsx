@@ -47,6 +47,14 @@ const AUTO_DISMISS_MS = 5000
 
 const emptySubscribe = () => () => {}
 
+interface TimerEntry {
+  timeoutId: number | null
+  /** ms left on the timer; meaningful while paused (timeoutId === null). */
+  remaining: number
+  /** Epoch ms the running timer fires at. */
+  endsAt: number
+}
+
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([])
   // Portal only renders after hydration - document doesn't exist during SSR
@@ -57,18 +65,66 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     () => false
   )
   const nextId = useRef(1)
+  // Auto-dismiss timers, pausable while the stack is hovered or focused.
+  const timers = useRef(new Map<number, TimerEntry>())
+  const paused = useRef(false)
 
   const dismiss = useCallback((id: number) => {
+    const entry = timers.current.get(id)
+    if (entry?.timeoutId != null) window.clearTimeout(entry.timeoutId)
+    timers.current.delete(id)
     setToasts((list) => list.filter((t) => t.id !== id))
   }, [])
+
+  const startTimer = useCallback(
+    (id: number, ms: number) => {
+      const timeoutId = window.setTimeout(() => {
+        timers.current.delete(id)
+        dismiss(id)
+      }, ms)
+      timers.current.set(id, { timeoutId, remaining: ms, endsAt: Date.now() + ms })
+    },
+    [dismiss]
+  )
+
+  const pauseTimers = useCallback(() => {
+    if (paused.current) return
+    paused.current = true
+    for (const entry of timers.current.values()) {
+      if (entry.timeoutId == null) continue
+      window.clearTimeout(entry.timeoutId)
+      entry.timeoutId = null
+      entry.remaining = Math.max(entry.endsAt - Date.now(), 1000)
+    }
+  }, [])
+
+  const resumeTimers = useCallback(() => {
+    if (!paused.current) return
+    paused.current = false
+    for (const [id, entry] of timers.current.entries()) {
+      if (entry.timeoutId == null) startTimer(id, entry.remaining)
+    }
+  }, [startTimer])
 
   const toast = useCallback(
     (kind: ToastKind, title: string, description?: string) => {
       const id = nextId.current++
       setToasts((list) => [...list.slice(-3), { id, kind, title, description }])
-      window.setTimeout(() => dismiss(id), AUTO_DISMISS_MS)
+      // Errors stay until dismissed; other kinds auto-dismiss (paused while
+      // the user is reading the stack).
+      if (kind !== 'error') {
+        if (paused.current) {
+          timers.current.set(id, {
+            timeoutId: null,
+            remaining: AUTO_DISMISS_MS,
+            endsAt: Date.now() + AUTO_DISMISS_MS,
+          })
+        } else {
+          startTimer(id, AUTO_DISMISS_MS)
+        }
+      }
     },
-    [dismiss]
+    [startTimer]
   )
 
   const value = useMemo<ToastContextValue>(
@@ -86,9 +142,17 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       {mounted &&
         createPortal(
+          // Announcements come from the per-toast role="alert"/"status" -
+          // an aria-live container on top would double-announce them.
           <div
-            aria-live="polite"
-            aria-label="Notifications"
+            onMouseEnter={pauseTimers}
+            onMouseLeave={resumeTimers}
+            onFocus={pauseTimers}
+            onBlur={(e) => {
+              // Resume only when focus leaves the whole stack, not when it
+              // moves between toasts.
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) resumeTimers()
+            }}
             className="fixed bottom-4 right-4 z-100 flex w-full max-w-sm flex-col gap-2 no-print"
           >
             {toasts.map((t) => {
@@ -111,7 +175,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                     type="button"
                     onClick={() => dismiss(t.id)}
                     aria-label="Dismiss notification"
-                    className="absolute right-2 top-2 rounded-md p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+                    className="absolute right-2 top-2 rounded-md p-1 text-stone-500 hover:bg-stone-100 hover:text-stone-600"
                   >
                     <X className="h-4 w-4" aria-hidden />
                   </button>

@@ -12,6 +12,8 @@ interface FieldContextValue {
   errorId: string
   hintId: string
   invalid: boolean
+  required: boolean
+  hasHint: boolean
 }
 
 const FieldContext = createContext<FieldContextValue | null>(null)
@@ -32,8 +34,15 @@ interface FieldProps {
 export function Field({ label, required, error, hint, className, children }: FieldProps) {
   const id = useId()
   const value = useMemo(
-    () => ({ id, errorId: `${id}-error`, hintId: `${id}-hint`, invalid: Boolean(error) }),
-    [id, error]
+    () => ({
+      id,
+      errorId: `${id}-error`,
+      hintId: `${id}-hint`,
+      invalid: Boolean(error),
+      required: Boolean(required),
+      hasHint: Boolean(hint),
+    }),
+    [id, error, required, hint]
   )
 
   return (
@@ -42,9 +51,12 @@ export function Field({ label, required, error, hint, className, children }: Fie
         <label htmlFor={id} className="block text-sm font-medium text-stone-700">
           {label}
           {required && (
-            <span className="text-red-500 ml-0.5" aria-hidden>
-              *
-            </span>
+            <>
+              <span className="text-red-500 ml-0.5" aria-hidden="true">
+                *
+              </span>
+              <span className="sr-only"> (required)</span>
+            </>
           )}
         </label>
         {children}
@@ -68,20 +80,30 @@ export function Field({ label, required, error, hint, className, children }: Fie
  * ---------------------------------------------------------------- */
 
 const controlStyles =
-  'block w-full rounded-lg border bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 transition-colors duration-150 focus:outline-hidden focus:ring-2 disabled:opacity-50 disabled:bg-stone-50'
+  'block w-full rounded-lg border bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-500 transition-colors duration-150 focus:outline-hidden focus:ring-2 disabled:opacity-50 disabled:bg-stone-50'
 
 const controlStates = (invalid: boolean) =>
   invalid
-    ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
-    : 'border-stone-300 focus:border-brand-500 focus:ring-brand-500/20'
+    ? 'border-red-400 focus:border-red-500 focus:ring-red-500/60'
+    : 'border-stone-300 focus:border-brand-500 focus:ring-brand-500/60'
 
 function useControlProps() {
   const ctx = useFieldContext()
   const isInvalid = ctx?.invalid ?? false
+  // Only reference ids that actually render: the error when invalid, the hint
+  // when a hint exists (the hint is hidden while an error shows).
+  const describedBy = ctx
+    ? ctx.invalid
+      ? ctx.errorId
+      : ctx.hasHint
+        ? ctx.hintId
+        : undefined
+    : undefined
   return {
     id: ctx?.id,
     'aria-invalid': isInvalid || undefined,
-    'aria-describedby': ctx ? (ctx.invalid ? ctx.errorId : ctx.hintId) : undefined,
+    'aria-required': ctx?.required || undefined,
+    'aria-describedby': describedBy,
     isInvalid,
   }
 }

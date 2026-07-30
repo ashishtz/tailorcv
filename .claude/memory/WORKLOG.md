@@ -5,6 +5,24 @@
 
 ---
 
+## Session 3c — 2026-07-29 (accessibility pass + cursor/dropdown/template fixes)
+
+Full a11y audit (35 findings: 9 serious, 14 moderate, 12 minor) then fixed ALL of them via two parallel agents. **Suite now 53/53** (44 + new e2e/a11y.spec.ts with 9 invariant tests).
+
+Direct fixes (orchestrator):
+- **cursor:pointer restored globally** (`app/globals.css`): Tailwind v4 preflight sets `cursor:default` on buttons — added `@layer base` rule for button/select/summary/[role=button|radio|tab]/checkbox/radio/file + labels wrapping them, `:not(:disabled)`.
+- **Template picker thumbnails → `<Select>`** on the generator (live preview already shows the choice); e2e updated to `selectOption`.
+- **Professional template sidebar cutoff** (user-reported): flex columns stretched equal but stopped above the sheet's `minHeight: 11in`. Fixed by painting the split on the sheet root: `linear-gradient(to right, #1e293b 33.3333%, #fff 33.3333%)`.
+- `React.FormEvent` deprecation → structural `{ preventDefault(): void }` params.
+- **BUILD FIX**: `buttonVariants` (cva) lived in a `'use client'` module; server components calling it broke prerender ("Attempted to call buttonVariants() from the server"). Extracted to `components/ui/button-variants.ts` (pure cva, no directive); button.tsx re-exports for clients, 4 server files import the pure module.
+
+Agent A (components/ui, shell, table, toast, icons, layout): required-state ARIA (`aria-required` via FieldContext) + sr-only "(required)", dangling `aria-describedby` fixed, placeholder + focus-ring contrast (brand-500/20 → /60), **mobile drawer rebuilt on native `<dialog>`** (focus trap/Escape/restore), skip link in root layout + `id="main"`, table `aria-label`/`scope="col"`/`aria-sort`/`role="status"` count/focus rings, toast pause-on-hover-focus + error toasts never auto-dismiss + nested-live-region removed, SocialIcons `aria-hidden`, EnhanceTextarea describedby + rewrite announcement, skills suggestions live region, disabled-button explanations.
+
+Agent B (app pages, templates, auth shell, header): **17 nested `<Link><Button>` → `buttonVariants` links**, `<main>` landmarks on landing/auth/error/not-found/preview, **per-route metadata titles** (11 new tiny server layouts), auth brand h2 → p, generator `status` union + visible `role="status"` + single always-mounted submit/cancel button + `<section aria-label="Resume preview">` + "Sample data" pill, **`lib/use-fit-scale.ts`** reflow fix applied to view + preview pages (were hard 816px in overflow-x-auto) + `zoom:1 !important` in print CSS, `TemplateProps.nameTag` ('h1'|'h2') so embedded sheets don't duplicate the page h1, template icon-link aria-labels, stone-400 → stone-500 contrast bumps, validation-failure focus moves to first invalid field.
+`aria-sort` emits 'none' on unsorted sortable columns (better AT announcement than omitting).
+
+---
+
 ## Session 3b — 2026-07-29 (generator preview polish + collapsible sidebar)
 
 Follow-up in same session: preview read as landscape — portrait framing added (`max-w-[62vh]` wrapper so one 816:1056 page fits ~80vh; zoom fills that width), box cap raised to 85vh; page title/subtitle moved INTO the left form card (top header block deleted, vertical space reclaimed). Overflow e2e selector updated (85vh). Suite 44/44.
