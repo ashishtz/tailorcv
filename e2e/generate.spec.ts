@@ -9,6 +9,9 @@ import {
 test.describe('resume generator (split-screen)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/dashboard/documents/new')
+    // "Start from" only renders after the client-side resumes fetch - its
+    // presence proves the page is hydrated, so clicks won't be swallowed.
+    await expect(page.getByLabel('Start from')).toBeVisible({ timeout: 15_000 })
   })
 
   test('renders form and sample preview side by side', async ({ page }) => {
@@ -52,7 +55,8 @@ test.describe('resume generator (split-screen)', () => {
     await page.getByLabel(/job description/i).fill('Own the platform.')
     await page.getByRole('button', { name: /generate resume/i }).click()
 
-    await expect(page.getByRole('alert')).toContainText(/unusable resume/i)
+    // filter() dodges Next's empty route-announcer, which is also role=alert.
+    await expect(page.getByRole('alert').filter({ hasText: /unusable resume/i })).toBeVisible()
     await expect(page.getByRole('button', { name: /generate resume/i })).toBeVisible()
   })
 
@@ -66,6 +70,7 @@ test.describe('resume generator (split-screen)', () => {
     await expect(cancel).toBeVisible()
     await cancel.click()
     await expect(page.getByRole('button', { name: /generate resume/i })).toBeVisible()
-    await expect(page.getByRole('alert')).toHaveCount(0)
+    // Only Next's always-present route announcer may remain.
+    await expect(page.getByRole('alert').filter({ hasText: /./ })).toHaveCount(0)
   })
 })

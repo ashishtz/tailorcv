@@ -79,6 +79,16 @@ export default function NewResumePage() {
     // supabase client is a stable singleton per render tree
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Wired to the form's onReset (Cancel is type="reset"): the native form
+  // event path is reliable while a generation is in flight, where a plain
+  // delegated onClick on the swapped-in button proved not to be.
+  const handleCancel = (e: React.FormEvent) => {
+    e.preventDefault() // keep the field values - only cancel the generation
+    abortRef.current?.abort()
+    setLoading(false)
+    setPreview(null)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -145,8 +155,9 @@ export default function NewResumePage() {
       router.refresh()
       // Keep the page in its generating state while navigation commits.
     } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        // User cancelled - back to the form, no error banner.
+      // User cancelled - the rejection flavor varies (AbortError or a generic
+      // fetch TypeError), so trust the signal, not the error type.
+      if (controller.signal.aborted) {
         setLoading(false)
         setPreview(null)
         return
@@ -173,7 +184,7 @@ export default function NewResumePage() {
 
         <div className="grid gap-6 lg:grid-cols-[minmax(320px,3fr)_7fr]">
           {/* Left: inputs */}
-          <form onSubmit={handleSubmit} className="space-y-5 self-start rounded-xl border border-stone-200 bg-white p-5">
+          <form onSubmit={handleSubmit} onReset={handleCancel} className="space-y-5 self-start rounded-xl border border-stone-200 bg-white p-5">
             {error && (
               <div
                 role="alert"
@@ -358,12 +369,7 @@ export default function NewResumePage() {
 
             <div className="flex items-center gap-3 border-t border-stone-200 pt-4">
               {loading ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => abortRef.current?.abort()}
-                  className="w-full"
-                >
+                <Button type="reset" variant="secondary" className="w-full">
                   Cancel generation
                 </Button>
               ) : (

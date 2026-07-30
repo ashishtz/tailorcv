@@ -38,7 +38,10 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
+    // Production server: dev-mode per-route compilation is too slow/heavy for
+    // a 42-test suite (and hung outright on a memory-tight machine).
+    // Requires `npm run build` first.
+    command: 'npm run start',
     url: BASE_URL,
     reuseExistingServer: true,
     timeout: 120_000,

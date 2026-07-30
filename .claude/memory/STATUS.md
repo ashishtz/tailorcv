@@ -5,7 +5,7 @@
 > and MUST update all three before finishing a work chunk. Keep entries detailed enough
 > that a brand-new session can resume without any other context.
 
-**Last updated:** 2026-07-29 (session 2i)
+**Last updated:** 2026-07-29 (session 3)
 **Working branch:** `claude/deps-ui-modernize-mkz7xm` (never push to main)
 
 ---
@@ -44,7 +44,7 @@
 
 1. (Deferred) Revisit TypeScript 7 + real `typescript` package when Next 16.3 stable ships `experimental.useTypeScriptCli` AND typescript-eslint supports TS7 peers.
 2. (USER ACTION — SECURITY) Rotate the OpenRouter API key: it was committed in `.env.docker` (file now deleted, but the key remains in git history). PII in `supabase/backup` history is intentional per user — no scrub.
-3. (Nice-to-have) Component/E2E test coverage (unit suites now cover prompts, streaming, normalize - 9 tests).
+3. DONE session 3 — E2E covers all pages/flows (42 Playwright tests) + 9 unit tests.
 
 ## ⛔ Known Constraints / Gotchas
 

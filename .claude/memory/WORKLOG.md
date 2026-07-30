@@ -5,6 +5,22 @@
 
 ---
 
+## Session 3 — 2026-07-29 (E2E suite live: 42/42 green)
+
+Ran the Playwright suite against the real local stack (supabase CLI + `next start` prod build), headed per user request. **Final: 42/42 passed in 46s.** Fix journey (6 runs):
+
+1. Env: new supabase CLI prints `sb_secret_*` keys — that IS the service-role key; appended to .env.local (watch trailing-newline when `echo >>`).
+2. **Dev server unusable for E2E**: per-route Turbopack compile hung outright on the memory-tight machine — `playwright.config.ts` webServer switched to `npm run start` (prod build required first).
+3. **signOut() is global**: dashboard sign-out test revoked the demo user's session server-side, cascading failures into every later spec. Fix: sign-out test creates its own throwaway user (admin API + completed profile).
+4. Selector fixes: "New resume" (literal "Generate resume" only exists in empty state); banner-scoped landing nav (footer repeats links); heading-scoped not-found; `getByRole('alert').filter()` (Next route-announcer is also role=alert); editor Add scoped via card-header `heading -> ../..`; editor save NAVIGATES to view page (test rewritten).
+5. **Hydration race**: prod-rendered generate page swallowed clicks before hydration — beforeEach now waits for the client-only "Start from" select.
+6. **Zombie server**: rebuilding while old `next start` held :3000 (EADDRINUSE ignored in nohup log) served deleted chunks -> ChunkLoadError -> app error boundary (user saw it live). Lesson: kill by port (`lsof -ti :3000 | xargs kill`), THEN build, THEN start.
+7. **REAL APP BUG found+fixed**: while generation is in flight, React's delegated onClick on the swapped-in Cancel button never fired for native (trusted) clicks — DOM events reached the button and bubbled to body normally (verified with listeners); synthetic .click() worked. Deep React 19 delegation edge, unresolved WHY (timeboxed). Fix: Cancel is now `type="reset"` handled by the form's `onReset` (same native form-event path submit uses; `e.preventDefault()` keeps field values). Also `catch` now checks `controller.signal.aborted` instead of error type (aborted fetch can reject as TypeError, not AbortError).
+
+Static checks stay green: tsc / eslint / jest 9/9. Committed + pushed.
+
+---
+
 ## Session 2i — 2026-07-29 (Playwright E2E template)
 
 User asked for scalable E2E suite in root `e2e/`; laptop under memory pressure so NOTHING was run against a live stack — template written + statically verified only (tsc, eslint, jest still 9/9, `playwright test --list` parses 42 tests / 11 files).

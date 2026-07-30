@@ -21,7 +21,8 @@ test.describe('landing page', () => {
       ['How it works', 'how-it-works'],
       ['Templates', 'templates'],
     ] as const) {
-      await page.getByRole('navigation').getByRole('link', { name: label, exact: true }).click()
+      // banner scopes to the header - the footer repeats the same links.
+      await page.getByRole('banner').getByRole('link', { name: label, exact: true }).click()
       await expect(page).toHaveURL(new RegExp(`#${id}$`))
       await expect(page.locator(`#${id}`)).toBeInViewport()
     }
