@@ -14,6 +14,20 @@ test.describe('resume generator (split-screen)', () => {
     await expect(page.getByLabel('Start from')).toBeVisible({ timeout: 15_000 })
   })
 
+  test('auto-collapses the sidebar, expandable again', async ({ page }) => {
+    await expect(page.getByRole('navigation', { name: 'Main' })).toBeHidden()
+    await page.getByRole('button', { name: 'Expand sidebar' }).click()
+    await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
+    await page.getByRole('button', { name: 'Collapse sidebar' }).click()
+    await expect(page.getByRole('navigation', { name: 'Main' })).toBeHidden()
+  })
+
+  test('preview pane has no horizontal overflow', async ({ page }) => {
+    const box = page.locator('.max-h-\\[70vh\\]')
+    const overflow = await box.evaluate((el) => el.scrollWidth - el.clientWidth)
+    expect(overflow).toBeLessThanOrEqual(1)
+  })
+
   test('renders form and sample preview side by side', async ({ page }) => {
     await expect(page.getByRole('heading', { name: /generate a resume/i })).toBeVisible()
     await expect(page.getByLabel(/job title/i)).toBeVisible()

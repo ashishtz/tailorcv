@@ -5,6 +5,15 @@
 
 ---
 
+## Session 3b — 2026-07-29 (generator preview polish + collapsible sidebar)
+
+User asks: no horizontal scroll on preview, shorter box, collapsible sidebar auto-collapsed on generator page. Done:
+- Preview pane (`app/dashboard/documents/new/page.tsx`): sheet still renders at RESUME_PAGE_WIDTH_PX but a ResizeObserver computes `zoom = paneWidth/816` so it always fills 100% of the pane — identical proportions, no horizontal scroll. Box capped `max-h-[70vh] overflow-y-auto`.
+- Sidebar (`components/dashboard/shell.tsx`): `collapsed` state + PanelLeftClose button in header; collapsed shows a floating PanelLeftOpen rail button (desktop only, mobile drawer untouched). Auto-collapses on `/dashboard/documents/new` via initial state + render-time adjust (NOT an effect — react-hooks/set-state-in-effect compiler rule). State persists across dashboard navigation otherwise.
+- 2 new e2e tests in generate.spec (sidebar collapse/expand, zero horizontal overflow). **Suite: 44/44 green.** tsc/eslint clean.
+
+---
+
 ## Session 3 — 2026-07-29 (E2E suite live: 42/42 green)
 
 Ran the Playwright suite against the real local stack (supabase CLI + `next start` prod build), headed per user request. **Final: 42/42 passed in 46s.** Fix journey (6 runs):

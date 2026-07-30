@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, FileText, User, LogOut, Menu, X } from 'lucide-react'
+import { Home, FileText, User, LogOut, Menu, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/brand/logo'
 import { cn } from '@/lib/utils'
@@ -93,17 +93,55 @@ function UserFooter({ userEmail }: { userEmail: string }) {
 
 export function DashboardShell({ userEmail, children }: DashboardShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const pathname = usePathname()
+  // The generator page wants every pixel for its live preview - collapse on
+  // landing there (initial state covers direct loads, the render-time adjust
+  // covers client navigation). The user can re-expand; other routes keep the
+  // last state.
+  const [collapsed, setCollapsed] = useState(pathname === '/dashboard/documents/new')
+  const [prevPath, setPrevPath] = useState(pathname)
+  if (pathname !== prevPath) {
+    setPrevPath(pathname)
+    if (pathname === '/dashboard/documents/new') setCollapsed(true)
+  }
 
   return (
     <div className="flex min-h-screen bg-stone-50">
       {/* Desktop sidebar */}
-      <aside className="no-print fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-stone-200 bg-white lg:flex">
-        <div className="flex h-16 items-center border-b border-stone-200 px-5">
+      <aside
+        className={cn(
+          'no-print fixed inset-y-0 left-0 z-40 w-64 flex-col border-r border-stone-200 bg-white',
+          collapsed ? 'hidden' : 'hidden lg:flex'
+        )}
+      >
+        <div className="flex h-16 items-center justify-between border-b border-stone-200 px-5">
           <Logo />
+          <button
+            type="button"
+            onClick={() => setCollapsed(true)}
+            aria-label="Collapse sidebar"
+            title="Collapse sidebar"
+            className="rounded-lg p-2 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700"
+          >
+            <PanelLeftClose className="h-5 w-5" aria-hidden />
+          </button>
         </div>
         <NavLinks />
         <UserFooter userEmail={userEmail} />
       </aside>
+
+      {/* Collapsed rail: just the expand control */}
+      {collapsed && (
+        <button
+          type="button"
+          onClick={() => setCollapsed(false)}
+          aria-label="Expand sidebar"
+          title="Expand sidebar"
+          className="no-print fixed left-3 top-3 z-40 hidden rounded-lg border border-stone-200 bg-white p-2 text-stone-500 shadow-sm transition-colors hover:bg-stone-100 hover:text-stone-800 lg:flex"
+        >
+          <PanelLeftOpen className="h-5 w-5" aria-hidden />
+        </button>
+      )}
 
       {/* Mobile top bar */}
       <header className="no-print fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-stone-200 bg-white px-4 lg:hidden">
@@ -145,7 +183,9 @@ export function DashboardShell({ userEmail, children }: DashboardShellProps) {
       )}
 
       {/* Main */}
-      <main className="min-w-0 flex-1 pt-14 lg:ml-64 lg:pt-0">{children}</main>
+      <main className={cn('min-w-0 flex-1 pt-14 lg:pt-0', !collapsed && 'lg:ml-64')}>
+        {children}
+      </main>
     </div>
   )
 }

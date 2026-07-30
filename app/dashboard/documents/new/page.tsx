@@ -59,6 +59,19 @@ export default function NewResumePage() {
   const [preview, setPreview] = useState<GeneratedResumeData | null>(null)
   const [existingResumes, setExistingResumes] = useState<Resume[]>([])
   const abortRef = useRef<AbortController | null>(null)
+  // Scale the fixed-width resume sheet to always fill the preview pane.
+  const previewBoxRef = useRef<HTMLDivElement>(null)
+  const [previewScale, setPreviewScale] = useState(1)
+
+  useEffect(() => {
+    const el = previewBoxRef.current
+    if (!el) return
+    const observer = new ResizeObserver(() => {
+      if (el.clientWidth > 0) setPreviewScale(el.clientWidth / RESUME_PAGE_WIDTH_PX)
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -395,18 +408,22 @@ export default function NewResumePage() {
                 <>Sample preview of the {getTemplateDef(formData.template).name} template - your generated resume will replace it here.</>
               )}
             </p>
-            <div className="overflow-x-auto rounded-xl border border-stone-200 bg-stone-100 p-4 sm:p-6">
-              <div
-                className={cn(
-                  'mx-auto bg-white shadow-md transition-opacity',
-                  !loading && !preview && 'opacity-60'
-                )}
-                style={{ width: RESUME_PAGE_WIDTH_PX }}
-              >
-                <Template
-                  data={preview ?? landingSampleResume}
-                  settings={formData.generation_settings}
-                />
+            <div className="max-h-[70vh] overflow-y-auto rounded-xl border border-stone-200 bg-stone-100 p-4 sm:p-6">
+              {/* Full-page-width sheet zoomed to exactly fill the pane - no
+                  horizontal scroll, identical proportions at any size. */}
+              <div ref={previewBoxRef}>
+                <div
+                  className={cn(
+                    'bg-white shadow-md transition-opacity',
+                    !loading && !preview && 'opacity-60'
+                  )}
+                  style={{ width: RESUME_PAGE_WIDTH_PX, zoom: previewScale }}
+                >
+                  <Template
+                    data={preview ?? landingSampleResume}
+                    settings={formData.generation_settings}
+                  />
+                </div>
               </div>
             </div>
           </div>
