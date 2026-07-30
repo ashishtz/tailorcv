@@ -28,9 +28,9 @@ test.describe('landing page', () => {
     }
   })
 
-  test('shows all five template thumbnails', async ({ page }) => {
+  test('shows all six template thumbnails', async ({ page }) => {
     await page.locator('#templates').scrollIntoViewIfNeeded()
-    for (const name of ['Classic', 'Modern', 'Minimal', 'Professional', 'Jake (LaTeX)']) {
+    for (const name of ['Classic', 'Hybrid', 'Technical', 'Executive', 'Academic', 'Compact']) {
       await expect(page.locator('#templates').getByText(name, { exact: true })).toBeVisible()
     }
   })

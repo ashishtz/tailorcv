@@ -37,8 +37,8 @@ test.describe('resume generator (split-screen)', () => {
   })
 
   test('template dropdown switches the live preview', async ({ page }) => {
-    await page.getByLabel('Template').selectOption('minimal')
-    await expect(page.getByText(/sample preview of the minimal template/i)).toBeVisible()
+    await page.getByLabel('Template').selectOption('technical')
+    await expect(page.getByText(/sample preview of the technical template/i)).toBeVisible()
     await page.getByLabel('Template').selectOption('classic')
     await expect(page.getByText(/sample preview of the classic template/i)).toBeVisible()
   })

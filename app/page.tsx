@@ -120,7 +120,7 @@ export default function Home() {
 
         {/* Hero preview strip */}
         <div className="mx-auto mt-16 flex max-w-5xl justify-center gap-6 overflow-hidden px-2">
-          {['classic', 'modern', 'professional'].map((id, i) => (
+          {['classic', 'technical', 'executive'].map((id, i) => (
             <div
               key={id}
               className={`overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg ${

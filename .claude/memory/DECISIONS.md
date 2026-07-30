@@ -5,6 +5,12 @@
 
 ---
 
+## D-009 · 2026-07-30 · Every resume template must be single-column and ATS-standard
+
+- **Decision:** The catalog is 6 templates (classic, hybrid, technical, executive, academic, compact). Every template: ONE column, standard headings only ("Professional Summary", "Skills", "Work Experience", "Education", "Projects"), no tables/text boxes/images/icons/charts/decorative rules, an ATS-standard font stack declared inline (Arial / Helvetica / Georgia / Times, 10-12pt equivalent), plain bullets, visible URLs as text, `break-inside-avoid` on entries, and `nameTag` support. Templates differ by typography, ordering and density, never by layout columns.
+- **Why:** 2026 ATS guidance (Jobscan, Resume.io and others) is unanimous that multi-column layouts scramble parse order and icons/graphics contribute zero matchable keywords. The retired templates (creative, executive-v1, modern, minimal, professional) each broke one of these rules while the product pitch claimed "ATS-friendly".
+- **When adding a template:** register it in `lib/templates.ts` (order = picker order, index 0 is the `getTemplateDef` fallback), and if an id is ever retired add a remap migration like `20260730000000_remap_retired_template_ids.sql` rather than relying on the silent fallback.
+
 ## D-008 · 2026-07-30 · No em/en dashes in anything user-visible
 
 - **Decision:** User-facing copy (labels, hints, paragraphs, toasts, page titles, API error messages) and AI-generated resume text must never contain em (U+2014) or en (U+2013) dashes. Use a plain hyphen, comma, colon, or two sentences.

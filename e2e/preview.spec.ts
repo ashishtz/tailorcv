@@ -12,7 +12,7 @@ test.describe('preview page', () => {
 
   test('template query param overrides the saved template', async ({ page }) => {
     const id = await seededResumeId(SEEDED_RESUME_TITLE)
-    await page.goto(`/preview/${id}?template=minimal`)
+    await page.goto(`/preview/${id}?template=technical`)
     await expect(page.locator('.resume-container')).toBeVisible()
   })
 

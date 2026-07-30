@@ -3,10 +3,10 @@ import { renderFormattedContent } from '@/lib/utils/render-content'
 import { Fragment } from 'react'
 import { ContactLinks, stripScheme } from './shared'
 
-export function JakeTemplate({ data, settings, nameTag: NameTag = 'h1' }: TemplateProps) {
+export function CompactTemplate({ data, settings, nameTag: NameTag = 'h1' }: TemplateProps) {
   return (
     <div className="bg-white px-10 py-8 w-full font-libre-baskerville" style={{ minHeight: '11in' }}>
-      {/* Header Section - Centered with small caps name */}
+      {/* Header - centered, small-caps name (compact LaTeX-style layout) */}
       <header className="text-center mb-4">
         <NameTag className="text-3xl font-bold text-gray-900 tracking-wide" style={{ fontVariant: 'small-caps' }}>
           {data.contact.name}
@@ -25,6 +25,18 @@ export function JakeTemplate({ data, settings, nameTag: NameTag = 'h1' }: Templa
           </p>
         </div>
       </header>
+
+      {/* Professional Summary - standard ATS heading, leads the document */}
+      {data.summary && (
+        <section className="mb-3">
+          <h2 className="text-lg font-bold text-gray-900 border-b border-gray-900 pb-0.5 mb-2" style={{ fontVariant: 'small-caps' }}>
+            Professional Summary
+          </h2>
+          <div className="text-sm">
+            {renderFormattedContent(data.summary, settings?.summary_format)}
+          </div>
+        </section>
+      )}
 
       {/* Education Section */}
       {data.education.length > 0 && (
@@ -50,11 +62,11 @@ export function JakeTemplate({ data, settings, nameTag: NameTag = 'h1' }: Templa
         </section>
       )}
 
-      {/* Experience Section */}
+      {/* Work Experience Section */}
       {data.workExperience && data.workExperience.length > 0 && (
         <section className="mb-3">
           <h2 className="text-lg font-bold text-gray-900 border-b border-gray-900 pb-0.5 mb-2" style={{ fontVariant: 'small-caps' }}>
-            Experience
+            Work Experience
           </h2>
           <div className="space-y-3">
             {data.workExperience.map((exp, index) => (
@@ -108,11 +120,11 @@ export function JakeTemplate({ data, settings, nameTag: NameTag = 'h1' }: Templa
         </section>
       )}
 
-      {/* Technical Skills Section */}
+      {/* Skills Section */}
       {data.skills.length > 0 && (
         <section className="mb-3">
           <h2 className="text-lg font-bold text-gray-900 border-b border-gray-900 pb-0.5 mb-2" style={{ fontVariant: 'small-caps' }}>
-            Technical Skills
+            Skills
           </h2>
           <div className="space-y-1">
             {data.skills.map((category, index) => (
@@ -129,17 +141,6 @@ export function JakeTemplate({ data, settings, nameTag: NameTag = 'h1' }: Templa
         </section>
       )}
 
-      {/* Professional Summary - placed at end like some LaTeX templates */}
-      {data.summary && (
-        <section className="mb-3">
-          <h2 className="text-lg font-bold text-gray-900 border-b border-gray-900 pb-0.5 mb-2" style={{ fontVariant: 'small-caps' }}>
-            Summary
-          </h2>
-          <div className="text-sm">
-            {renderFormattedContent(data.summary, settings?.summary_format)}
-          </div>
-        </section>
-      )}
     </div>
   )
 }

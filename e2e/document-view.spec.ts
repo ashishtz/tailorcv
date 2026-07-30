@@ -22,9 +22,9 @@ test.describe('document view', () => {
 
   test('template select re-renders and persists across reload', async ({ page }) => {
     const select = page.getByLabel('Template')
-    await select.selectOption('minimal')
+    await select.selectOption('technical')
     await page.reload()
-    await expect(page.getByLabel('Template')).toHaveValue('minimal')
+    await expect(page.getByLabel('Template')).toHaveValue('technical')
     // Restore for other specs.
     await page.getByLabel('Template').selectOption('classic')
   })

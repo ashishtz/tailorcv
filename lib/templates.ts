@@ -1,10 +1,11 @@
 import type { ComponentType } from 'react'
 import type { Resume } from '@/lib/types/database'
 import { ClassicTemplate } from '@/components/resume-templates/classic-template'
-import { ModernTemplate } from '@/components/resume-templates/modern-template'
-import { MinimalTemplate } from '@/components/resume-templates/minimal-template'
-import { ProfessionalTemplate } from '@/components/resume-templates/professional-template'
-import { JakeTemplate } from '@/components/resume-templates/jake-template'
+import { HybridTemplate } from '@/components/resume-templates/hybrid-template'
+import { TechnicalTemplate } from '@/components/resume-templates/technical-template'
+import { ExecutiveTemplate } from '@/components/resume-templates/executive-template'
+import { AcademicTemplate } from '@/components/resume-templates/academic-template'
+import { CompactTemplate } from '@/components/resume-templates/compact-template'
 
 export interface TemplateProps {
   data: Resume['generated_data']
@@ -29,32 +30,38 @@ export const RESUME_TEMPLATES: ResumeTemplateDef[] = [
   {
     id: 'classic',
     name: 'Classic',
-    description: 'Traditional single-column layout with clear section rules.',
+    description: 'Reverse-chronological standard. The safest all-purpose choice.',
     component: ClassicTemplate,
   },
   {
-    id: 'modern',
-    name: 'Modern',
-    description: 'Colored header with a two-column skills sidebar.',
-    component: ModernTemplate,
+    id: 'hybrid',
+    name: 'Hybrid',
+    description: 'Skills above experience. Good for career changes.',
+    component: HybridTemplate,
   },
   {
-    id: 'minimal',
-    name: 'Minimal',
-    description: 'Centered heading, generous whitespace, quiet rules.',
-    component: MinimalTemplate,
+    id: 'technical',
+    name: 'Technical',
+    description: 'Dense layout with grouped skills and prominent projects.',
+    component: TechnicalTemplate,
   },
   {
-    id: 'professional',
-    name: 'Professional',
-    description: 'Two-column layout with an experience timeline.',
-    component: ProfessionalTemplate,
+    id: 'executive',
+    name: 'Executive',
+    description: 'Serif masthead and roomy leading for senior roles.',
+    component: ExecutiveTemplate,
   },
   {
-    id: 'jake',
-    name: 'Jake (LaTeX)',
-    description: 'Compact academic style inspired by LaTeX resumes.',
-    component: JakeTemplate,
+    id: 'academic',
+    name: 'Academic',
+    description: 'Education first, Times typography for research and teaching.',
+    component: AcademicTemplate,
+  },
+  {
+    id: 'compact',
+    name: 'Compact',
+    description: 'Tight one-page LaTeX-inspired layout that fits a lot.',
+    component: CompactTemplate,
   },
 ]
 

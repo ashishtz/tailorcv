@@ -3,7 +3,7 @@ import { Logo } from '@/components/brand/logo'
 
 const HIGHLIGHTS = [
   'AI-tailored content for every job posting',
-  'Five professional, ATS-friendly templates',
+  'Six professional, ATS-friendly templates',
   'Instant PDF export that recruiters can read',
 ]
 

@@ -5,6 +5,21 @@
 
 ---
 
+## Session 3e — 2026-07-30 (template catalog rebuilt on researched ATS formats)
+
+Web research (Jobscan, Resume.io, scale.jobs, PitchMe 2026 guides) agreed on: single column only, reverse-chronological is the most ATS-safe (hybrid acceptable if headings stay standard), standard headings ("Professional Summary", "Skills", "Work Experience", "Education", "Projects"), no tables/text boxes/images/icons/decorative lines/multi-column, Arial/Calibri/Georgia/Times/Helvetica at 10-12pt, plain bullets, text-based PDF.
+
+- **Deleted** minimal, modern, professional templates (multi-column sidebars, icon rows).
+- **Renamed** jake-template.tsx -> compact-template.tsx (`JakeTemplate` -> `CompactTemplate`, id `jake` -> `compact`, label "Jake (LaTeX)" -> "Compact"). Also fixed its non-standard headings ("Experience" -> "Work Experience", "Technical Skills" -> "Skills") and moved Summary from last to first.
+- **Created 4** single-column ATS templates, each with a real ATS-standard font stack (not a webfont): `hybrid` (Arial, skills above experience for career changers), `technical` (Helvetica, dense, grouped skills + prominent projects), `executive` (Georgia, centred masthead, roomy leading), `academic` (Times, education promoted above experience).
+- **Catalog is now 6**: classic, hybrid, technical, executive, academic, compact. Registry order in `lib/templates.ts` doubles as picker order; classic stays index 0 (the getTemplateDef fallback).
+- **Migration** `20260730000000_remap_retired_template_ids.sql`: jake -> compact, minimal/modern/professional -> classic (applied locally, 1 row remapped). Fallback already handled unknown ids, so this is about preserving intent.
+- Fixed `technical` rendering the name in CSS ALL-CAPS (our own ATS rule bans caps for emphasis).
+- Copy/tests updated: landing thumbnails now classic/technical/executive, auth pitch "Six professional, ATS-friendly templates", landing spec checks the 6 new names, generate/document-view/preview specs use `technical` instead of the deleted `minimal`.
+- Verified: each template screenshotted at full page size via /preview and inspected; section audit confirms all 6 emit the standard heading set. tsc / eslint / jest 10 / **e2e 55/55** green.
+
+---
+
 ## Session 3d — 2026-07-30 (em-dash purge from user-visible copy)
 
 User rule: zero em dashes anywhere a user can see, including backend error messages.
