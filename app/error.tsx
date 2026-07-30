@@ -26,7 +26,7 @@ export default function ErrorPage({
           Something went wrong
         </h1>
         <p className="mt-2 text-sm text-stone-600">
-          An unexpected error occurred while loading this page. Your data is safe — try again,
+          An unexpected error occurred while loading this page. Your data is safe. Try again,
           or head back to the dashboard.
         </p>
         {error.digest && (

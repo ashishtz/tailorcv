@@ -136,7 +136,7 @@ function SkillsForm() {
   return (
     <StepShell
       title="Add your skills"
-      description="Group skills the way you want them to read on a resume — languages, frameworks, tools."
+      description="Group skills the way you want them to read on a resume: languages, frameworks, tools."
       backHref="/onboarding"
       onContinue={() => router.push('/onboarding/work-experience')}
     >
@@ -202,7 +202,7 @@ function SkillsForm() {
           <div className="flex items-start gap-3 rounded-xl border border-dashed border-stone-300 bg-white px-4 py-4">
             <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-stone-400" aria-hidden />
             <p className="text-sm text-stone-500">
-              No skills yet — you can continue and add them later from your profile, but a few
+              No skills yet. You can continue and add them later from your profile, but a few
               strong ones help the AI write better resumes.
             </p>
           </div>

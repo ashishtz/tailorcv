@@ -24,5 +24,7 @@ export async function enhanceText(text: string, type: EnhancementType): Promise<
 
   const response = await prompt.pipe(client).invoke({ text })
 
-  return response.text.trim()
+  // Same de-dashing guarantee as normalizeResumeData: this text lands in a
+  // user-facing textarea and then on the resume.
+  return response.text.trim().replace(/\s*[\u2013\u2014\u2015]\s*/g, ' - ')
 }

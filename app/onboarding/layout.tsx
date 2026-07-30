@@ -34,13 +34,13 @@ export default async function OnboardingLayout({ children }: { children: React.R
           <Logo href="/onboarding" />
           <Link
             href="/dashboard"
-            title="Your answers are saved as a draft in this browser — come back anytime to finish."
+            title="Your answers are saved as a draft in this browser. Come back anytime to finish."
             className={buttonVariants({ variant: 'ghost', size: 'sm' })}
           >
             Save & exit
             <span className="sr-only">
               {' '}
-              (your answers are saved as a draft in this browser — come back anytime to finish)
+              (your answers are saved as a draft in this browser, so you can come back anytime to finish)
             </span>
           </Link>
         </div>

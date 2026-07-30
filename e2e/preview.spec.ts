@@ -7,7 +7,7 @@ test.describe('preview page', () => {
     await page.goto(`/preview/${id}`)
     await expect(page.locator('.resume-container')).toBeVisible()
     await expect(page.getByRole('button', { name: /print/i })).toBeVisible()
-    await expect(page.getByText(`${SEEDED_RESUME_TITLE} — preview`)).toBeVisible()
+    await expect(page.getByText(`${SEEDED_RESUME_TITLE} (preview)`)).toBeVisible()
   })
 
   test('template query param overrides the saved template', async ({ page }) => {

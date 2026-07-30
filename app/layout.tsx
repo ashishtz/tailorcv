@@ -45,7 +45,7 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: {
-    default: "Resume Builder — Craft resumes that get read",
+    default: "Resume Builder - Craft resumes that get read",
     template: "%s · Resume Builder",
   },
   description:

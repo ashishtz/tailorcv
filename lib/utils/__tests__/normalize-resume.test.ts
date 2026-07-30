@@ -7,6 +7,18 @@ describe('normalizeResumeData (trust boundary)', () => {
     expect(data.skills).toEqual([{ category: 'Skills', skills: ['TypeScript', 'React'] }])
   })
 
+  it('strips em and en dashes from model output', () => {
+    const data = normalizeResumeData({
+      summary: 'Engineer \u2014 ten years of experience',
+      workExperience: [
+        { company: 'Acme', duration: 'Mar 2021 \u2013 Present', description: ['Led a team \u2014 shipped fast'] },
+      ],
+    })
+    expect(data.summary).toBe('Engineer - ten years of experience')
+    expect(data.workExperience[0].duration).toBe('Mar 2021 - Present')
+    expect(data.workExperience[0].description).toEqual(['Led a team - shipped fast'])
+  })
+
   it('coerces junk model output into a fully-shaped, renderable object', () => {
     const data = normalizeResumeData({
       summary: 42,

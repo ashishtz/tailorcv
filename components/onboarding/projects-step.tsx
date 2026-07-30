@@ -110,7 +110,7 @@ function ProjectsList() {
       if (!result.ok) {
         toast.error(
           `Couldn't save your ${result.step}`,
-          `${result.message} Your draft is still here — please try again.`
+          `${result.message} Your draft is still here. Please try again.`
         )
         return
       }
@@ -132,7 +132,7 @@ function ProjectsList() {
   return (
     <StepShell
       title="Projects"
-      description="Side projects and open source show initiative. This is the last step — Finish saves everything to your profile."
+      description="Side projects and open source show initiative. This is the last step, and Finish saves everything to your profile."
       backHref="/onboarding/education"
       onContinue={handleFinish}
       continueLabel="Finish setup"
@@ -195,7 +195,7 @@ function ProjectsList() {
             <EmptyState
               icon={Rocket}
               title="No projects yet"
-              description="Optional — but a strong side project often carries a resume. You can finish without one."
+              description="Optional, but a strong side project often carries a resume. You can finish without one."
               action={
                 <Button variant="secondary" onClick={openAdd}>
                   <Plus aria-hidden />

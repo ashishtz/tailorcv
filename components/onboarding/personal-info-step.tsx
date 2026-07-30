@@ -113,7 +113,7 @@ function PersonalInfoForm() {
           <Field
             label="Email"
             error={errors.email}
-            hint="Prefilled from your account — shown in your resume header."
+            hint="Prefilled from your account. Shown in your resume header."
           >
             <Input
               type="email"
@@ -147,7 +147,7 @@ function PersonalInfoForm() {
           <div className="border-t border-stone-200 pt-5">
             <h2 className="text-sm font-semibold text-stone-900">Social profiles</h2>
             <p className="mt-0.5 text-xs text-stone-500">
-              Optional — included on templates that show links.
+              Optional. Included on templates that show links.
             </p>
             <div className="mt-4 space-y-5">
               <Field label="LinkedIn URL">

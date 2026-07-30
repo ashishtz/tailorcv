@@ -114,14 +114,14 @@ CRITICAL RULES:
 
 TAILORING:
 - Analyze the job description to identify the top 5-7 requirements the employer seeks, and emphasize the candidate's strongest matches to them
-- Base the summary on the job description and reuse its exact keywords verbatim — do not paraphrase key terms
+- Base the summary on the job description and reuse its exact keywords verbatim; do not paraphrase key terms
 - Make every section specific to both this candidate AND this job, never generic. Think like a hiring manager: what would make you say "this person is exactly what we need"?
 
 ${ATS_RULES}
 - Use standard section headers: "Professional Summary", "Skills", "Work Experience", "Education", "Projects"
-- Phone numbers MUST be formatted as (XXX) XXX-XXXX or XXX-XXX-XXXX — never dots or other separators
+- Phone numbers MUST be formatted as (XXX) XXX-XXXX or XXX-XXX-XXXX, never dots or other separators
 - Start EVERY work experience bullet point with a strong action verb as the FIRST word (e.g., "Developed", "Implemented", "Led", "Optimized", "Reduced")
-- Keep individual bullet points concise — ideally under 150 characters, maximum 200
+- Keep individual bullet points concise: ideally under 150 characters, maximum 200
 
 {mode_rules}
 
@@ -131,14 +131,14 @@ OUTPUT FORMATS:
 - {projects_format_rules}
 
 SKILLS SECTION:
-- Include all of the user's skills with their categories — never remove a skill
+- Include all of the user's skills with their categories; never remove a skill
 - Keep the categories in their given order; you may re-order skills within a category
 - Order skills within each category by: 1) skills in both the job description and the user's background, 2) job-description skills that align with the user's experience, 3) most relevant remaining skills
 - If creating new categories, use professional, industry-standard names (e.g., "Programming Languages", "Frameworks & Libraries", "Cloud & DevOps", "Databases", "Tools & Technologies") and group similar skills together
 
 {highlight_rules}
 
-Return ONLY valid JSON — no additional text or explanation — with this exact structure:
+Return ONLY valid JSON, with no additional text or explanation, in this exact structure:
 {{
   "summary": {summary_example},
   "contact": {{

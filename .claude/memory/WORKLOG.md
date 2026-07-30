@@ -5,6 +5,17 @@
 
 ---
 
+## Session 3d — 2026-07-30 (em-dash purge from user-visible copy)
+
+User rule: zero em dashes anywhere a user can see, including backend error messages.
+- **20 user-visible strings rewritten** across app/layout.tsx (default title), app/error.tsx, app/preview/[id] ("{title} (preview)"), app/onboarding/layout.tsx (title attr + sr-only), all 5 onboarding steps (descriptions, hints, empty-state copy, toast message), and the 2 date-range formatters in work-experience/education steps. Also normalized the 2 EN dashes in profile section date meta. Prose was rewritten (sentence split / comma / colon), not blind-swapped to hyphens.
+- **AI output is user-visible too**: added "Never use em dashes or en dashes" to `lib/prompts/shared.ts` ATS_RULES (shared by generation + both enhancement prompts) AND rewrote the 5 prose em dashes inside the generation system prompt.
+- **Enforced at the trust boundary** (the real guarantee, also fixes already-stored resumes): `deDash()` in `lib/utils/normalize-resume.ts` strips U+2013/2014/2015 to " - " inside `asString`/`asContent`; same strip on the return of `text-enhancer.service.ts` (its output lands in a user-facing textarea).
+- **Guards**: jest test that normalizeResumeData strips dashes (10 unit tests now); new `e2e/copy.spec.ts` scans rendered body text on 17 routes (12 authenticated incl. all onboarding steps, 5 public) and fails on any em/en dash. **Suite 55/55.**
+- Deliberately untouched: JSDoc/code comments (8, not user-visible), README dev docs, and the resume-import parser output (that is the user's OWN uploaded text; stripping it would mangle their data).
+
+---
+
 ## Session 3c — 2026-07-29 (accessibility pass + cursor/dropdown/template fixes)
 
 Full a11y audit (35 findings: 9 serious, 14 moderate, 12 minor) then fixed ALL of them via two parallel agents. **Suite now 53/53** (44 + new e2e/a11y.spec.ts with 9 invariant tests).

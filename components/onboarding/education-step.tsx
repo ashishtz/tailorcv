@@ -28,7 +28,7 @@ const EMPTY_FORM: EducationDraft = {
 function rangeText(entry: EducationDraft): string {
   const start = formatMonthYear(entry.start_date)
   if (!start) return formatMonthYear(entry.end_date)
-  return `${start} — ${entry.end_date ? formatMonthYear(entry.end_date) : 'In progress'}`
+  return `${start} - ${entry.end_date ? formatMonthYear(entry.end_date) : 'In progress'}`
 }
 
 export function EducationStep() {
@@ -109,7 +109,7 @@ function EducationList() {
   return (
     <StepShell
       title="Your education"
-      description="Schools, degrees and certificates — add whatever supports your story."
+      description="Schools, degrees and certificates. Add whatever supports your story."
       backHref="/onboarding/work-experience"
       onContinue={handleContinue}
       footerNote={footerNote || undefined}

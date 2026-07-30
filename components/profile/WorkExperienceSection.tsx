@@ -282,7 +282,7 @@ export default function WorkExperienceSection() {
                   </>
                 }
                 subtitle={`${exp.company_name}${exp.location ? ` · ${exp.location}` : ''}`}
-                meta={`${formatMonthYear(exp.start_date)} – ${
+                meta={`${formatMonthYear(exp.start_date)} - ${
                   exp.is_current || !exp.end_date ? 'Present' : formatMonthYear(exp.end_date)
                 }`}
                 description={exp.description ?? undefined}

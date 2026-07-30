@@ -70,7 +70,7 @@ function PreviewContent() {
     <div className="min-h-screen bg-stone-100">
       <div className="no-print sticky top-0 z-10 border-b border-stone-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-          <p className="truncate text-sm font-medium text-stone-700">{resume.job_title} — preview</p>
+          <p className="truncate text-sm font-medium text-stone-700">{resume.job_title} (preview)</p>
           <Button variant="secondary" size="sm" onClick={() => window.print()}>
             <Printer aria-hidden />
             Print

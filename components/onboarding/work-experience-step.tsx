@@ -31,7 +31,7 @@ const EMPTY_FORM: WorkExperienceDraft = {
 function rangeText(entry: WorkExperienceDraft): string {
   const start = formatMonthYear(entry.start_date)
   const end = entry.is_current ? 'Present' : formatMonthYear(entry.end_date)
-  if (start && end) return `${start} — ${end}`
+  if (start && end) return `${start} - ${end}`
   return start || end
 }
 
@@ -117,7 +117,7 @@ function WorkExperienceList() {
   return (
     <StepShell
       title="Your work experience"
-      description="Add the roles you want on your resume — the AI tailors them to each job you apply for."
+      description="Add the roles you want on your resume. The AI tailors them to each job you apply for."
       backHref="/onboarding/skills"
       onContinue={handleContinue}
       footerNote={footerNote || undefined}
@@ -177,7 +177,7 @@ function WorkExperienceList() {
             <EmptyState
               icon={Briefcase}
               title="No work experience yet"
-              description="Add the roles you want on your resume — internships and freelance work count too."
+              description="Add the roles you want on your resume. Internships and freelance work count too."
               action={
                 <Button variant="secondary" onClick={openAdd}>
                   <Plus aria-hidden />

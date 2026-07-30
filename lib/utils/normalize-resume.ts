@@ -35,12 +35,19 @@ export function rowToResume(row: ResumeRow): Resume {
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v)
 
+/**
+ * Models emit em/en dashes despite the prompt rules, and resumes saved before
+ * that rule existed still contain them - strip on the way in so nothing
+ * user-visible ever renders one.
+ */
+const deDash = (s: string): string => s.replace(/\s*[\u2013\u2014\u2015]\s*/g, ' - ')
+
 const asString = (v: unknown, fallback = ''): string =>
-  typeof v === 'string' ? v : typeof v === 'number' ? String(v) : fallback
+  typeof v === 'string' ? deDash(v) : typeof v === 'number' ? String(v) : fallback
 
 const asContent = (v: unknown): string | string[] => {
-  if (typeof v === 'string') return v
-  if (Array.isArray(v)) return v.filter((x): x is string => typeof x === 'string')
+  if (typeof v === 'string') return deDash(v)
+  if (Array.isArray(v)) return v.filter((x): x is string => typeof x === 'string').map(deDash)
   return ''
 }
 

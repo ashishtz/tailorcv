@@ -263,7 +263,7 @@ export default function EducationSection() {
               <EntryRow
                 title={edu.institution_name}
                 subtitle={[edu.degree, edu.field_of_study].filter(Boolean).join(' · ') || undefined}
-                meta={`${formatMonthYear(edu.start_date)} – ${
+                meta={`${formatMonthYear(edu.start_date)} - ${
                   edu.end_date ? formatMonthYear(edu.end_date) : 'Present'
                 }`}
                 editLabel={`Edit education at ${edu.institution_name}`}

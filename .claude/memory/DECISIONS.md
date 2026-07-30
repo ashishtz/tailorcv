@@ -5,6 +5,12 @@
 
 ---
 
+## D-008 · 2026-07-30 · No em/en dashes in anything user-visible
+
+- **Decision:** User-facing copy (labels, hints, paragraphs, toasts, page titles, API error messages) and AI-generated resume text must never contain em (U+2014) or en (U+2013) dashes. Use a plain hyphen, comma, colon, or two sentences.
+- **Enforcement, three layers:** (1) prompt rule in `lib/prompts/shared.ts` ATS_RULES, inherited by the generation and both enhancement prompts; (2) `deDash()` inside `asString`/`asContent` in `lib/utils/normalize-resume.ts` plus the return of `text-enhancer.service.ts`, so model output and legacy stored resumes are cleaned on the way to the screen; (3) `e2e/copy.spec.ts` scans rendered text on 17 routes and fails the build on any occurrence.
+- **Out of scope:** code comments and developer docs (not user-visible), and text imported from a user's own uploaded resume (that is their data, not our copy).
+
 ## D-007 · 2026-07-29 · Accessibility baseline (WCAG 2.1 AA) is enforced, not aspirational
 
 - **Decision:** All 35 findings of the session-3c audit are fixed and guarded by `e2e/a11y.spec.ts` (skip link is first tab stop, zero `a button` nesting, all controls pointer-cursored, every form control named, `aria-required` on required fields, table sort semantics, one h1 + no horizontal overflow on resume pages, generation status live region, drawer focus-trap + Escape).
