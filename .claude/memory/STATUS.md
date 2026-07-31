@@ -6,6 +6,7 @@
 > that a brand-new session can resume without any other context.
 
 **Last updated:** 2026-07-30 (session 3i)
+**Repo:** `ashishtz/tailorcv` (renamed from `AI-resume-builder` 2026-07-30; GitHub redirects the old URL)
 **Working branch:** `claude/deps-ui-modernize-mkz7xm` (never push to main)
 
 ---

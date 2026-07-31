@@ -1,6 +1,6 @@
 <div align="center">
 
-# Resume Builder
+# tailorcv
 
 **Paste a job posting. Watch an ATS-friendly resume write itself against it, live.**
 
@@ -50,8 +50,8 @@ watch it appear.
 [OpenRouter](https://openrouter.ai) API key.
 
 ```bash
-git clone https://github.com/ashishtz/AI-resume-builder.git
-cd AI-resume-builder
+git clone https://github.com/ashishtz/tailorcv.git
+cd tailorcv
 npm install
 cp .env.example .env.local   # then fill in the values below
 ```

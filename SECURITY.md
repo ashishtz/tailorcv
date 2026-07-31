@@ -4,7 +4,7 @@
 
 Please report security issues privately rather than opening a public issue.
 
-Use GitHub's [private vulnerability reporting](https://github.com/ashishtz/AI-resume-builder/security/advisories/new)
+Use GitHub's [private vulnerability reporting](https://github.com/ashishtz/tailorcv/security/advisories/new)
 on this repository. Include what you found, how to reproduce it, and what an
 attacker could reach with it.
 
