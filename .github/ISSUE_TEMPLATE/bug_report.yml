@@ -1,0 +1,40 @@
+name: Bug report
+description: Something behaves differently than it should
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you expect, and what did you get instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The smallest sequence that triggers it.
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. See ...
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or error text
+      description: A broken layout is much easier to fix with a picture. Paste any error message in full.
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      placeholder: Chrome 139 on macOS 15
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Which database were you running against?
+      options:
+        - Local Supabase (supabase start)
+        - Hosted Supabase project
+        - Not sure

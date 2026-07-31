@@ -5,6 +5,24 @@
 
 ---
 
+## Session 3i — 2026-07-30 (public-repo docs: README, contributing, licence)
+
+Repo is going public. Added:
+- **README.md** rewritten: badge row, centred hero with a real recorded demo GIF, "what this is" framing (ATS-first), feature table, quick start with a collapsible local-Supabase section, an ASCII data-flow diagram plus the four architecture facts that matter (prompts contract, partial-JSON streaming, normalize trust boundary, RLS), template gallery image + the shared ATS rule set, testing, project structure, contributing/security/licence.
+- **docs/demo.gif** (3.1MB, 960px, 11fps, 20s): recorded with Playwright `recordVideo` against the local stack (seeded demo account), converted with ffmpeg palettegen/paletteuse. Shows documents list, generator, typing a posting, switching templates live, streaming generation, landing on the document. Generation was route-mocked with the seeded resume's own data so it is deterministic and spends no OpenRouter credit; the UI states shown are real. Regenerate: script pattern is in this entry's commit.
+- **docs/templates.png**: 3x2 ffmpeg tile of all six templates captured at deviceScaleFactor 2 from /preview.
+- **CONTRIBUTING.md**: setup, the four pre-PR commands, what a PR must contain (what/why/screenshots/verification/what was left out), screenshot guidance, and the codebase standards as enforceable rules (no `any`, reuse first, the ATS template contract, prompt architecture, a11y invariants, no em dashes, route/service/repository layering), commit style, licence grant.
+- **.github/PULL_REQUEST_TEMPLATE.md**: before/after screenshot table, verification checkboxes for the four suites, and a checklist covering the template/prompt/migration rules.
+- **.github/ISSUE_TEMPLATE/**: bug_report.yml and feature_request.yml (feature form includes an ATS-compliance checkbox for template proposals).
+- **SECURITY.md**: private reporting via GitHub advisories, scope (RLS is highest severity), key-handling rules.
+- **LICENSE**: Apache 2.0, downloaded verbatim from apache.org, appendix stamped "Copyright 2026 Resume Builder contributors". `"license": "Apache-2.0"` added to package.json.
+
+Caught in review: three em dashes had crept into CONTRIBUTING.md, in the section that bans them. Fixed. Unused docs/document-view.png deleted.
+
+**STILL OPEN BEFORE GOING PUBLIC (user action):** the OpenRouter key committed in `.env.docker` back in session 1 is still in git history and still unrotated. Publishing exposes it.
+
+---
+
 ## Session 3h — 2026-07-30 (templates redesigned: distinct identities, still ATS-safe)
 
 User pushback, and it was right: session 3e produced four templates that differed only by font and section order. I had conflated "ATS-safe" with "visually plain". The real constraint is STRUCTURAL (one column, standard headings, real text, no images/tables/text boxes/icons); colour, rules, tints, type scale and accents are all free because parsers read text, not styling.
