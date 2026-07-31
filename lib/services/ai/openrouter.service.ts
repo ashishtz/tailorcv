@@ -27,7 +27,7 @@ export function createOpenRouterClient(options?: OpenRouterClientOptions) {
       baseURL: 'https://openrouter.ai/api/v1',
       defaultHeaders: {
         'HTTP-Referer': process.env.NEXT_PUBLIC_URL || 'http://localhost:3000',
-        'X-Title': 'Resume Builder',
+        'X-Title': 'tailorcv',
       },
     },
   })
