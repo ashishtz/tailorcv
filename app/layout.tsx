@@ -45,8 +45,8 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: {
-    default: "Resume Builder - Craft resumes that get read",
-    template: "%s · Resume Builder",
+    default: "tailorcv - resumes tailored to the job, built to pass ATS",
+    template: "%s · tailorcv",
   },
   description:
     "Build tailored, ATS-friendly resumes in minutes. AI-assisted writing, professional templates, and instant PDF export.",

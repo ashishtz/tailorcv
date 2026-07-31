@@ -1,6 +1,6 @@
 <div align="center">
 
-# tailorcv
+<img src="docs/logo.svg" alt="tailorcv" width="240">
 
 **Paste a job posting. Watch an ATS-friendly resume write itself against it, live.**
 

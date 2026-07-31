@@ -5,6 +5,21 @@
 
 ---
 
+## Session 3j — 2026-07-30 (rename to tailorcv + logo)
+
+- **Repo renamed** `AI-resume-builder` -> `tailorcv` via `gh repo rename`. Local remote updated (BOTH fetch and push URLs; the push URL was configured separately and would have kept pointing at the old name). GitHub redirects the old URL, but that redirect dies if the old name is ever reused on the account.
+- **Repo description + 12 topics** set with `gh repo edit` (was "Build Resume with AI"). Homepage field still empty - set it if the app gets deployed.
+- **Logo designed as hand-authored SVG** (no image-gen tool available, and vector is the right format anyway): a sheet with the top-right corner cut away, three text bars inside, the middle one trimmed short and amber - the line being tailored. Brand teal #0b7a6e + accent amber #fbbf24, reusing the design-system tokens via CSS vars with hex fallbacks.
+  - `components/brand/logo.tsx`: replaced the stock lucide FileText mark; exports `LogoMark` separately and gained a `markOnly` prop. Wordmark is two-tone "tailor" + teal "cv", `aria-label="tailorcv"` on the link.
+  - `app/icon.svg`: Next 16 picks this up as the favicon automatically.
+  - `docs/logo.svg`: standalone lockup for the README header.
+  - Verified by screenshot at 16/24/32/64/128px - the cut silhouette and amber bar stay readable at favicon size.
+- Name propagated: metadata title + template, auth footer, OpenRouter `X-Title` header, README, SECURITY advisory link.
+- Deleted the five unused Next starter SVGs from `public/` (file/globe/next/vercel/window, zero references).
+- jest 10/10, e2e 59/59.
+
+---
+
 ## Session 3i — 2026-07-30 (public-repo docs: README, contributing, licence)
 
 Repo is going public. Added:

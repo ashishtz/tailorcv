@@ -45,7 +45,7 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
           </ul>
         </div>
         <p className="relative text-xs text-brand-300/70">
-          © {new Date().getFullYear()} Resume Builder
+          © {new Date().getFullYear()} tailorcv
         </p>
       </div>
 
