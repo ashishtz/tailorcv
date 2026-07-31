@@ -1,285 +1,196 @@
 'use client'
 
 import { useState } from 'react'
-import { useOnboarding } from '@/lib/contexts/onboarding-context'
 import { useRouter } from 'next/navigation'
-import { Trash2, Plus, Edit2 } from 'lucide-react'
+import { Briefcase, Plus } from 'lucide-react'
+import { useOnboarding, type WorkExperienceDraft } from '@/lib/contexts/onboarding-context'
+import { StepShell, StepSkeleton } from '@/components/onboarding/step-shell'
+import {
+  AddEntryButton,
+  EntryRow,
+  endBeforeStart,
+  useEntryForm,
+} from '@/components/forms/entry-form'
+import { WorkFields, type FieldErrors } from '@/components/forms/entry-fields'
+import { Card, CardBody } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { formatMonthYear } from '@/lib/utils'
+
+const EMPTY_FORM: WorkExperienceDraft = {
+  company_name: '',
+  position_title: '',
+  location: '',
+  job_type: '',
+  start_date: '',
+  end_date: '',
+  is_current: false,
+  description: '',
+}
+
+function rangeText(entry: WorkExperienceDraft): string {
+  const start = formatMonthYear(entry.start_date)
+  const end = entry.is_current ? 'Present' : formatMonthYear(entry.end_date)
+  if (start && end) return `${start} - ${end}`
+  return start || end
+}
 
 export function WorkExperienceStep() {
-  const { data, addWorkExperience, updateWorkExperience, removeWorkExperience, setCurrentStep } = useOnboarding()
+  const { hydrated } = useOnboarding()
+  if (!hydrated) return <StepSkeleton />
+  return <WorkExperienceList />
+}
+
+/** Rendered only after the draft has hydrated, so initial state is safe. */
+function WorkExperienceList() {
+  const { data, updateData } = useOnboarding()
   const router = useRouter()
-  const [isAdding, setIsAdding] = useState(false)
-  const [editingIndex, setEditingIndex] = useState<number | null>(null)
-  const [formData, setFormData] = useState({
-    company_name: '',
-    position_title: '',
-    location: '',
-    job_type: 'Full-Time' as 'Part-Time' | 'Full-Time' | 'Contract',
-    start_date: '',
-    end_date: '',
-    is_current: false,
-    description: '',
-  })
+  const entries = data.workExperiences
 
-  const resetForm = () => {
-    setFormData({
-      company_name: '',
-      position_title: '',
-      location: '',
-      job_type: 'Full-Time',
-      start_date: '',
-      end_date: '',
-      is_current: false,
-      description: '',
-    })
-    setIsAdding(false)
-    setEditingIndex(null)
+  const entryForm = useEntryForm<WorkExperienceDraft, number>()
+  const [errors, setErrors] = useState<FieldErrors<WorkExperienceDraft>>({})
+  const [footerNote, setFooterNote] = useState('')
+
+  const openAdd = () => {
+    setErrors({})
+    setFooterNote('')
+    entryForm.open({ ...EMPTY_FORM })
   }
 
-  const handleSubmitExperience = (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (editingIndex !== null) {
-      updateWorkExperience(editingIndex, formData)
-    } else {
-      addWorkExperience(formData)
+  const openEdit = (index: number) => {
+    setErrors({})
+    setFooterNote('')
+    entryForm.open({ ...entries[index] }, index)
+  }
+
+  const closeForm = () => {
+    setErrors({})
+    setFooterNote('')
+    entryForm.close()
+  }
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const form = entryForm.form
+    if (!form) return
+
+    const nextErrors: FieldErrors<WorkExperienceDraft> = {}
+    if (!form.company_name.trim()) nextErrors.company_name = 'Company is required.'
+    if (!form.position_title.trim()) nextErrors.position_title = 'Position is required.'
+    if (!form.start_date) nextErrors.start_date = 'Start month is required.'
+    if (!form.is_current && endBeforeStart(form.start_date, form.end_date)) {
+      nextErrors.end_date = 'End month must be the same as or after the start month.'
     }
-    
-    resetForm()
-  }
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length > 0) return
 
-  const handleEdit = (index: number) => {
-    const experience = data.workExperiences[index]
-    setFormData({
-      company_name: experience.company_name,
-      position_title: experience.position_title,
-      location: experience.location || '',
-      job_type: experience.job_type || 'Full-Time',
-      start_date: experience.start_date,
-      end_date: experience.end_date || '',
-      is_current: experience.is_current,
-      description: experience.description || '',
+    const entry: WorkExperienceDraft = {
+      ...form,
+      company_name: form.company_name.trim(),
+      position_title: form.position_title.trim(),
+      location: form.location.trim(),
+      description: form.description.trim(),
+      end_date: form.is_current ? '' : form.end_date,
+    }
+    const editIndex = entryForm.editKey
+    updateData({
+      workExperiences:
+        editIndex === null
+          ? [...entries, entry]
+          : entries.map((existing, index) => (index === editIndex ? entry : existing)),
     })
-    setEditingIndex(index)
-    setIsAdding(true)
+    closeForm()
   }
 
-  const handleNext = () => {
-    setCurrentStep(4)
+  const removeEntry = (index: number) => {
+    updateData({ workExperiences: entries.filter((_, i) => i !== index) })
+  }
+
+  const handleContinue = () => {
+    if (entryForm.isOpen) {
+      setFooterNote('Add or cancel the entry you are working on before continuing.')
+      return
+    }
     router.push('/onboarding/education')
   }
 
-  const handleBack = () => {
-    setCurrentStep(2)
-    router.push('/onboarding/skills')
-  }
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return ''
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-  }
-
   return (
-    <div className="space-y-6">
+    <StepShell
+      title="Your work experience"
+      description="Add the roles you want on your resume. The AI tailors them to each job you apply for."
+      backHref="/onboarding/skills"
+      onContinue={handleContinue}
+      footerNote={footerNote || undefined}
+    >
       <div className="space-y-4">
-        {data.workExperiences.map((experience, index) => (
-          <div key={experience.id} className="border border-gray-200 rounded-lg p-4">
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <h4 className="font-semibold text-gray-900">{experience.position_title}</h4>
-                <p className="text-gray-600">{experience.company_name}</p>
-                <p className="text-sm text-gray-500">
-                  {experience.location} • {experience.job_type}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {formatDate(experience.start_date)} - {
-                    experience.is_current ? 'Present' : formatDate(experience.end_date || '')
-                  }
-                </p>
-                {experience.description && (
-                  <p className="mt-2 text-gray-700">{experience.description}</p>
-                )}
-              </div>
-              <div className="flex gap-2 ml-4">
-                <button
-                  type="button"
-                  onClick={() => handleEdit(index)}
-                  className="p-1 text-gray-400 hover:text-gray-600"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removeWorkExperience(index)}
-                  className="p-1 text-red-400 hover:text-red-600"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+        {entries.length > 0 && (
+          <ul className="space-y-3">
+            {entries.map((entry, index) => (
+              <li key={`${entry.company_name}-${entry.position_title}-${index}`}>
+                <Card>
+                  <CardBody className="flex items-start justify-between gap-4 py-4">
+                    <EntryRow
+                      title={entry.position_title}
+                      subtitle={
+                        [entry.company_name, entry.location].filter(Boolean).join(' · ') ||
+                        undefined
+                      }
+                      meta={
+                        [entry.job_type, rangeText(entry)].filter(Boolean).join(' · ') || undefined
+                      }
+                      description={entry.description || undefined}
+                      clampDescription
+                      editLabel={`Edit ${entry.position_title} at ${entry.company_name}`}
+                      deleteLabel={`Remove ${entry.position_title} at ${entry.company_name}`}
+                      onEdit={() => openEdit(index)}
+                      onDelete={() => removeEntry(index)}
+                      disabled={entryForm.isOpen}
+                    />
+                  </CardBody>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {entryForm.form ? (
+          <Card>
+            <CardBody>
+              <h2 className="text-sm font-semibold text-stone-900">
+                {entryForm.editKey === null ? 'Add work experience' : 'Edit work experience'}
+              </h2>
+              <form onSubmit={handleSubmit} className="mt-4 space-y-5">
+                <WorkFields form={entryForm.form} onChange={entryForm.patch} errors={errors} />
+                <div className="flex items-center justify-end gap-3">
+                  <Button variant="ghost" onClick={closeForm}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" variant="secondary">
+                    {entryForm.editKey === null ? 'Add experience' : 'Save changes'}
+                  </Button>
+                </div>
+              </form>
+            </CardBody>
+          </Card>
+        ) : entries.length === 0 ? (
+          <Card>
+            <EmptyState
+              icon={Briefcase}
+              title="No work experience yet"
+              description="Add the roles you want on your resume. Internships and freelance work count too."
+              action={
+                <Button variant="secondary" onClick={openAdd}>
+                  <Plus aria-hidden />
+                  Add experience
+                </Button>
+              }
+              className="py-10"
+            />
+          </Card>
+        ) : (
+          <AddEntryButton label="Add another experience" onClick={openAdd} />
+        )}
       </div>
-
-      {isAdding ? (
-        <form onSubmit={handleSubmitExperience} className="space-y-4 border border-gray-200 rounded-lg p-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="company_name" className="block text-sm font-medium text-gray-700">
-                Company Name *
-              </label>
-              <input
-                type="text"
-                id="company_name"
-                required
-                value={formData.company_name}
-                onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                className="mt-1 block w-full"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="position_title" className="block text-sm font-medium text-gray-700">
-                Position Title *
-              </label>
-              <input
-                type="text"
-                id="position_title"
-                required
-                value={formData.position_title}
-                onChange={(e) => setFormData({ ...formData, position_title: e.target.value })}
-                className="mt-1 block w-full"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-                Location
-              </label>
-              <input
-                type="text"
-                id="location"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="mt-1 block w-full"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="job_type" className="block text-sm font-medium text-gray-700">
-                Job Type *
-              </label>
-              <select
-                id="job_type"
-                value={formData.job_type}
-                onChange={(e) => setFormData({ ...formData, job_type: e.target.value as 'Part-Time' | 'Full-Time' | 'Contract' })}
-                className="mt-1 block w-full rounded-md border-gray-300"
-              >
-                <option value="Full-Time">Full-Time</option>
-                <option value="Part-Time">Part-Time</option>
-                <option value="Contract">Contract</option>
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="start_date" className="block text-sm font-medium text-gray-700">
-                Start Date *
-              </label>
-              <input
-                type="month"
-                id="start_date"
-                required
-                value={formData.start_date}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="mt-1 block w-full"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="end_date" className="block text-sm font-medium text-gray-700">
-                End Date
-              </label>
-              <input
-                type="month"
-                id="end_date"
-                value={formData.end_date}
-                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                disabled={formData.is_current}
-                className="mt-1 block w-full"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.is_current}
-                  onChange={(e) => setFormData({ ...formData, is_current: e.target.checked, end_date: '' })}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="ml-2 text-sm text-gray-700">I currently work here</span>
-              </label>
-            </div>
-
-            <div className="sm:col-span-2">
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description
-              </label>
-              <textarea
-                id="description"
-                rows={4}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300"
-                placeholder="Describe your responsibilities and achievements..."
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={resetForm}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700"
-            >
-              {editingIndex !== null ? 'Update' : 'Add'} Experience
-            </button>
-          </div>
-        </form>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setIsAdding(true)}
-          className="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 flex items-center justify-center gap-2"
-        >
-          <Plus className="w-5 h-5" />
-          Add Work Experience
-        </button>
-      )}
-
-      <div className="flex justify-between">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-        >
-          Back
-        </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
-        >
-          Next Step
-        </button>
-      </div>
-    </div>
+    </StepShell>
   )
 }

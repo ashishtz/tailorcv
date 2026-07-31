@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { parseResumeText } from '@/lib/services/resume'
+import { asJson } from '@/lib/utils/normalize-resume'
 
 export const runtime = 'nodejs'
+export const maxDuration = 120
+
+const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB of plain text is a very long resume
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
     const {
       data: { user },
-      error: authError
+      error: authError,
     } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -17,57 +21,69 @@ export async function POST(request: NextRequest) {
     }
 
     const formData = await request.formData()
-    const file = formData.get('resume') as File
+    const file = formData.get('resume')
 
-    if (!file) {
+    if (!(file instanceof File)) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    // File validation
-    if (file.type !== 'text/plain') {
+    // Accept text files even when the browser reports a generic MIME type.
+    const isTxt =
+      file.type === 'text/plain' ||
+      (file.name.toLowerCase().endsWith('.txt') &&
+        (file.type === '' || file.type === 'application/octet-stream'))
+    if (!isTxt) {
       return NextResponse.json(
-        { error: 'Currently only TXT files are supported' },
+        { error: 'Currently only .txt files are supported.' },
         { status: 400 }
       )
     }
 
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: 'File too large. Maximum size is 10MB.' },
+        { error: 'File too large. Maximum size is 2MB.' },
         { status: 400 }
       )
     }
 
-    // Parse resume
     const resumeText = await file.text()
+    if (!resumeText.trim()) {
+      return NextResponse.json({ error: 'The file appears to be empty.' }, { status: 400 })
+    }
+
     const parsedData = await parseResumeText(resumeText)
 
-    // Generate a random name for the import
-    const randomName = `Import_${new Date().toISOString().split('T')[0]}_${Math.random().toString(36).substring(2, 7)}`
-
-    // Store parsed data in imported_resumes table
-    const { error: insertError } = await supabase
-      .from('imported_resumes')
-      .insert({
-        user_id: user.id,
-        name: randomName,
-        content: parsedData
-      })
+    // Keep a copy of the raw import for reference/debugging.
+    const importName = `Import ${new Date().toISOString().slice(0, 10)} - ${file.name}`
+    const { error: insertError } = await supabase.from('imported_resumes').insert({
+      user_id: user.id,
+      name: importName,
+      content: asJson(parsedData),
+    })
 
     if (insertError) {
       console.error('Error storing parsed resume:', insertError)
-      return NextResponse.json(
-        { error: 'Failed to store parsed resume' },
-        { status: 500 }
-      )
+      // The parse itself succeeded - return the data anyway so the client
+      // can still apply it to the profile.
+    } else {
+      // Nothing lists these yet - bound growth to the 5 most recent per user.
+      const { data: stale } = await supabase
+        .from('imported_resumes')
+        .select('id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .range(5, 1000)
+      if (stale?.length) {
+        await supabase.from('imported_resumes').delete().in('id', stale.map((row) => row.id))
+      }
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Resume parsed and stored successfully'
-    })
+    return NextResponse.json({ success: true, data: parsedData })
   } catch (error) {
     console.error('Resume parsing error:', error)
-    return NextResponse.json({ error: 'Failed to parse resume' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'We could not parse that resume. Check the file and try again.' },
+      { status: 500 }
+    )
   }
 }

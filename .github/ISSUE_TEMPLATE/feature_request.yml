@@ -1,0 +1,28 @@
+name: Idea or feature request
+description: Suggest something new, including a new resume template
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the situation you hit, not just the feature you want.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you have in mind
+      description: Sketches, screenshots of other tools, or a rough description all work.
+  - type: checkboxes
+    id: template
+    attributes:
+      label: If this is a resume template
+      options:
+        - label: It is single column, with standard headings and no images or tables (see CONTRIBUTING.md)
+  - type: checkboxes
+    id: contributing
+    attributes:
+      label: Would you like to build it?
+      options:
+        - label: I am willing to open a pull request for this

@@ -1,10 +1,9 @@
 import { ChatOpenAI } from "@langchain/openai"
+import { parseJsonMarkdown, parsePartialJson } from "@langchain/core/output_parsers"
 
-export interface OpenRouterClientOptions {
-  model?: string
+interface OpenRouterClientOptions {
   temperature?: number
   maxTokens?: number
-  streaming?: boolean
 }
 
 /**
@@ -13,18 +12,16 @@ export interface OpenRouterClientOptions {
  * @returns Configured ChatOpenAI instance
  */
 export function createOpenRouterClient(options?: OpenRouterClientOptions) {
-  const {
-    model = 'anthropic/claude-sonnet-4',
-    temperature = 0.7,
-    // maxTokens = 2000,
-    streaming = false,
-  } = options || {}
+  const { temperature = 0.7, maxTokens = 4000 } = options || {}
+
+  if (!process.env.OPENROUTER_API_KEY) {
+    throw new Error('OPENROUTER_API_KEY is not configured')
+  }
 
   return new ChatOpenAI({
-    model,
+    model: process.env.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4',
     temperature,
-    // maxTokens,
-    streaming,
+    maxTokens,
     apiKey: process.env.OPENROUTER_API_KEY,
     configuration: {
       baseURL: 'https://openrouter.ai/api/v1',
@@ -34,4 +31,28 @@ export function createOpenRouterClient(options?: OpenRouterClientOptions) {
       },
     },
   })
+}
+
+/**
+ * Extracts and parses a JSON object from model output, tolerating markdown
+ * code fences, truncated JSON, and prose before a bare object.
+ */
+/**
+ * Best-effort parse of an in-flight (truncated) model response. Returns null
+ * until the accumulated text contains at least a parseable JSON prefix.
+ */
+export function extractPartialJson(raw: string): unknown {
+  const start = raw.indexOf('{')
+  return start === -1 ? null : parsePartialJson(raw.slice(start))
+}
+
+export function extractJsonObject<T = unknown>(raw: string): T {
+  // parseJsonMarkdown handles fenced/truncated JSON but not prose before a
+  // bare "{" - the slice retry covers that case.
+  const parsed: unknown =
+    parseJsonMarkdown(raw) ?? parseJsonMarkdown(raw.slice(raw.indexOf('{')))
+  if (parsed === null || parsed === undefined) {
+    throw new Error('Model response did not contain valid JSON')
+  }
+  return parsed as T
 }

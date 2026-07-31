@@ -23,7 +23,7 @@ export const renderFormattedContent = (
             key={index}
             className="text-gray-700 leading-relaxed font-medium flex"
           >
-            <span className="mr-2 flex-shrink-0">•</span>
+            <span className="mr-2 shrink-0">•</span>
             <span>{parseHighlights(bullet.trim())}</span>
           </li>
         ))}
@@ -38,19 +38,12 @@ export const renderFormattedContent = (
 
   // If format is bullets and content is string, try to parse it
   if (format === 'bullets') {
-    let bullets: string[] = []
-
-    if (content.includes('•')) {
-      bullets = content.split('•').filter((bullet) => bullet.trim())
-    } else if (content.includes('- ')) {
-      bullets = content.split(/(?:^|\n)- /).filter((bullet) => bullet.trim())
-    } else if (content.includes('* ')) {
-      bullets = content.split(/(?:^|\n)\* /).filter((bullet) => bullet.trim())
-    } else if (content.includes('\n')) {
-      bullets = content.split('\n').filter((bullet) => bullet.trim())
-    } else {
-      bullets = content.split('.').filter((bullet) => bullet.trim())
-    }
+    // Split on any bullet marker (•, line-start - or *) or newline. A single
+    // sentence with no markers yields one piece and falls through to the
+    // paragraph branch - splitting on '.' would shred "Node.js" and decimals.
+    const bullets = content
+      .split(/•|(?:^|\n)\s*[-*]\s|\n/)
+      .filter((bullet) => bullet.trim())
 
     if (bullets.length > 1) {
       return (
@@ -61,7 +54,7 @@ export const renderFormattedContent = (
               key={index}
               className="text-gray-700 leading-relaxed font-medium flex"
             >
-              <span className="mr-2 flex-shrink-0">•</span>
+              <span className="mr-2 shrink-0">•</span>
               <span>{parseHighlights(bullet.trim().replace(/^[•\-\*]\s*/, ''))}</span>
             </li>
           ))}

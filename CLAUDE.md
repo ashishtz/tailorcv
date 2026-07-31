@@ -1,5 +1,23 @@
 # Claude Code Development Guidelines
 
+## 🧠 Persistent Memory System — READ FIRST, ALWAYS
+
+**MANDATORY for every Claude session, before any other work:**
+
+1. **Read** `.claude/memory/STATUS.md` — current objectives, what's done / in progress / backlog, constraints.
+2. **Read** `.claude/memory/WORKLOG.md` — detailed history of past sessions.
+3. **Read** `.claude/memory/DECISIONS.md` — settled technical decisions (do not reverse without user approval).
+4. Also read any feature docs referenced there (e.g. `.claude/memory/FRONTEND_AUDIT.md`, `.claude/memory/DESIGN_SYSTEM.md`).
+
+**MANDATORY before ending any work chunk / session:**
+
+- Update `STATUS.md` (move items between Done / In Progress / Backlog; refresh "Last updated").
+- Append a detailed entry to `WORKLOG.md` (what changed, file paths, findings, next steps).
+- Record any new significant decision in `DECISIONS.md`.
+- Commit and push the memory updates together with (or right after) the code they describe.
+
+This system is how work stays on track across sessions — treat it as part of the deliverable, not optional bookkeeping.
+
 ## Code Quality Standards
 
 ### TypeScript and ESLint Compliance

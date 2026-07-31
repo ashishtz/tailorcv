@@ -1,24 +1,18 @@
-import { formatResumeDate } from '@/lib/utils'
+import { describe, expect, it } from '@jest/globals'
+import { formatMonthYear } from '@/lib/utils'
 
-describe('formatResumeDate', () => {
-  it('should format date string to YYYY-MMM format', () => {
-    expect(formatResumeDate('2023-10-15')).toBe('2023-Oct')
-    expect(formatResumeDate('2022-01-01')).toBe('2022-Jan')
-    expect(formatResumeDate('2021-12-31')).toBe('2021-Dec')
+describe('formatMonthYear', () => {
+  it('formats date-only strings as "Mon YYYY"', () => {
+    expect(formatMonthYear('2023-10-15')).toBe('Oct 2023')
+    expect(formatMonthYear('2022-01-01')).toBe('Jan 2022')
+    // "YYYY-MM" must parse as local time, not UTC midnight
+    expect(formatMonthYear('2023-05')).toBe('May 2023')
   })
 
-  it('should handle null input', () => {
-    expect(formatResumeDate(null)).toBe('')
-  })
-
-  it('should handle invalid date strings', () => {
-    expect(formatResumeDate('invalid-date')).toBe('')
-    expect(formatResumeDate('')).toBe('')
-  })
-
-  it('should handle different date string formats', () => {
-    expect(formatResumeDate('2023/10/15')).toBe('2023-Oct')
-    expect(formatResumeDate('10/15/2023')).toBe('2023-Oct')
-    expect(formatResumeDate('2023.10.15')).toBe('2023-Oct')
+  it('returns empty string for missing or invalid input', () => {
+    expect(formatMonthYear(null)).toBe('')
+    expect(formatMonthYear(undefined)).toBe('')
+    expect(formatMonthYear('')).toBe('')
+    expect(formatMonthYear('invalid-date')).toBe('')
   })
 })

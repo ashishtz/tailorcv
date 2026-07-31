@@ -1,16 +1,26 @@
-import { Sidebar } from '@/components/dashboard/sidebar'
+import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { DashboardShell } from '@/components/dashboard/shell'
 
-export default function DashboardLayout({
+// Default title for /dashboard; nested routes override via their own layouts.
+export const metadata: Metadata = {
+  title: 'Dashboard',
+}
+
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-primary-50/30 to-secondary-50/30">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        {children}
-      </main>
-    </div>
-  )
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/auth/login?next=%2Fdashboard')
+  }
+
+  return <DashboardShell userEmail={user.email ?? ''}>{children}</DashboardShell>
 }

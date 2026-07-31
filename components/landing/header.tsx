@@ -1,130 +1,106 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { FileText, Menu, X } from 'lucide-react'
-import { useState } from 'react'
+import { createClient, getSessionUser } from '@/lib/supabase/client'
+import { Menu, X } from 'lucide-react'
+import { Logo } from '@/components/brand/logo'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
-interface HeaderProps {
-  isAuthenticated: boolean
+const NAV_ITEMS = [
+  { label: 'Features', href: '#features' },
+  { label: 'How it works', href: '#how-it-works' },
+  { label: 'Templates', href: '#templates' },
+]
+
+function NavLinks({ className, onClick }: { className: string; onClick?: () => void }) {
+  return (
+    <>
+      {NAV_ITEMS.map((item) => (
+        <a key={item.href} href={item.href} onClick={onClick} className={className}>
+          {item.label}
+        </a>
+      ))}
+    </>
+  )
 }
 
-export function LandingHeader({ isAuthenticated }: HeaderProps) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+function AuthButtons({ isAuthenticated, mobile }: { isAuthenticated: boolean; mobile?: boolean }) {
+  const width = mobile ? 'w-full' : undefined
+  return isAuthenticated ? (
+    <Link href="/dashboard" className={cn(buttonVariants({}), width)}>
+      Go to dashboard
+    </Link>
+  ) : (
+    <>
+      <Link
+        href="/auth/login"
+        className={cn(buttonVariants({ variant: mobile ? 'secondary' : 'ghost' }), width)}
+      >
+        Sign in
+      </Link>
+      <Link href="/auth/register" className={cn(buttonVariants({}), width)}>
+        Get started
+      </Link>
+    </>
+  )
+}
+
+export function LandingHeader() {
+  const [menuOpen, setMenuOpen] = useState(false)
+  // Detected client-side from the local session so the landing page itself
+  // can be statically prerendered. Defaults to signed-out until mounted.
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  useEffect(() => {
+    getSessionUser(createClient()).then((user) => setIsAuthenticated(!!user))
+  }, [])
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200 shadow-soft">
-      <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 no-print">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2 group">
-            <div className="p-2 bg-gradient-to-br from-primary-600 to-accent-500 rounded-lg shadow-medium group-hover:shadow-large transition-all duration-200">
-              <FileText className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent font-poppins">
-              Resume Builder
-            </span>
-          </Link>
+    <header className="no-print fixed inset-x-0 top-0 z-50 border-b border-stone-200/80 bg-stone-50/80 backdrop-blur-md">
+      <nav
+        aria-label="Main"
+        className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
+      >
+        <Logo />
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8 font-inter">
-            <Link href="#features" className="text-gray-700 hover:text-primary-600 font-medium transition-colors duration-200">
-              Features
-            </Link>
-            <Link href="#how-it-works" className="text-gray-700 hover:text-primary-600 font-medium transition-colors duration-200">
-              How it Works
-            </Link>
-            <Link href="#templates" className="text-gray-700 hover:text-primary-600 font-medium transition-colors duration-200">
-              Templates
-            </Link>
-
-            {isAuthenticated ? (
-              <Link
-                href="/dashboard"
-                className="px-6 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-medium hover:shadow-large transform hover:-translate-y-0.5"
-              >
-                Dashboard
-              </Link>
-            ) : (
-              <div className="flex items-center space-x-4">
-                <Link
-                  href="/auth/login"
-                  className="text-gray-700 hover:text-primary-600 font-semibold transition-colors duration-200"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/auth/register"
-                  className="px-6 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-medium hover:shadow-large transform hover:-translate-y-0.5"
-                >
-                  Get Started
-                </Link>
-              </div>
-            )}
-          </div>
-
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors duration-200"
-          >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+        {/* Desktop nav */}
+        <div className="hidden items-center gap-8 md:flex">
+          <NavLinks className="text-sm font-medium text-stone-600 transition-colors hover:text-stone-900" />
         </div>
 
-        {/* Mobile Navigation */}
-        {mobileMenuOpen && (
-          <div className="md:hidden py-4 space-y-4 animate-slide-up">
-            <Link
-              href="#features"
-              className="block text-gray-700 hover:text-primary-600 font-medium transition-colors duration-200"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Features
-            </Link>
-            <Link
-              href="#how-it-works"
-              className="block text-gray-700 hover:text-primary-600 font-medium transition-colors duration-200"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              How it Works
-            </Link>
-            <Link
-              href="#templates"
-              className="block text-gray-700 hover:text-primary-600 font-medium transition-colors duration-200"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Templates
-            </Link>
+        <div className="hidden items-center gap-3 md:flex">
+          <AuthButtons isAuthenticated={isAuthenticated} />
+        </div>
 
-            {isAuthenticated ? (
-              <Link
-                href="/dashboard"
-                className="block w-full px-6 py-3 text-center bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Dashboard
-              </Link>
-            ) : (
-              <div className="space-y-2">
-                <Link
-                  href="/auth/login"
-                  className="block w-full px-6 py-3 text-center border-2 border-primary-600 text-primary-600 rounded-lg font-semibold"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/auth/register"
-                  className="block w-full px-6 py-3 text-center bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Get Started
-                </Link>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Mobile toggle */}
+        <button
+          type="button"
+          className="rounded-lg p-2 text-stone-600 hover:bg-stone-100 md:hidden"
+          onClick={() => setMenuOpen((open) => !open)}
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={menuOpen}
+          aria-controls="mobile-nav"
+        >
+          {menuOpen ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
+        </button>
       </nav>
+
+      {/* Mobile nav */}
+      {menuOpen && (
+        <div id="mobile-nav" className="border-t border-stone-200 bg-stone-50 px-4 py-4 md:hidden">
+          <div className="flex flex-col gap-1">
+            <NavLinks
+              onClick={() => setMenuOpen(false)}
+              className="rounded-lg px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100"
+            />
+            <div className="mt-3 flex flex-col gap-2 border-t border-stone-200 pt-4">
+              <AuthButtons isAuthenticated={isAuthenticated} mobile />
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   )
 }

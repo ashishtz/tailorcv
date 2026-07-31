@@ -1,45 +1,21 @@
-import { Resume } from '@/lib/types/database'
+import type { TemplateProps } from '@/lib/templates'
 import { renderFormattedContent } from '@/lib/utils/render-content'
 import { Fragment } from 'react'
+import { ContactLinks, stripScheme } from './shared'
 
-interface ClassicTemplateProps {
-  data: Resume['generated_data']
-  settings?: Resume['generation_settings']
-}
-
-export function ClassicTemplate({ data, settings }: ClassicTemplateProps) {
+export function ClassicTemplate({ data, settings, nameTag: NameTag = 'h1' }: TemplateProps) {
   return (
     <div className="bg-white p-8 w-full font-inter" style={{ minHeight: '11in' }}>
       {/* Header Section - ATS-friendly: no icons, plain text with separators */}
       <header className="border-b-2 border-gray-800 pb-4 mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">{data.contact.name}</h1>
+        <NameTag className="text-3xl font-bold text-gray-900 mb-2">{data.contact.name}</NameTag>
         <div className="text-sm text-gray-600 font-medium">
           {/* Primary contact info on one line with pipe separators */}
           <p>
             {data.contact.email} | {data.contact.phone} | {data.contact.location}
           </p>
           {/* Social links on separate line with text labels for ATS parsing */}
-          {(data.contact.socialLinks?.linkedin || data.contact.socialLinks?.github || data.contact.socialLinks?.stackoverflow) && (
-            <p className="mt-1">
-              {data.contact.socialLinks?.linkedin && (
-                <span>
-                  LinkedIn: {data.contact.socialLinks.linkedin.replace(/^https?:\/\/(www\.)?/, '')}
-                </span>
-              )}
-              {data.contact.socialLinks?.linkedin && data.contact.socialLinks?.github && ' | '}
-              {data.contact.socialLinks?.github && (
-                <span>
-                  GitHub: {data.contact.socialLinks.github.replace(/^https?:\/\/(www\.)?/, '')}
-                </span>
-              )}
-              {(data.contact.socialLinks?.linkedin || data.contact.socialLinks?.github) && data.contact.socialLinks?.stackoverflow && ' | '}
-              {data.contact.socialLinks?.stackoverflow && (
-                <span>
-                  StackOverflow: {data.contact.socialLinks.stackoverflow.replace(/^https?:\/\/(www\.)?/, '')}
-                </span>
-              )}
-            </p>
-          )}
+          <ContactLinks links={data.contact.socialLinks} variant="labels" className="mt-1" />
         </div>
         {data.contact.address && (
           <div className="text-sm text-gray-600 mt-1">{data.contact.address}</div>
@@ -58,31 +34,21 @@ export function ClassicTemplate({ data, settings }: ClassicTemplateProps) {
       {data.skills.length > 0 && (
         <section className="mb-6">
           <h2 className="text-xl font-bold text-gray-800 mb-3 uppercase tracking-wide">Skills</h2>
-          {typeof data.skills[0] === 'string' ? (
-            <div className="flex flex-wrap gap-2">
-              {(data.skills as string[]).map((skill, index) => (
-                <span key={index} className="px-3 py-1 text-sm">
-                  {skill}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {(data.skills as Array<{ category: string; skills: string[] }>).map((category, index) => (
-                <div key={index}>
-                  <h3 className="font-semibold mb-2 text-base">{category.category}:{' '}
-                    <span className="text-sm font-medium">
-                    {category.skills.map((skill, skillIndex) => (
-                      <Fragment key={skillIndex}>
-                        {skill}{skillIndex < category.skills.length - 1 ? ', ' : ''}
-                      </Fragment>
-                    ))}
-                    </span>
-                  </h3>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="space-y-3">
+            {data.skills.map((category, index) => (
+              <div key={index} className="break-inside-avoid">
+                <h3 className="font-semibold mb-2 text-base">{category.category}:{' '}
+                  <span className="text-sm font-medium">
+                  {category.skills.map((skill, skillIndex) => (
+                    <Fragment key={skillIndex}>
+                      {skill}{skillIndex < category.skills.length - 1 ? ', ' : ''}
+                    </Fragment>
+                  ))}
+                  </span>
+                </h3>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
@@ -92,7 +58,7 @@ export function ClassicTemplate({ data, settings }: ClassicTemplateProps) {
           <h2 className="text-xl font-bold text-gray-800 mb-3 uppercase tracking-wide">Work Experience</h2>
           <div className="space-y-4">
             {data.workExperience.map((exp, index) => (
-              <div key={index}>
+              <div key={index} className="break-inside-avoid">
                 <div className="flex justify-between items-start mb-1">
                   <div>
                     <h3 className="font-bold text-gray-900 text-lg">{exp.position}</h3>
@@ -118,12 +84,12 @@ export function ClassicTemplate({ data, settings }: ClassicTemplateProps) {
           <h2 className="text-xl font-bold text-gray-800 mb-3 uppercase tracking-wide">Projects</h2>
           <div className="space-y-3">
             {data.projects.map((project, index) => (
-              <div key={index}>
+              <div key={index} className="break-inside-avoid">
                 <h3 className="font-bold text-gray-900 text-lg">{project.name}</h3>
                 {project.role && <p className="text-gray-700 text-sm font-semibold">{project.role}</p>}
                 {project.link && (
                   <p className="text-sm text-gray-600">
-                    Link: {project.link.replace(/^https?:\/\/(www\.)?/, '')}
+                    Link: {stripScheme(project.link)}
                   </p>
                 )}
                 <div className="mt-1 text-sm">
@@ -141,7 +107,7 @@ export function ClassicTemplate({ data, settings }: ClassicTemplateProps) {
           <h2 className="text-xl font-bold text-gray-800 mb-3 uppercase tracking-wide">Education</h2>
           <div className="space-y-3">
             {data.education.map((edu, index) => (
-              <div key={index}>
+              <div key={index} className="break-inside-avoid">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-semibold text-gray-900">{edu.institution}</h3>

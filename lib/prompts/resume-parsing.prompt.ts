@@ -1,9 +1,17 @@
 import { ChatPromptTemplate } from "@langchain/core/prompts"
 
+/**
+ * Resume parsing prompt. System message = task + schema + rules;
+ * user message = the raw resume text, nothing else.
+ */
 export const resumeParsingPrompt = ChatPromptTemplate.fromMessages([
-  ["user", `Parse the following resume text and extract structured data in JSON format. Return ONLY valid JSON without any markdown formatting or explanations.
+  [
+    "system",
+    `You are a resume parser. Parse the resume text provided by the user and extract structured data in JSON format. Return ONLY valid JSON without any markdown formatting or explanations.
 
-The JSON should have this exact structure:
+Extract all relevant information. If a field is not available, use null or an empty array as appropriate.
+
+The JSON must have this exact structure:
 {{
   "contact": {{
     "name": "Full Name",
@@ -42,10 +50,7 @@ The JSON should have this exact structure:
       "link": "project link if available"
     }}
   ]
-}}
-
-Extract all relevant information from the resume text. If a field is not available, use null or an empty array as appropriate.
-
-Resume text:
-{resume_text}`]
+}}`,
+  ],
+  ["user", "{resume_text}"],
 ])

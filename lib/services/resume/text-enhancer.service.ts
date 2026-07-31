@@ -19,10 +19,12 @@ export async function enhanceText(text: string, type: EnhancementType): Promise<
 
   const client = createOpenRouterClient({
     temperature: 0.7,
-    maxTokens: 300
+    maxTokens: 600
   })
 
   const response = await prompt.pipe(client).invoke({ text })
 
-  return response.content as string
+  // Same de-dashing guarantee as normalizeResumeData: this text lands in a
+  // user-facing textarea and then on the resume.
+  return response.text.trim().replace(/\s*[\u2013\u2014\u2015]\s*/g, ' - ')
 }

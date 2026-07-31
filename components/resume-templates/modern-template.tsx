@@ -1,163 +1,167 @@
-import { Resume } from '@/lib/types/database'
-import { Mail, Phone, MapPin, Link as LinkIcon } from 'lucide-react'
-import { LinkedInIcon, GitHubIcon, StackOverflowIcon } from '@/components/icons/SocialIcons'
+import type { TemplateProps } from '@/lib/templates'
 import { renderFormattedContent } from '@/lib/utils/render-content'
+import { ContactLinks, stripScheme } from './shared'
 
-interface ModernTemplateProps {
-  data: Resume['generated_data']
-  settings?: Resume['generation_settings']
-}
+const TEAL = '#0b7a6e'
 
-export function ModernTemplate({ data, settings }: ModernTemplateProps) {
+/**
+ * Modern: colour-led but still strictly one column of real text - a heavy
+ * accent bar, teal section rules and tinted skill chips. Nothing is an image,
+ * table or text box, and chips are dark text on a light tint so the sheet
+ * still reads if background graphics are dropped at print time.
+ */
+export function ModernTemplate({ data, settings, nameTag: NameTag = 'h1' }: TemplateProps) {
   return (
-    <div className="bg-white p-8 w-full shadow-lg font-poppins" style={{ minHeight: '11in' }}>
-      {/* Header Section */}
-      <header className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-8 -m-8 mb-6">
-        <h1 className="text-4xl font-bold mb-4">{data.contact.name}</h1>
-        <div className="flex flex-wrap gap-6 text-sm">
-          <div className="flex items-center gap-2">
-            <Mail className="w-4 h-4" />
-            <span>{data.contact.email}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Phone className="w-4 h-4" />
-            <span>{data.contact.phone}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4" />
-            <span>{data.contact.location}</span>
-          </div>
-          {data.contact.socialLinks?.linkedin && (
-            <a href={data.contact.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <LinkedInIcon className="w-4 h-4" />
-            </a>
-          )}
-          {data.contact.socialLinks?.github && (
-            <a href={data.contact.socialLinks.github} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <GitHubIcon className="w-4 h-4" />
-            </a>
-          )}
-          {data.contact.socialLinks?.stackoverflow && (
-            <a href={data.contact.socialLinks.stackoverflow} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <StackOverflowIcon className="w-4 h-4" />
-            </a>
-          )}
-        </div>
-      </header>
+    <div
+      className="bg-white w-full"
+      style={{ minHeight: '11in', fontFamily: 'Arial, Helvetica, sans-serif' }}
+    >
+      <div style={{ height: 10, backgroundColor: TEAL }} />
 
-      {/* Professional Summary */}
-      {data.summary && (
-        <section className="mb-6">
-          <h2 className="text-lg font-bold text-blue-700 mb-3 border-b-2 border-blue-200 pb-1">PROFESSIONAL SUMMARY</h2>
-          {renderFormattedContent(data.summary, settings?.summary_format)}
-        </section>
-      )}
+      <div className="px-10 pb-10 pt-7">
+        <header className="mb-6">
+          <NameTag className="text-[32px] font-bold leading-none tracking-tight text-stone-900">
+            {data.contact.name}
+          </NameTag>
+          <div className="mt-2.5 text-[12.5px] leading-relaxed text-stone-600">
+            <p>
+              {[data.contact.email, data.contact.phone, data.contact.location]
+                .filter(Boolean)
+                .join('  •  ')}
+            </p>
+            {data.contact.address && <p>{data.contact.address}</p>}
+            <ContactLinks links={data.contact.socialLinks} variant="labels" />
+          </div>
+        </header>
 
-      <div className="grid grid-cols-3 gap-6">
-        {/* Left Column - Skills & Education */}
-        <div className="col-span-1 space-y-6">
-          {/* Skills Section */}
-          {data.skills.length > 0 && (
-            <section>
-              <h2 className="text-lg font-bold text-blue-700 mb-3 border-b-2 border-blue-200 pb-1">SKILLS</h2>
-              {typeof data.skills[0] === 'string' ? (
-                <div className="space-y-1">
-                  {(data.skills as string[]).map((skill, index) => (
-                    <div key={index} className="text-sm text-gray-700">
-                      • {skill}
-                    </div>
-                  ))}
+        {data.summary && (
+          <Section title="Professional Summary">
+            <div className="text-[13px] leading-[1.65] text-stone-800">
+              {renderFormattedContent(data.summary, settings?.summary_format)}
+            </div>
+          </Section>
+        )}
+
+        {data.skills.length > 0 && (
+          <Section title="Skills">
+            <div className="space-y-2.5">
+              {data.skills.map((group, index) => (
+                <div key={index} className="break-inside-avoid">
+                  <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-stone-500">
+                    {group.category}
+                  </p>
+                  <p className="flex flex-wrap gap-1.5">
+                    {group.skills.map((skill, i) => (
+                      <span
+                        key={i}
+                        className="rounded-full px-2.5 py-0.5 text-[12px] text-stone-800"
+                        style={{ backgroundColor: '#e6f4f2' }}
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </p>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {(data.skills as Array<{ category: string; skills: string[] }>).map((category, index) => (
-                    <div key={index}>
-                      <h3 className="font-semibold text-blue-600 text-sm mb-1">{category.category}</h3>
-                      <div className="space-y-1">
-                        {category.skills.map((skill, skillIndex) => (
-                          <div key={skillIndex} className="text-sm text-gray-700">
-                            • {skill}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {data.workExperience.length > 0 && (
+          <Section title="Work Experience">
+            <div className="space-y-5">
+              {data.workExperience.map((exp, index) => (
+                <div key={index} className="break-inside-avoid">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+                    <p className="text-[15px] font-bold text-stone-900">{exp.position}</p>
+                    <p className="text-[12px] font-semibold" style={{ color: TEAL }}>
+                      {exp.duration}
+                    </p>
+                  </div>
+                  <p className="text-[12.5px] text-stone-600">
+                    {[exp.company, exp.location, exp.type].filter(Boolean).join('  •  ')}
+                  </p>
+                  <div className="mt-1.5 text-[13px] leading-[1.65] text-stone-800">
+                    {renderFormattedContent(exp.description, settings?.work_experience_format)}
+                  </div>
                 </div>
-              )}
-            </section>
-          )}
+              ))}
+            </div>
+          </Section>
+        )}
 
-          {/* Education Section */}
-          {data.education.length > 0 && (
-            <section>
-              <h2 className="text-lg font-bold text-blue-700 mb-3 border-b-2 border-blue-200 pb-1">EDUCATION</h2>
-              <div className="space-y-3">
-                {data.education.map((edu, index) => (
-                  <div key={index}>
-                    <h3 className="font-semibold text-gray-800 text-sm">{edu.institution}</h3>
-                    <p className="text-xs text-gray-600">{edu.degree}</p>
-                    <p className="text-xs text-gray-600">{edu.field}</p>
-                    <p className="text-xs text-gray-500 mt-1">{edu.duration}</p>
+        {data.projects.length > 0 && (
+          <Section title="Projects">
+            <div className="space-y-3.5">
+              {data.projects.map((project, index) => (
+                <div key={index} className="break-inside-avoid">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+                    <p className="text-[14px] font-bold text-stone-900">
+                      {project.name}
+                      {project.role ? (
+                        <span className="font-normal text-stone-600"> / {project.role}</span>
+                      ) : null}
+                    </p>
+                    {project.link && (
+                      <p className="text-[12px]" style={{ color: TEAL }}>
+                        {stripScheme(project.link)}
+                      </p>
+                    )}
                   </div>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
+                  <div className="mt-1 text-[13px] leading-[1.65] text-stone-800">
+                    {renderFormattedContent(project.description, settings?.projects_format)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
 
-        {/* Right Column - Experience & Projects */}
-        <div className="col-span-2 space-y-6">
-          {/* Work Experience Section */}
-          {data.workExperience.length > 0 && (
-            <section>
-              <h2 className="text-lg font-bold text-blue-700 mb-3 border-b-2 border-blue-200 pb-1">EXPERIENCE</h2>
-              <div className="space-y-4">
-                {data.workExperience.map((exp, index) => (
-                  <div key={index}>
-                    <div className="flex justify-between items-start mb-1">
-                      <div>
-                        <h3 className="font-bold text-gray-800 text-lg">{exp.position}</h3>
-                        <p className="text-sm text-gray-600 font-semibold">{exp.company} • {exp.location}</p>
-                      </div>
-                      <p className="text-sm text-gray-500">{exp.duration}</p>
-                    </div>
-                    <div className="text-sm mt-2">
-                      {renderFormattedContent(exp.description, settings?.work_experience_format)}
-                    </div>
+        {data.education.length > 0 && (
+          <Section title="Education" last>
+            <div className="space-y-2.5">
+              {data.education.map((edu, index) => (
+                <div
+                  key={index}
+                  className="break-inside-avoid flex flex-wrap items-baseline justify-between gap-x-4 text-[13px]"
+                >
+                  <div>
+                    <p className="font-bold text-stone-900">{edu.institution}</p>
+                    <p className="text-stone-700">
+                      {[edu.degree, edu.field].filter(Boolean).join(', ')}
+                    </p>
                   </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Projects Section */}
-          {data.projects.length > 0 && (
-            <section>
-              <h2 className="text-lg font-bold text-blue-700 mb-3 border-b-2 border-blue-200 pb-1">PROJECTS</h2>
-              <div className="space-y-3">
-                {data.projects.map((project, index) => (
-                  <div key={index}>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-bold text-gray-800 text-lg">{project.name}</h3>
-                        {project.role && <p className="text-sm text-gray-600 font-semibold">{project.role}</p>}
-                      </div>
-                      {project.link && (
-                        <a href={project.link} className="text-blue-600 hover:text-blue-700" target="_blank" rel="noopener noreferrer">
-                          <LinkIcon className="w-4 h-4" />
-                        </a>
-                      )}
-                    </div>
-                    <div className="text-sm mt-1">
-                      {renderFormattedContent(project.description, settings?.projects_format)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
+                  <p className="text-[12px] font-semibold" style={{ color: TEAL }}>
+                    {edu.duration}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
       </div>
     </div>
+  )
+}
+
+function Section({
+  title,
+  children,
+  last,
+}: {
+  title: string
+  children: React.ReactNode
+  last?: boolean
+}) {
+  return (
+    <section className={last ? undefined : 'mb-6'}>
+      <h2
+        className="mb-2.5 pb-1 text-[12px] font-bold uppercase tracking-[0.16em] text-stone-900"
+        style={{ borderBottom: `2px solid ${TEAL}` }}
+      >
+        {title}
+      </h2>
+      {children}
+    </section>
   )
 }

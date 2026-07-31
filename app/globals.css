@@ -1,157 +1,177 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-@layer base {
-  :root {
-    --background: #ffffff;
-    --foreground: #171717;
-  }
+/* ============================================================
+   Atelier design tokens — see .claude/memory/DESIGN_SYSTEM.md
+   ============================================================ */
+@theme {
+  /* Brand — "Evergreen" */
+  --color-brand-50: #f0fbf9;
+  --color-brand-100: #d7f4ef;
+  --color-brand-200: #aee9df;
+  --color-brand-300: #7dd8ca;
+  --color-brand-400: #45beab;
+  --color-brand-500: #0e9384;
+  --color-brand-600: #0b7a6e;
+  --color-brand-700: #0a655c;
+  --color-brand-800: #0b514a;
+  --color-brand-900: #0a433e;
+  --color-brand-950: #052e2a;
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --background: #0a0a0a;
-      --foreground: #ededed;
+  /* Accent — "Amber" (AI moments, highlights; never large surfaces) */
+  --color-accent-50: #fffbeb;
+  --color-accent-100: #fef3c7;
+  --color-accent-200: #fde68a;
+  --color-accent-300: #fcd34d;
+  --color-accent-400: #fbbf24;
+  --color-accent-500: #f59e0b;
+  --color-accent-600: #d97706;
+  --color-accent-700: #b45309;
+  --color-accent-800: #92400e;
+  --color-accent-900: #78350f;
+  --color-accent-950: #451a03;
+
+  /* App typography */
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Resume template typography (user documents, not app chrome) */
+  --font-inter: var(--font-inter), ui-sans-serif, sans-serif;
+  --font-source-sans: var(--font-source-sans), ui-sans-serif, sans-serif;
+  --font-roboto: var(--font-roboto), ui-sans-serif, sans-serif;
+  --font-libre-baskerville: var(--font-libre-baskerville), ui-serif, serif;
+  --font-poppins: var(--font-poppins), ui-sans-serif, sans-serif;
+
+  /* Motion */
+  --animate-fade-in: fade-in 0.25s ease-out;
+  --animate-slide-up: slide-up 0.3s ease-out;
+  --animate-scale-in: scale-in 0.2s ease-out;
+  --animate-shimmer: shimmer 1.8s linear infinite;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
     }
   }
+  @keyframes slide-up {
+    from {
+      transform: translateY(8px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  @keyframes scale-in {
+    from {
+      transform: scale(0.98);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: -400px 0;
+    }
+    to {
+      background-position: 400px 0;
+    }
+  }
+}
 
+/* Native checkbox/radio accents (raw inputs used for radio cards/toggles) */
+@layer base {
+  input[type='checkbox'],
+  input[type='radio'] {
+    accent-color: var(--color-brand-600);
+  }
+}
+
+/* Tailwind v4 compatibility: keep v3's default border color until every
+   border has an explicit color utility. */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-stone-200, currentcolor);
+  }
+}
+
+@layer base {
   body {
-    background: var(--background);
-    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont,
-      "Segoe UI", sans-serif;
+    background: var(--color-stone-50);
+    color: var(--color-stone-900);
+    font-family: var(--font-sans);
   }
 
   html {
     scroll-behavior: smooth;
+    /* Anchor targets clear the fixed marketing header */
+    scroll-padding-top: 5rem;
   }
 
-  input[type="text"],
-  input[type="email"],
-  input[type="tel"],
-  input[type="date"],
-  input[type="password"],
-  input[type="url"],
-  textarea,
-  select {
-    @apply px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400 text-slate-700 bg-white placeholder-gray-500;
+  ::selection {
+    background: var(--color-brand-200);
+    color: var(--color-brand-950);
   }
 
-  input[type="checkbox"],
-  input[type="radio"] {
-    @apply text-slate-600 border-gray-300 focus:ring-slate-300 focus:ring-1;
-  }
-}
-
-@layer utilities {
-  .animate-blob {
-    animation: blob 7s infinite;
-  }
-
-  .animation-delay-2000 {
-    animation-delay: 2s;
-  }
-
-  .animation-delay-100 {
-    animation-delay: 100ms;
-  }
-
-  .animation-delay-200 {
-    animation-delay: 200ms;
-  }
-
-  .animation-delay-300 {
-    animation-delay: 300ms;
-  }
-
-  .animation-delay-400 {
-    animation-delay: 400ms;
-  }
-
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-
-  .animate-pulse-slow {
-    animation: pulse-slow 4s ease-in-out infinite;
-  }
-
-  .animate-bounce-slow {
-    animation: bounce-slow 3s ease-in-out infinite;
-  }
-
-  @keyframes blob {
-    0% {
-      transform: translate(0px, 0px) scale(1);
-    }
-    33% {
-      transform: translate(30px, -50px) scale(1.1);
-    }
-    66% {
-      transform: translate(-20px, 20px) scale(0.9);
-    }
-    100% {
-      transform: translate(0px, 0px) scale(1);
-    }
-  }
-
-  @keyframes float {
-    0%,
-    100% {
-      transform: translateY(0px);
-    }
-    50% {
-      transform: translateY(-20px);
-    }
-  }
-
-  @keyframes pulse-slow {
-    0%,
-    100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 0.8;
-      transform: scale(1.05);
-    }
-  }
-
-  @keyframes bounce-slow {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
-  }
-
-  /* Floating particles */
-  .particle {
-    position: absolute;
-    border-radius: 50%;
-    pointer-events: none;
-  }
-
-  @keyframes float-particle {
-    0% {
-      transform: translateY(0) translateX(0);
-      opacity: 0;
-    }
-    10% {
-      opacity: 1;
-    }
-    90% {
-      opacity: 1;
-    }
-    100% {
-      transform: translateY(-100vh) translateX(50px);
-      opacity: 0;
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
     }
   }
 }
 
-/* Print Styles */
+/* Tailwind v4 preflight ships cursor:default on buttons - restore the
+   pointer affordance on every enabled interactive control. */
+@layer base {
+  :is(
+    button,
+    select,
+    summary,
+    [role='button'],
+    [role='radio'],
+    [role='tab'],
+    input[type='checkbox'],
+    input[type='radio'],
+    input[type='file']
+  ):not(:disabled) {
+    cursor: pointer;
+  }
+  label:has(> input[type='checkbox']:not(:disabled)),
+  label:has(> input[type='radio']:not(:disabled)) {
+    cursor: pointer;
+  }
+}
+
+/* Scroll without a visible scrollbar. Only for panes that stay keyboard
+   scrollable (focusable content or tabindex), never for the page itself. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Print: only the resume sheet */
+@page {
+  size: letter;
+  margin: 0;
+}
 @media print {
   .no-print {
     display: none !important;
@@ -159,10 +179,24 @@
   body {
     margin: 0;
     padding: 0;
+    background: white;
   }
   .resume-container {
     margin: 0;
     padding: 0;
+    /* Screen zoom-to-fit must never leak into the printed PDF. */
+    zoom: 1 !important;
+    /* Templates use tints and accent bars; without this Chrome prints them
+       white and reversed-out headings vanish. */
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .resume-container * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .resume-container h2,
+  .resume-container h3 {
+    break-after: avoid;
   }
 }
-

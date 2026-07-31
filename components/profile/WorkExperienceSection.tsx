@@ -1,333 +1,314 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { Plus, Edit2, Trash2, Save, X } from 'lucide-react'
-import EnhanceTextarea from '@/components/ui/EnhanceTextarea'
+import { useState, useEffect, useCallback } from 'react'
+import { createClient, requireSessionUser } from '@/lib/supabase/client'
+import { Briefcase, Plus } from 'lucide-react'
+import { Card, CardHeader, CardBody } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { EmptyState } from '@/components/ui/empty-state'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { SkeletonRows } from '@/components/ui/skeleton'
+import { useToast } from '@/components/ui/toast'
+import { EntryRow, endBeforeStart, useEntryForm } from '@/components/forms/entry-form'
+import { WorkFields } from '@/components/forms/entry-fields'
+import type { JobType, WorkExperienceDraft } from '@/lib/contexts/onboarding-context'
+import { formatMonthYear, monthInputToDate, dateToMonthInput } from '@/lib/utils'
 
 interface WorkExperience {
   id: string
-  user_id: string
   company_name: string
   position_title: string
   location: string | null
-  job_type: 'Part-Time' | 'Full-Time' | 'Contract' | null
+  job_type: JobType | null
   start_date: string
   end_date: string | null
   is_current: boolean
   description: string | null
 }
 
+/** Form state keeps dates as <input type="month"> values ("YYYY-MM"). */
+const EMPTY_FORM: WorkExperienceDraft = {
+  company_name: '',
+  position_title: '',
+  location: '',
+  job_type: 'Full-Time',
+  start_date: '',
+  end_date: '',
+  is_current: false,
+  description: '',
+}
+
 export default function WorkExperienceSection() {
   const [experiences, setExperiences] = useState<WorkExperience[]>([])
-  const [isAdding, setIsAdding] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState<Partial<WorkExperience>>({})
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [dateError, setDateError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<WorkExperience | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const entryForm = useEntryForm<WorkExperienceDraft>()
   const supabase = createClient()
+  const toast = useToast()
+
+  const fetchExperiences = useCallback(async (): Promise<WorkExperience[]> => {
+    const user = await requireSessionUser(supabase)
+    if (!user) return []
+
+    const { data, error } = await supabase
+      .from('work_experiences')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('start_date', { ascending: false })
+
+    if (error) {
+      toast.error('Could not load work experience', error.message)
+      return []
+    }
+    return (data as WorkExperience[] | null) ?? []
+  }, [supabase, toast])
+
+  const loadExperiences = useCallback(async () => {
+    setExperiences(await fetchExperiences())
+  }, [fetchExperiences])
 
   useEffect(() => {
-    loadWorkExperiences()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const loadWorkExperiences = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { data, error } = await supabase
-        .from('work_experiences')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('start_date', { ascending: false })
-
-      if (!error && data) {
-        setExperiences(data)
-      }
-    } catch (error) {
-      console.error('Error loading work experiences:', error)
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      if (editingId) {
-        const { error } = await supabase
-          .from('work_experiences')
-          .update({
-            ...formData,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', editingId)
-          .eq('user_id', user.id)
-
-        if (!error) {
-          await loadWorkExperiences()
-          setEditingId(null)
-        }
-      } else {
-        const { error } = await supabase
-          .from('work_experiences')
-          .insert({
-            ...formData,
-            user_id: user.id
-          })
-
-        if (!error) {
-          await loadWorkExperiences()
-          setIsAdding(false)
-        }
-      }
-
-      setFormData({})
-    } catch (error) {
-      console.error('Error saving work experience:', error)
-    } finally {
+    let active = true
+    fetchExperiences().then((list) => {
+      if (!active) return
+      setExperiences(list)
       setLoading(false)
+    })
+    return () => {
+      active = false
     }
-  }
+  }, [fetchExperiences])
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this work experience?')) return
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { error } = await supabase
-        .from('work_experiences')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id)
-
-      if (!error) {
-        setExperiences(experiences.filter(exp => exp.id !== id))
-      }
-    } catch (error) {
-      console.error('Error deleting work experience:', error)
-    }
+  const startAdd = () => {
+    setDateError(null)
+    entryForm.open({ ...EMPTY_FORM })
   }
 
   const startEdit = (exp: WorkExperience) => {
-    setFormData(exp)
-    setEditingId(exp.id)
-    setIsAdding(false)
+    setDateError(null)
+    entryForm.open(
+      {
+        company_name: exp.company_name,
+        position_title: exp.position_title,
+        location: exp.location ?? '',
+        job_type: exp.job_type ?? 'Full-Time',
+        start_date: dateToMonthInput(exp.start_date),
+        end_date: dateToMonthInput(exp.end_date),
+        is_current: exp.is_current,
+        description: exp.description ?? '',
+      },
+      exp.id
+    )
   }
 
-  const startAdd = () => {
-    setFormData({
-      company_name: '',
-      position_title: '',
-      location: '',
-      job_type: 'Full-Time',
-      start_date: '',
-      end_date: '',
-      is_current: false,
-      description: ''
-    })
-    setIsAdding(true)
-    setEditingId(null)
+  const closeForm = () => {
+    setDateError(null)
+    entryForm.close()
   }
 
-  const cancel = () => {
-    setFormData({})
-    setIsAdding(false)
-    setEditingId(null)
+  const handleFieldChange = (patch: Partial<WorkExperienceDraft>) => {
+    if ('start_date' in patch || 'end_date' in patch || 'is_current' in patch) setDateError(null)
+    entryForm.patch(patch)
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const form = entryForm.form
+    if (!form) return
+
+    if (!form.is_current && endBeforeStart(form.start_date, form.end_date)) {
+      setDateError('End date must be on or after the start date.')
+      return
+    }
+    setDateError(null)
+    setSaving(true)
+
+    const user = await requireSessionUser(supabase)
+    if (!user) {
+      setSaving(false)
+      toast.error('You are signed out', 'Sign in again to save your changes.')
+      return
+    }
+
+    // Explicit payload: month values converted to DATE-safe strings, empty
+    // strings to null - never spread raw form state into the table.
+    const startDate = monthInputToDate(form.start_date)
+    if (!startDate) {
+      setSaving(false)
+      setDateError('A start date is required.')
+      return
+    }
+    const payload = {
+      company_name: form.company_name.trim(),
+      position_title: form.position_title.trim(),
+      location: form.location.trim() || null,
+      job_type: form.job_type || null,
+      start_date: startDate,
+      end_date: form.is_current ? null : monthInputToDate(form.end_date),
+      is_current: form.is_current,
+      description: form.description.trim() || null,
+    }
+
+    const editingId = entryForm.editKey
+    const { error } = editingId
+      ? await supabase
+          .from('work_experiences')
+          .update({ ...payload, updated_at: new Date().toISOString() })
+          .eq('id', editingId)
+          .eq('user_id', user.id)
+      : await supabase.from('work_experiences').insert({ ...payload, user_id: user.id })
+
+    setSaving(false)
+    if (error) {
+      toast.error(
+        editingId ? 'Could not update the experience' : 'Could not add the experience',
+        error.message
+      )
+      return
+    }
+
+    toast.success(editingId ? 'Experience updated' : 'Experience added')
+    closeForm()
+    await loadExperiences()
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+
+    const user = await requireSessionUser(supabase)
+    if (!user) {
+      setDeleting(false)
+      toast.error('You are signed out', 'Sign in again to delete this entry.')
+      return
+    }
+
+    const { error } = await supabase
+      .from('work_experiences')
+      .delete()
+      .eq('id', deleteTarget.id)
+      .eq('user_id', user.id)
+
+    setDeleting(false)
+    if (error) {
+      toast.error('Could not delete the experience', error.message)
+      return
+    }
+
+    toast.success('Experience deleted')
+    setDeleteTarget(null)
+    await loadExperiences()
   }
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-gray-900">Work Experience</h2>
-        {!isAdding && !editingId && (
-          <button
-            onClick={startAdd}
-            className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-100 hover:bg-blue-200"
+    <Card>
+      <CardHeader
+        title="Work experience"
+        description="Roles you have held, most recent first."
+        actions={
+          !entryForm.isOpen && (
+            <Button variant="secondary" size="sm" onClick={startAdd}>
+              <Plus aria-hidden />
+              Add experience
+            </Button>
+          )
+        }
+      />
+
+      {entryForm.form && (
+        <CardBody className="border-b border-stone-200">
+          <form
+            onSubmit={handleSubmit}
+            className="rounded-lg border border-stone-200 bg-stone-50 p-4 sm:p-5"
           >
-            <Plus className="w-4 h-4 mr-1" />
-            Add Experience
-          </button>
-        )}
-      </div>
-
-      {(isAdding || editingId) && (
-        <form onSubmit={handleSubmit} className="mb-6 p-4 border border-gray-200 rounded-lg">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Company Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.company_name || ''}
-                onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
+            <h3 className="font-display text-sm font-semibold text-stone-900">
+              {entryForm.editKey ? 'Edit experience' : 'New experience'}
+            </h3>
+            <div className="mt-4">
+              <WorkFields
+                form={entryForm.form}
+                onChange={handleFieldChange}
+                errors={{ end_date: dateError ?? undefined }}
+                nativeRequired
               />
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Position Title *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.position_title || ''}
-                onChange={(e) => setFormData({ ...formData, position_title: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
-              />
+            <div className="mt-5 flex justify-end gap-3">
+              <Button variant="secondary" onClick={closeForm} disabled={saving}>
+                Cancel
+              </Button>
+              <Button type="submit" loading={saving}>
+                {entryForm.editKey ? 'Save changes' : 'Add experience'}
+              </Button>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Location
-              </label>
-              <input
-                type="text"
-                value={formData.location || ''}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Job Type
-              </label>
-              <select
-                value={formData.job_type || 'Full-Time'}
-                onChange={(e) => setFormData({ ...formData, job_type: e.target.value as 'Part-Time' | 'Full-Time' | 'Contract' | null })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
-              >
-                <option value="Full-Time">Full-Time</option>
-                <option value="Part-Time">Part-Time</option>
-                <option value="Contract">Contract</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Start Date *
-              </label>
-              <input
-                type="date"
-                required
-                value={formData.start_date || ''}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                End Date
-              </label>
-              <input
-                type="date"
-                value={formData.end_date || ''}
-                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                disabled={formData.is_current}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-slate-400 focus:ring-slate-300 sm:text-sm disabled:bg-gray-100"
-              />
-              <label className="mt-2 flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.is_current || false}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    is_current: e.target.checked,
-                    end_date: e.target.checked ? null : formData.end_date
-                  })}
-                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-slate-400 focus:ring-slate-300"
-                />
-                <span className="ml-2 text-sm text-gray-700">Currently working here</span>
-              </label>
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Description
-              </label>
-              <EnhanceTextarea
-                value={formData.description || ''}
-                onChange={(value) => setFormData({ ...formData, description: value })}
-                rows={3}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-slate-400 focus:ring-slate-300 sm:text-sm"
-                placeholder="Describe your responsibilities and achievements..."
-                enhanceType="work_experience"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4 flex gap-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-            >
-              <Save className="w-4 h-4 mr-1" />
-              {loading ? 'Saving...' : 'Save'}
-            </button>
-            <button
-              type="button"
-              onClick={cancel}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-            >
-              <X className="w-4 h-4 mr-1" />
-              Cancel
-            </button>
-          </div>
-        </form>
+          </form>
+        </CardBody>
       )}
 
-      <div className="space-y-4">
-        {experiences.length === 0 ? (
-          <p className="text-gray-500 text-sm">No work experience added yet</p>
-        ) : (
-          experiences.map(exp => (
-            <div key={exp.id} className="border-l-4 border-blue-500 pl-4 py-2">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{exp.position_title}</h3>
-                  <p className="text-gray-700">{exp.company_name}</p>
-                  {exp.location && (
-                    <p className="text-sm text-gray-600">{exp.location}</p>
-                  )}
-                  <p className="text-sm text-gray-500">
-                    {exp.job_type} • {new Date(exp.start_date).toLocaleDateString()} - {
-                      exp.is_current ? 'Present' : exp.end_date ? new Date(exp.end_date).toLocaleDateString() : 'Present'
-                    }
-                  </p>
-                  {exp.description && (
-                    <p className="mt-2 text-sm text-gray-600 whitespace-pre-wrap">{exp.description}</p>
-                  )}
-                </div>
-                <div className="flex gap-2 ml-4">
-                  <button
-                    onClick={() => startEdit(exp)}
-                    className="text-gray-400 hover:text-blue-600"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(exp.id)}
-                    className="text-gray-400 hover:text-red-600"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
+      {loading ? (
+        <CardBody>
+          <SkeletonRows rows={2} />
+        </CardBody>
+      ) : experiences.length === 0 ? (
+        !entryForm.isOpen && (
+          <EmptyState
+            icon={Briefcase}
+            title="No work experience yet"
+            description="Add the roles you have held so the AI can build accurate resumes."
+            action={
+              <Button size="sm" onClick={startAdd}>
+                <Plus aria-hidden />
+                Add experience
+              </Button>
+            }
+          />
+        )
+      ) : (
+        <ul className="divide-y divide-stone-100">
+          {experiences.map((exp) => (
+            <li
+              key={exp.id}
+              className="flex items-start justify-between gap-4 px-5 py-4 sm:px-6"
+            >
+              <EntryRow
+                title={exp.position_title}
+                titleExtra={
+                  <>
+                    {exp.job_type && <Badge variant="stone">{exp.job_type}</Badge>}
+                    {exp.is_current && <Badge variant="brand">Current</Badge>}
+                  </>
+                }
+                subtitle={`${exp.company_name}${exp.location ? ` · ${exp.location}` : ''}`}
+                meta={`${formatMonthYear(exp.start_date)} - ${
+                  exp.is_current || !exp.end_date ? 'Present' : formatMonthYear(exp.end_date)
+                }`}
+                description={exp.description ?? undefined}
+                editLabel={`Edit ${exp.position_title} at ${exp.company_name}`}
+                deleteLabel={`Delete ${exp.position_title} at ${exp.company_name}`}
+                onEdit={() => startEdit(exp)}
+                onDelete={() => setDeleteTarget(exp)}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete work experience"
+        message={
+          deleteTarget
+            ? `"${deleteTarget.position_title}" at ${deleteTarget.company_name} will be removed from your profile.`
+            : ''
+        }
+        confirmText="Delete"
+        loading={deleting}
+      />
+    </Card>
   )
 }

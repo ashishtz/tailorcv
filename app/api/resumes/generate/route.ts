@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { generateResume } from '@/lib/services/resume'
-import { fetchUserProfileData, fetchResumeById, saveResume } from '@/lib/repositories'
+import { streamResume } from '@/lib/services/resume'
+import { fetchUserProfileData } from '@/lib/repositories'
+import { asJson, normalizeResumeData, normalizeSettings } from '@/lib/utils/normalize-resume'
 
 export const runtime = 'nodejs'
+// AI generation legitimately takes tens of seconds - don't let the default
+// serverless timeout kill it mid-flight.
+export const maxDuration = 300
+
+interface GenerateRequestBody {
+  job_title?: unknown
+  job_description?: unknown
+  mode?: unknown
+  template?: unknown
+  generation_settings?: unknown
+  context_source?: unknown
+  base_resume_id?: unknown
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,26 +30,50 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { job_title, job_description, mode, template, generation_settings, context_source, base_resume_id } =
-      await request.json()
+    const body = (await request.json()) as GenerateRequestBody
+
+    // Validate inputs up front so failures are specific, not a generic 500.
+    const job_title = typeof body.job_title === 'string' ? body.job_title.trim() : ''
+    const job_description =
+      typeof body.job_description === 'string' ? body.job_description.trim() : ''
+    const mode = body.mode === 'free' ? 'free' : body.mode === 'strict' ? 'strict' : null
+    const template = typeof body.template === 'string' && body.template ? body.template : 'classic'
+    const context_source = body.context_source === 'resume' ? 'resume' : 'profile'
+    const base_resume_id = typeof body.base_resume_id === 'string' ? body.base_resume_id : null
+
+    if (!job_title) {
+      return NextResponse.json({ error: 'Job title is required.' }, { status: 400 })
+    }
+    if (!job_description) {
+      return NextResponse.json({ error: 'Job description is required.' }, { status: 400 })
+    }
+    if (!mode) {
+      return NextResponse.json({ error: 'Generation mode must be strict or free.' }, { status: 400 })
+    }
+    if (context_source === 'resume' && !base_resume_id) {
+      return NextResponse.json(
+        { error: 'Select which existing resume to use as the starting point.' },
+        { status: 400 }
+      )
+    }
+
+    const generation_settings = normalizeSettings(body.generation_settings)
 
     let userData
     let resumeContext
 
-    // Determine context source
     if (context_source === 'resume' && base_resume_id) {
-      // Fetch existing resume data
-      const { data: existingResume, error: resumeError } = await fetchResumeById(
-        supabase,
-        user.id,
-        base_resume_id
-      )
+      const { data: existingResume, error: resumeError } = await supabase
+        .from('resumes')
+        .select('*')
+        .eq('id', base_resume_id)
+        .eq('user_id', user.id)
+        .maybeSingle()
 
       if (resumeError || !existingResume) {
-        return NextResponse.json({ error: 'Resume not found' }, { status: 404 })
+        return NextResponse.json({ error: 'The selected base resume was not found.' }, { status: 404 })
       }
 
-      // Use empty user data since we're using resume context
       userData = {
         profile: null,
         skills: [],
@@ -45,16 +83,14 @@ export async function POST(request: NextRequest) {
       }
 
       resumeContext = {
-        generated_data: existingResume.generated_data
+        generated_data: normalizeResumeData(existingResume.generated_data)
       }
     } else {
-      // Fetch user profile data (from scratch)
       userData = await fetchUserProfileData(supabase, user.id)
       resumeContext = undefined
     }
 
-    // Generate resume
-    const resumeData = await generateResume({
+    const generation = streamResume({
       ...userData,
       jobTitle: job_title,
       jobDescription: job_description,
@@ -63,21 +99,76 @@ export async function POST(request: NextRequest) {
       resumeContext
     })
 
-    // Save resume
-    const { data: resume, error } = await saveResume(supabase, user.id, {
-      job_title,
-      job_description,
-      mode,
-      generated_data: resumeData,
-      template_id: template,
-      generation_settings
+    // From here on the response is an NDJSON stream: {partial} lines while
+    // the model writes, then a final {resumeId} or {error} line. HTTP status
+    // can no longer signal failure once streaming starts.
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream({
+      async start(controller) {
+        const send = (obj: object) =>
+          controller.enqueue(encoder.encode(JSON.stringify(obj) + '\n'))
+        try {
+          let step = await generation.next()
+          while (!step.done) {
+            send({ partial: step.value })
+            step = await generation.next()
+          }
+
+          // Never store unvalidated model output - normalize to the exact shape
+          // the templates render, so a missing key can't crash the viewer.
+          const resumeData = normalizeResumeData(step.value)
+          if (
+            !resumeData.contact.name &&
+            !resumeData.summary &&
+            resumeData.workExperience.length === 0
+          ) {
+            send({ error: 'The AI returned an unusable resume. Please try again.' })
+            return
+          }
+
+          const { data: resume, error } = await supabase
+            .from('resumes')
+            .insert({
+              user_id: user.id,
+              job_title,
+              job_description,
+              mode,
+              generated_data: asJson(resumeData),
+              template_id: template,
+              generation_settings: asJson(generation_settings)
+            })
+            .select()
+            .single()
+
+          if (error || !resume) {
+            console.error('Error saving resume:', error)
+            send({ error: 'The resume was generated but could not be saved. Please try again.' })
+            return
+          }
+
+          send({ resumeId: resume.id })
+        } catch (error) {
+          console.error('Error generating resume:', error)
+          send({
+            error:
+              error instanceof Error && error.message === 'OPENROUTER_API_KEY is not configured'
+                ? 'The AI service is not configured (missing API key).'
+                : 'Resume generation failed. This is usually temporary - please try again.'
+          })
+        } finally {
+          controller.close()
+        }
+      }
     })
 
-    if (error) throw error
-
-    return NextResponse.json({ resumeId: resume.id })
+    return new Response(stream, {
+      headers: { 'Content-Type': 'application/x-ndjson', 'Cache-Control': 'no-cache' }
+    })
   } catch (error) {
     console.error('Error generating resume:', error)
-    return NextResponse.json({ error: 'Failed to generate resume' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Resume generation failed. This is usually temporary - please try again.' },
+      { status: 500 }
+    )
   }
 }

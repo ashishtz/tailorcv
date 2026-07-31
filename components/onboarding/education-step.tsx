@@ -1,231 +1,184 @@
 'use client'
 
 import { useState } from 'react'
-import { useOnboarding } from '@/lib/contexts/onboarding-context'
 import { useRouter } from 'next/navigation'
-import { Trash2, Plus, Edit2 } from 'lucide-react'
+import { GraduationCap, Plus } from 'lucide-react'
+import { useOnboarding, type EducationDraft } from '@/lib/contexts/onboarding-context'
+import { StepShell, StepSkeleton } from '@/components/onboarding/step-shell'
+import {
+  AddEntryButton,
+  EntryRow,
+  endBeforeStart,
+  useEntryForm,
+} from '@/components/forms/entry-form'
+import { EducationFields, type FieldErrors } from '@/components/forms/entry-fields'
+import { Card, CardBody } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { formatMonthYear } from '@/lib/utils'
+
+const EMPTY_FORM: EducationDraft = {
+  institution_name: '',
+  degree: '',
+  field_of_study: '',
+  start_date: '',
+  end_date: '',
+}
+
+function rangeText(entry: EducationDraft): string {
+  const start = formatMonthYear(entry.start_date)
+  if (!start) return formatMonthYear(entry.end_date)
+  return `${start} - ${entry.end_date ? formatMonthYear(entry.end_date) : 'In progress'}`
+}
 
 export function EducationStep() {
-  const { data, addEducation, updateEducation, removeEducation, setCurrentStep } = useOnboarding()
+  const { hydrated } = useOnboarding()
+  if (!hydrated) return <StepSkeleton />
+  return <EducationList />
+}
+
+/** Rendered only after the draft has hydrated, so initial state is safe. */
+function EducationList() {
+  const { data, updateData } = useOnboarding()
   const router = useRouter()
-  const [isAdding, setIsAdding] = useState(false)
-  const [editingIndex, setEditingIndex] = useState<number | null>(null)
-  const [formData, setFormData] = useState({
-    institution_name: '',
-    start_date: '',
-    end_date: '',
-    degree: "Bachelor's" as "Bachelor's" | "Master's",
-    field_of_study: '',
-  })
+  const entries = data.education
 
-  const resetForm = () => {
-    setFormData({
-      institution_name: '',
-      start_date: '',
-      end_date: '',
-      degree: "Bachelor's",
-      field_of_study: '',
-    })
-    setIsAdding(false)
-    setEditingIndex(null)
+  const entryForm = useEntryForm<EducationDraft, number>()
+  const [errors, setErrors] = useState<FieldErrors<EducationDraft>>({})
+  const [footerNote, setFooterNote] = useState('')
+
+  const openAdd = () => {
+    setErrors({})
+    setFooterNote('')
+    entryForm.open({ ...EMPTY_FORM })
   }
 
-  const handleSubmitEducation = (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (editingIndex !== null) {
-      updateEducation(editingIndex, formData)
-    } else {
-      addEducation(formData)
+  const openEdit = (index: number) => {
+    setErrors({})
+    setFooterNote('')
+    entryForm.open({ ...entries[index] }, index)
+  }
+
+  const closeForm = () => {
+    setErrors({})
+    setFooterNote('')
+    entryForm.close()
+  }
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const form = entryForm.form
+    if (!form) return
+
+    const nextErrors: FieldErrors<EducationDraft> = {}
+    if (!form.institution_name.trim()) nextErrors.institution_name = 'Institution is required.'
+    if (!form.start_date) nextErrors.start_date = 'Start month is required.'
+    if (endBeforeStart(form.start_date, form.end_date)) {
+      nextErrors.end_date = 'End month must be the same as or after the start month.'
     }
-    
-    resetForm()
-  }
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length > 0) return
 
-  const handleEdit = (index: number) => {
-    const education = data.education[index]
-    setFormData({
-      institution_name: education.institution_name,
-      start_date: education.start_date,
-      end_date: education.end_date || '',
-      degree: education.degree || "Bachelor's",
-      field_of_study: education.field_of_study || '',
+    const entry: EducationDraft = {
+      ...form,
+      institution_name: form.institution_name.trim(),
+      field_of_study: form.field_of_study.trim(),
+    }
+    const editIndex = entryForm.editKey
+    updateData({
+      education:
+        editIndex === null
+          ? [...entries, entry]
+          : entries.map((existing, index) => (index === editIndex ? entry : existing)),
     })
-    setEditingIndex(index)
-    setIsAdding(true)
+    closeForm()
   }
 
-  const handleNext = () => {
-    setCurrentStep(5)
+  const removeEntry = (index: number) => {
+    updateData({ education: entries.filter((_, i) => i !== index) })
+  }
+
+  const handleContinue = () => {
+    if (entryForm.isOpen) {
+      setFooterNote('Add or cancel the entry you are working on before continuing.')
+      return
+    }
     router.push('/onboarding/projects')
   }
 
-  const handleBack = () => {
-    setCurrentStep(3)
-    router.push('/onboarding/work-experience')
-  }
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return ''
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-  }
-
   return (
-    <div className="space-y-6">
+    <StepShell
+      title="Your education"
+      description="Schools, degrees and certificates. Add whatever supports your story."
+      backHref="/onboarding/work-experience"
+      onContinue={handleContinue}
+      footerNote={footerNote || undefined}
+    >
       <div className="space-y-4">
-        {data.education.map((edu, index) => (
-          <div key={edu.id} className="border border-gray-200 rounded-lg p-4">
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <h4 className="font-semibold text-gray-900">{edu.institution_name}</h4>
-                <p className="text-gray-600">
-                  {edu.degree} {edu.field_of_study && `in ${edu.field_of_study}`}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {formatDate(edu.start_date)} - {formatDate(edu.end_date || '')}
-                </p>
-              </div>
-              <div className="flex gap-2 ml-4">
-                <button
-                  type="button"
-                  onClick={() => handleEdit(index)}
-                  className="p-1 text-gray-400 hover:text-gray-600"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removeEducation(index)}
-                  className="p-1 text-red-400 hover:text-red-600"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+        {entries.length > 0 && (
+          <ul className="space-y-3">
+            {entries.map((entry, index) => (
+              <li key={`${entry.institution_name}-${index}`}>
+                <Card>
+                  <CardBody className="flex items-start justify-between gap-4 py-4">
+                    <EntryRow
+                      title={entry.institution_name}
+                      subtitle={
+                        [entry.degree, entry.field_of_study].filter(Boolean).join(' · ') ||
+                        undefined
+                      }
+                      meta={rangeText(entry) || undefined}
+                      editLabel={`Edit education at ${entry.institution_name}`}
+                      deleteLabel={`Remove education at ${entry.institution_name}`}
+                      onEdit={() => openEdit(index)}
+                      onDelete={() => removeEntry(index)}
+                      disabled={entryForm.isOpen}
+                    />
+                  </CardBody>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {entryForm.form ? (
+          <Card>
+            <CardBody>
+              <h2 className="text-sm font-semibold text-stone-900">
+                {entryForm.editKey === null ? 'Add education' : 'Edit education'}
+              </h2>
+              <form onSubmit={handleSubmit} className="mt-4 space-y-5">
+                <EducationFields form={entryForm.form} onChange={entryForm.patch} errors={errors} />
+                <div className="flex items-center justify-end gap-3">
+                  <Button variant="ghost" onClick={closeForm}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" variant="secondary">
+                    {entryForm.editKey === null ? 'Add education' : 'Save changes'}
+                  </Button>
+                </div>
+              </form>
+            </CardBody>
+          </Card>
+        ) : entries.length === 0 ? (
+          <Card>
+            <EmptyState
+              icon={GraduationCap}
+              title="No education yet"
+              description="Schools, bootcamps and certificate programs all belong here."
+              action={
+                <Button variant="secondary" onClick={openAdd}>
+                  <Plus aria-hidden />
+                  Add education
+                </Button>
+              }
+              className="py-10"
+            />
+          </Card>
+        ) : (
+          <AddEntryButton label="Add another education" onClick={openAdd} />
+        )}
       </div>
-
-      {isAdding ? (
-        <form onSubmit={handleSubmitEducation} className="space-y-4 border border-gray-200 rounded-lg p-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label htmlFor="institution_name" className="block text-sm font-medium text-gray-700">
-                College/University Name *
-              </label>
-              <input
-                type="text"
-                id="institution_name"
-                required
-                value={formData.institution_name}
-                onChange={(e) => setFormData({ ...formData, institution_name: e.target.value })}
-                className="mt-1 block w-full"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="degree" className="block text-sm font-medium text-gray-700">
-                Degree *
-              </label>
-              <select
-                id="degree"
-                value={formData.degree}
-                onChange={(e) => setFormData({ ...formData, degree: e.target.value as "Bachelor's" | "Master's" })}
-                className="mt-1 block w-full rounded-md border-gray-300"
-              >
-                <option value="Bachelor's">Bachelor&apos;s</option>
-                <option value="Master's">Master&apos;s</option>
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="field_of_study" className="block text-sm font-medium text-gray-700">
-                Field of Study *
-              </label>
-              <input
-                type="text"
-                id="field_of_study"
-                required
-                placeholder="e.g., Computer Science"
-                value={formData.field_of_study}
-                onChange={(e) => setFormData({ ...formData, field_of_study: e.target.value })}
-                className="mt-1 block w-full"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="start_date" className="block text-sm font-medium text-gray-700">
-                Start Date *
-              </label>
-              <input
-                type="month"
-                id="start_date"
-                required
-                value={formData.start_date}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="mt-1 block w-full"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="end_date" className="block text-sm font-medium text-gray-700">
-                End Date *
-              </label>
-              <input
-                type="month"
-                id="end_date"
-                required
-                value={formData.end_date}
-                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                className="mt-1 block w-full"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={resetForm}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700"
-            >
-              {editingIndex !== null ? 'Update' : 'Add'} Education
-            </button>
-          </div>
-        </form>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setIsAdding(true)}
-          className="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 flex items-center justify-center gap-2"
-        >
-          <Plus className="w-5 h-5" />
-          Add Education
-        </button>
-      )}
-
-      <div className="flex justify-between">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-        >
-          Back
-        </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
-        >
-          Next Step
-        </button>
-      </div>
-    </div>
+    </StepShell>
   )
 }
